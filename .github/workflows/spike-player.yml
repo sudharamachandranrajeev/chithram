@@ -52,7 +52,8 @@ jobs:
       - name: Free disk for the system image
         run: |
           cp app/build/app/outputs/flutter-apk/app-debug.apk "$RUNNER_TEMP/app-debug.apk"
-          rm -rf app/build ~/.gradle /usr/share/dotnet /opt/ghc /usr/local/share/boost /usr/local/lib/node_modules /opt/hostedtoolcache/CodeQL
+          rm -rf app/build ~/.gradle
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost /opt/hostedtoolcache/CodeQL /usr/local/lib/android/sdk/ndk
           docker system prune -af >/dev/null 2>&1 || true
           df -h /
       - name: Enable KVM

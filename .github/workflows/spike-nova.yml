@@ -82,7 +82,7 @@ jobs:
 
       - name: Build the sandbox launcher
         run: |
-          cargo build --release --manifest-path native/sandbox/Cargo.toml
+          cargo build --release --locked --manifest-path native/sandbox/Cargo.toml
           ls -la native/sandbox/target/release/ | head
           echo "::group::Cargo.lock (commit this)"
           base64 -w0 native/sandbox/Cargo.lock 2>/dev/null || base64 native/sandbox/Cargo.lock

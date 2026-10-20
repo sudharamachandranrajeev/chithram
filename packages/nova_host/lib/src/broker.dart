@@ -340,11 +340,13 @@ class _Conn {
   }
 
   void _onEvent(RawSocketEvent e) {
-    // Drain on every event: on Windows data can still be pending when readClosed arrives.
-    var d = _raw.read();
-    while (d != null && d.isNotEmpty) {
-      _chunks.add(d);
-      d = _raw.read();
+    // Also drain on readClosed: data can still be pending when it arrives (seen on Windows).
+    if (e == RawSocketEvent.read || e == RawSocketEvent.readClosed) {
+      var d = _raw.read();
+      while (d != null && d.isNotEmpty) {
+        _chunks.add(d);
+        d = _raw.read();
+      }
     }
     if (e == RawSocketEvent.readClosed || e == RawSocketEvent.closed) {
       _closed = true;

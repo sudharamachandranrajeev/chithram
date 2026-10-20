@@ -1,0 +1,15 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <!-- Same-UID fallback: Chaquopy Python in its own process (kill-able, no UI). -->
+        <service
+            android:name=".NovaService"
+            android:process=":nova"
+            android:exported="false" />
+        <!-- Tried first: isolated uid, no app data, no INTERNET. Chaquopy may not start there. -->
+        <service
+            android:name=".NovaIsolatedService"
+            android:process=":novaiso"
+            android:isolatedProcess="true"
+            android:exported="false" />
+    </application>
+</manifest>

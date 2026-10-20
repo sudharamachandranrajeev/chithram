@@ -49,6 +49,12 @@ jobs:
           sleep 1
           curl -sfI http://127.0.0.1:8000/video.mp4
           curl -sf -H 'Range: bytes=0-9' http://127.0.0.1:8000/audio.m4a | wc -c
+      - name: Free disk for the system image
+        run: |
+          cp app/build/app/outputs/flutter-apk/app-debug.apk "$RUNNER_TEMP/app-debug.apk"
+          rm -rf app/build ~/.gradle /usr/share/dotnet /opt/ghc /usr/local/share/boost /usr/local/lib/node_modules /opt/hostedtoolcache/CodeQL
+          docker system prune -af >/dev/null 2>&1 || true
+          df -h /
       - name: Enable KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
@@ -62,7 +68,7 @@ jobs:
           profile: tv_1080p
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
-          script: bash packages/chithram_player/tool/emulator_check.sh app/build/app/outputs/flutter-apk/app-debug.apk emu-out
+          script: bash packages/chithram_player/tool/emulator_check.sh ${{ runner.temp }}/app-debug.apk emu-out
       - name: Results to the step summary
         if: always()
         run: |

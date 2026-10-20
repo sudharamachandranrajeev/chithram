@@ -47,6 +47,18 @@ jobs:
           set -o pipefail
           mkdir -p ../../logs
           E2E_SIZE_MB=200 cargo test --release -- --nocapture --test-threads=1 2>&1 | tee ../../logs/cargo-test.log
+      - name: Results to summary
+        if: always()
+        run: |
+          {
+            echo '### cargo test (200 MB seeder -> leecher engine, Range reads over HTTP)'
+            echo '```'
+            grep -E '^test |test result|seeder ready|^added:|^range |^stats: .{0,160}' ../../logs/cargo-test.log | cut -c1-240
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "---- Cargo.lock (base64) ----"
+          base64 -w0 Cargo.lock; echo
+          echo "---- end ----"
       - name: Versions and licence
         if: always()
         run: |
@@ -57,7 +69,9 @@ jobs:
           } | tee -a "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
+        continue-on-error: true
         with:
+          retention-days: 2
           name: torrent-test-logs
           path: |
             logs/
@@ -73,7 +87,6 @@ jobs:
         with:
           manifest-path: native/torrent/Cargo.toml
           command: check
-          command-arguments: --config native/torrent/deny.toml
 
   build-linux:
     name: build linux-x64 (gnu, ubuntu-22.04)
@@ -99,7 +112,9 @@ jobs:
           echo "glibc symbols needed:"; objdump -T ../../out/linux-x64/libchithram_torrent.so | grep -o 'GLIBC_[0-9.]*' | sort -uV | tail -3
           nm -D --defined-only ../../out/linux-x64/libchithram_torrent.so | grep ' ct_'
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        continue-on-error: true
         with:
+          retention-days: 2
           name: torrent-linux-x64
           path: out/
 
@@ -126,7 +141,9 @@ jobs:
           cp target/x86_64-pc-windows-msvc/release/chithram_torrent.dll ../../out/windows-x64/
           ls -l ../../out/windows-x64 | tee -a "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        continue-on-error: true
         with:
+          retention-days: 2
           name: torrent-windows-x64
           path: out/
 
@@ -157,13 +174,14 @@ jobs:
             echo '```'
           } | tee -a "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        continue-on-error: true
         with:
+          retention-days: 2
           name: torrent-android
           path: out/jniLibs/
 
   dart-ffi:
     name: Dart FFI smoke + analyze (linux)
-    needs: build-linux
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -172,10 +190,14 @@ jobs:
           channel: stable
           flutter-version: ${{ env.FLUTTER_VERSION }}
           cache: true
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
         with:
-          name: torrent-linux-x64
-          path: out
+          toolchain: stable
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
+        with:
+          workspaces: native/torrent
+      - name: Build the library
+        run: cargo build --release --lib --manifest-path native/torrent/Cargo.toml
       - run: flutter pub get
       - name: Analyze
         run: |
@@ -184,12 +206,11 @@ jobs:
       - name: Test against the real library
         working-directory: packages/torrent
         env:
-          CHITHRAM_TORRENT_LIB: ${{ github.workspace }}/out/linux-x64/libchithram_torrent.so
+          CHITHRAM_TORRENT_LIB: ${{ github.workspace }}/native/torrent/target/release/libchithram_torrent.so
         run: flutter test
 
   bundle-linux:
     name: FFI plugin bundles the library (flutter build linux)
-    needs: build-linux
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -202,13 +223,16 @@ jobs:
           channel: stable
           flutter-version: ${{ env.FLUTTER_VERSION }}
           cache: true
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
         with:
-          name: torrent-linux-x64
-          path: out
+          toolchain: stable
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
+        with:
+          workspaces: native/torrent
       - run: |
+          cargo build --release --lib --manifest-path native/torrent/Cargo.toml
           mkdir -p packages/torrent/prebuilt/linux-x64
-          cp out/linux-x64/libchithram_torrent.so packages/torrent/prebuilt/linux-x64/
+          cp native/torrent/target/release/libchithram_torrent.so packages/torrent/prebuilt/linux-x64/
       - run: flutter pub get
       - working-directory: app
         run: flutter build linux --debug
@@ -219,7 +243,6 @@ jobs:
 
   bundle-windows:
     name: FFI plugin bundles the library (flutter build windows)
-    needs: build-windows
     runs-on: windows-latest
     defaults:
       run:
@@ -231,13 +254,16 @@ jobs:
           channel: stable
           flutter-version: ${{ env.FLUTTER_VERSION }}
           cache: true
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
         with:
-          name: torrent-windows-x64
-          path: out
+          toolchain: stable
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
+        with:
+          workspaces: native/torrent
       - run: |
+          cargo build --release --lib --manifest-path native/torrent/Cargo.toml
           mkdir -p packages/torrent/prebuilt/windows-x64
-          cp out/windows-x64/chithram_torrent.dll packages/torrent/prebuilt/windows-x64/
+          cp native/torrent/target/release/chithram_torrent.dll packages/torrent/prebuilt/windows-x64/
       - run: flutter pub get
       - working-directory: app
         run: flutter build windows --debug
@@ -248,7 +274,6 @@ jobs:
 
   android-tv:
     name: Android TV emulator streams 50 MB (RSS < 400 MB)
-    needs: [build-android, build-linux]
     runs-on: ubuntu-22.04
     timeout-minutes: 60
     steps:
@@ -262,18 +287,22 @@ jobs:
           channel: stable
           flutter-version: ${{ env.FLUTTER_VERSION }}
           cache: true
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
         with:
-          name: torrent-android
-          path: packages/torrent/android/src/main/jniLibs
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+          toolchain: stable
+          targets: x86_64-linux-android
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
         with:
-          name: torrent-linux-x64
-          path: out
+          workspaces: native/torrent
+      - run: cargo install cargo-ndk --locked
+      - name: Build the x86_64 Android library and the host seeder
+        working-directory: native/torrent
+        run: |
+          cargo ndk -P 24 -t x86_64 -o ../../packages/torrent/android/src/main/jniLibs build --release --lib
+          cargo build --release --example seeder
       - name: Start the 50 MB seeder on the host
         run: |
-          chmod +x out/tools/seeder
-          setsid nohup out/tools/seeder --size-mb 50 --port 16881 --dir "$RUNNER_TEMP/seed" --out "$RUNNER_TEMP/magnet.txt" >"$RUNNER_TEMP/seeder.log" 2>&1 &
+          setsid nohup native/torrent/target/release/examples/seeder --size-mb 50 --port 16881 --dir "$RUNNER_TEMP/seed" --out "$RUNNER_TEMP/magnet.txt" >"$RUNNER_TEMP/seeder.log" 2>&1 &
           for i in $(seq 1 60); do [[ -s $RUNNER_TEMP/magnet.txt ]] && break; sleep 1; done
           cat "$RUNNER_TEMP/seeder.log"
           cat "$RUNNER_TEMP/magnet.txt"
@@ -298,9 +327,24 @@ jobs:
           target: android-tv
           disable-animations: true
           script: bash native/torrent/ci/emulator-test.sh app/build/app/outputs/flutter-apk/app-debug.apk tv-out
+      - name: Results to summary
+        if: always()
+        run: |
+          {
+            echo '### Android TV emulator (system-images;android-36;android-tv;x86_64)'
+            echo '```'
+            cat tv-out/summary.txt tv-out/autotest.txt 2>&1
+            echo '--- rss.csv (every ~2 s: seconds,VmRSS kB) ---'
+            cat tv-out/rss.csv 2>&1 | tail -40
+            echo '--- seeder.log ---'
+            tail -5 "$RUNNER_TEMP/seeder.log"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
+        continue-on-error: true
         with:
+          retention-days: 2
           name: torrent-android-tv
           path: |
             tv-out

@@ -57,11 +57,6 @@ add_subdirectory("runner")
 # them to the application.
 include(flutter/generated_plugins.cmake)
 
-# audio_service_win uses C++/WinRT under C++17, which pulls in
-# <experimental/coroutine>: Visual Studio 2026 (MSVC 14.51) refuses that
-# unless told to carry on.
-target_compile_definitions(audio_service_win_plugin PRIVATE _SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS)
-
 
 # === Installation ===
 # Support files are copied into place next to the executable, so that it can
@@ -81,11 +76,6 @@ install(TARGETS ${BINARY_NAME} RUNTIME DESTINATION "${CMAKE_INSTALL_PREFIX}"
   COMPONENT Runtime)
 
 install(FILES "${FLUTTER_ICU_DATA_FILE}" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}"
-  COMPONENT Runtime)
-
-# The 3D cover's model (U2-Net's small one), which the app looks for in its
-# data folder (lib/src/subject.dart).
-install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../../models/u2netp.onnx" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}"
   COMPONENT Runtime)
 
 install(FILES "${FLUTTER_LIBRARY}" DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"

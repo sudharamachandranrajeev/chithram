@@ -11,8 +11,8 @@ PAGE = ('<a class="r" href="magnet:?xt=urn:btih:' + "a" * 40 + '" data-size="1.5
 
 def run(name, audit=True, limit_requests=20, timeout=60):
     src = open(os.path.join(FIX, name + ".py")).read()
-    for k, v in {"__BASE__": "http://example.test:9", "__PORT__": "9", "__HOME__": os.path.expanduser("~"),
-                 "__TMP__": tempfile.gettempdir(), "__SECRET__": os.path.join(os.path.expanduser("~"), ".fake_secret_nova_test")}.items():
+    for k, v in {"__BASE__": "http://example.test:9", "__PORT__": "9", "__HOME__": os.path.expanduser("~").replace("\\", "/"),
+                 "__TMP__": tempfile.gettempdir().replace("\\", "/"), "__SECRET__": os.path.join(os.path.expanduser("~"), ".fake_secret_nova_test").replace("\\", "/")}.items():
         src = src.replace(k, v)
     env = dict(os.environ, NOVA_AUDIT="1" if audit else "0", PYTHONDONTWRITEBYTECODE="1")
     p = subprocess.Popen([sys.executable, "-I", RUNNER], stdin=subprocess.PIPE, stdout=subprocess.PIPE,

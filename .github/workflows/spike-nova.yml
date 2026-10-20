@@ -61,7 +61,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/pbs"
           curl -fsSL -o "$RUNNER_TEMP/pbs.tgz" "https://github.com/astral-sh/python-build-standalone/releases/download/$PBS_RELEASE/${f//+/%2B}"
           echo "$sha  $RUNNER_TEMP/pbs.tgz" | sha256sum -c -
-          tar -xzf "$RUNNER_TEMP/pbs.tgz" -C "$RUNNER_TEMP/pbs"
+          tar --force-local -xzf "$RUNNER_TEMP/pbs.tgz" -C "$RUNNER_TEMP/pbs"
           if [[ $RUNNER_OS == Windows ]]; then PY="$RUNNER_TEMP/pbs/python/python.exe"; else PY="$RUNNER_TEMP/pbs/python/bin/python3"; fi
           echo "PY_CMD=$PY" >> "$GITHUB_ENV"
 
@@ -103,11 +103,14 @@ jobs:
         if: runner.os == 'Linux'
         continue-on-error: true
         run: |
-          sudo apt-get install -y minisign
           d=$RUNNER_TEMP/realms; mkdir -p "$d"
-          minisign -G -W -f -p "$d/k.pub" -s "$d/k.key"
+          curl -fsSL -o "$d/ms.tgz" https://github.com/jedisct1/minisign/releases/download/0.12/minisign-0.12-linux.tar.gz
+          echo "9a599b48ba6eb7b1e80f12f36b94ceca7c00b7a5173c95c3efc88d9822957e73  $d/ms.tgz" | sha256sum -c -
+          tar -xzf "$d/ms.tgz" -C "$d" minisign-linux/x86_64/minisign
+          ms=$d/minisign-linux/x86_64/minisign
+          "$ms" -G -W -f -p "$d/k.pub" -s "$d/k.key"
           printf 'real minisign test file\n' > "$d/f"
-          minisign -S -s "$d/k.key" -m "$d/f" -x "$d/f.minisig" -t "chithram test" < /dev/null
+          "$ms" -S -s "$d/k.key" -m "$d/f" -x "$d/f.minisig" -t "chithram test" < /dev/null
           echo "NOVA_REAL_MINISIGN_DIR=$d" >> "$GITHUB_ENV"
 
       - run: flutter pub get

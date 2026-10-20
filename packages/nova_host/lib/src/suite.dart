@@ -5,6 +5,7 @@ import 'dart:io';
 import 'broker.dart';
 import 'fixtures.g.dart';
 import 'host.dart';
+import 'session.dart';
 
 /// A local HTTP server that plays the fake "example.test" site. It is the only
 /// server any fixture engine may talk to; Chithram ships no real indexers.

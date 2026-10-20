@@ -134,7 +134,7 @@ class NovaHost {
     } else if (status == SearchStatus.error && (code == 124 || (code != null && code > 128))) {
       // The launcher killed it (wall time, CPU limit, signal).
       status = SearchStatus.killed;
-      reason = code == 124 ? 'sandbox-wall-timeout' : 'sandbox-signal-${code - 128}';
+      reason = code == 124 ? 'sandbox-wall-timeout' : 'sandbox-signal-${code! - 128}';
     }
     sw.stop();
     return SearchOutcome(

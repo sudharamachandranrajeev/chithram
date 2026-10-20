@@ -166,7 +166,12 @@ void main() {
         allowlist: HostAllowlist(['example.test']),
         policy: BrokerPolicy(testMode: true, socks5: Socks5Config('127.0.0.1', proxy.port)),
       );
-      final r = await b.fetch('GET', 'http://example.test:$port/ok', {}, null);
+      final BrokerResponse r;
+      try {
+        r = await b.fetch('GET', 'http://example.test:$port/ok', {}, null);
+      } catch (e) {
+        fail('socks fetch failed: $e; broker log: ${b.log}; proxy saw: $seen');
+      }
       expect(String.fromCharCodes(r.body), 'hello');
       expect(seen, ['example.test:$port']);
       await proxy.close();

@@ -137,11 +137,24 @@ class fx_socket(object):
             s.recv(10)
 
         def raw():
-            socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_ICMP)
+            # Creating the socket is not an escape by itself (admin can on Windows);
+            # an ICMP echo that gets its reply back is.
+            s = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_ICMP)
+            s.settimeout(2)
+            icmp = b"\x08\x00\xf7\xff\x00\x00\x00\x00"
+            s.sendto(icmp, ("127.0.0.1", 0))
+            for _ in range(5):
+                data, _addr = s.recvfrom(1024)
+                if len(data) >= 28 and data[20] == 0:
+                    return
+            raise OSError("no echo reply")
 
         def udp():
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            s.sendto(b"x", ("127.0.0.1", __PORT__))
+            s.settimeout(2)
+            s.sendto(b"ping", ("127.0.0.1", __PORT__))
+            if s.recvfrom(16)[0] != b"pong":
+                raise OSError("no pong")
 
         def dns():
             socket.getaddrinfo("example.com", 80)

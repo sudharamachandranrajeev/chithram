@@ -86,7 +86,7 @@ class HttpBroker {
         // The next hop is re-checked against the allowlist in _one.
         continue;
       }
-      log.add('ok ${r.status} $current');
+      log.add('ok ${r.status} ${r.body.length}B $current');
       return r;
     }
     throw _deny('too many redirects', url);
@@ -265,6 +265,7 @@ class HttpBroker {
     final c = await _Conn.connect((await InternetAddress.lookup(s.host)).first, s.port);
     try {
       final auth = s.user != null;
+      log.add('socks5: connected to proxy, greeting');
       await c.write(auth ? [5, 2, 0, 2] : [5, 1, 0]);
       final m = await c.readExact(2);
       if (m[0] != 5) throw _deny('socks5: bad proxy reply', host);
@@ -281,6 +282,7 @@ class HttpBroker {
           ? [lit.type == InternetAddressType.IPv4 ? 1 : 4, ...lit.rawAddress]
           : [3, utf8.encode(host).length, ...utf8.encode(host)];
       await c.write([5, 1, 0, ...addr, port >> 8, port & 0xff]);
+      log.add('socks5: method ok, requesting $host:$port');
       final h = await c.readExact(4);
       if (h[1] != 0) throw _deny('socks5: connect refused (code ${h[1]})', host);
       final skip = h[3] == 1 ? 4 : h[3] == 4 ? 16 : (await c.readExact(1))[0];
@@ -338,13 +340,13 @@ class _Conn {
   }
 
   void _onEvent(RawSocketEvent e) {
-    if (e == RawSocketEvent.read) {
-      var d = _raw.read();
-      while (d != null && d.isNotEmpty) {
-        _chunks.add(d);
-        d = _raw.read();
-      }
-    } else if (e == RawSocketEvent.readClosed || e == RawSocketEvent.closed) {
+    // Drain on every event: on Windows data can still be pending when readClosed arrives.
+    var d = _raw.read();
+    while (d != null && d.isNotEmpty) {
+      _chunks.add(d);
+      d = _raw.read();
+    }
+    if (e == RawSocketEvent.readClosed || e == RawSocketEvent.closed) {
       _closed = true;
     }
     final w = _wake;

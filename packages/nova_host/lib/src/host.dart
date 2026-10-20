@@ -131,10 +131,14 @@ class NovaHost {
     if (session.killedReason != null && session.killedReason != 'cleanup') {
       status = SearchStatus.killed;
       reason = session.killedReason;
-    } else if (status == SearchStatus.error && (code == 124 || (code != null && code > 128))) {
-      // The launcher killed it (wall time, CPU limit, signal).
+    } else if (status == SearchStatus.error && code != null && (code == 124 || code > 128 || code < 0)) {
+      // The launcher / Job Object killed it (wall time, CPU limit, signal, NTSTATUS).
       status = SearchStatus.killed;
-      reason = code == 124 ? 'sandbox-wall-timeout' : 'sandbox-signal-${code! - 128}';
+      reason = code == 124
+          ? 'sandbox-wall-timeout'
+          : code > 128 && code < 256
+              ? 'sandbox-signal-${code - 128}'
+              : 'sandbox-exit-0x${(code & 0xffffffff).toRadixString(16)}';
     }
     sw.stop();
     return SearchOutcome(

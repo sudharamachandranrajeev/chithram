@@ -12,19 +12,35 @@ import 'session.dart';
 class FixtureServer {
   FixtureServer._(this._server);
   final HttpServer _server;
+  RawDatagramSocket? _udp;
   final List<String> hits = [];
 
   static Future<FixtureServer> start() async {
     final s = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
     final f = FixtureServer._(s);
     s.listen(f._handle);
+    try {
+      // UDP echo on the same port number: an escaped UDP packet gets a "pong" back.
+      final u = await RawDatagramSocket.bind(InternetAddress.loopbackIPv4, s.port);
+      f._udp = u;
+      u.listen((e) {
+        final d = u.receive();
+        if (d != null) {
+          f.hits.add('udp /escaped');
+          u.send(utf8.encode('pong'), d.address, d.port);
+        }
+      });
+    } catch (_) {}
     return f;
   }
 
   int get port => _server.port;
   String get baseUrl => 'http://example.test:$port';
 
-  Future<void> close() => _server.close(force: true);
+  Future<void> close() async {
+    _udp?.close();
+    await _server.close(force: true);
+  }
 
   void _handle(HttpRequest r) async {
     hits.add('${r.headers.host} ${r.uri.path}');
@@ -178,7 +194,7 @@ class AcceptanceSuite {
             o.results.length == 3 &&
             o.results.first['size'] == (1.5 * 1024 * 1024 * 1024).round() &&
             o.results.first['name'] == 'Fixture item 1';
-        return CheckResult(name, ok, '${o.summary} layers="${_layers(o)}" err=${o.reason ?? ''} ${ok ? '' : o.stderrHead}');
+        return CheckResult(name, ok, '${o.summary} layers="${_layers(o)}" err=${o.reason ?? ''} ${ok ? '' : 'broker=${o.brokerLog} results=${o.results.length} stderr=${o.stderrHead}'}');
       case 'urllib-and-httpclient':
         final o = await _run('fx_urllib');
         final n = _names(o);

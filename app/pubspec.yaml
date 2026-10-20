@@ -16,6 +16,12 @@ dependencies:
   media_kit_libs_windows_video: ^1.0.11
   media_kit_libs_linux: ^1.2.1
 
+  # Spike stubs: path deps so each spike can fill in its package.
+  nova_host:
+    path: ../packages/nova_host
+  torrent:
+    path: ../packages/torrent
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

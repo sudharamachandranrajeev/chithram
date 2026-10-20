@@ -41,14 +41,14 @@ jobs:
           path: pubspec.lock
       - name: Analyze
         run: |
-          for d in app packages/innertube packages/iptv packages/chithram_player; do
+          for d in app packages/innertube packages/iptv packages/chithram_player packages/nova_host packages/torrent; do
             echo "::group::analyze $d"
             (cd "$d" && flutter analyze --no-fatal-infos)
             echo "::endgroup::"
           done
       - name: Test
         run: |
-          for d in app packages/innertube packages/iptv packages/chithram_player; do
+          for d in app packages/innertube packages/iptv packages/chithram_player packages/nova_host packages/torrent; do
             echo "::group::test $d"
             (cd "$d" && flutter test)
             echo "::endgroup::"

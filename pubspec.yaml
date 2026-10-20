@@ -9,3 +9,5 @@ workspace:
   - packages/innertube
   - packages/iptv
   - packages/chithram_player
+  - packages/nova_host
+  - packages/torrent

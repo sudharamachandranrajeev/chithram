@@ -18,8 +18,9 @@ android {
 
     defaultConfig {
         applicationId = "dev.chithram.chithram"
-        // Android 5.0+: covers older Android TV boxes (armeabi-v7a).
-        minSdk = flutter.minSdkVersion
+        // Android 7.0+ (API 24): older Android TV boxes (armeabi-v7a), and the floor
+        // for the Media3 and Chaquopy spikes.
+        minSdk = 24
         targetSdk = flutter.targetSdkVersion
         // Uses the version code from pubspec.yaml. When using split APKs, 1000 * ABI_VERSION
         // is added automatically by Flutter. (https://developer.android.com/studio/build/configure-apk-splits#configure-APK-versions)

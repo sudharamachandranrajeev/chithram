@@ -53,7 +53,7 @@ class _SearchPageState extends State<SearchPage> {
       skipTraversal: true,
       onKeyEvent: _onKey,
       child: LayoutBuilder(builder: (context, box) {
-        final cols = ((box.maxWidth - pad * 2 + gap) / (key + gap)).floor().clamp(4, 12);
+        final cols = ((box.maxWidth - pad * 2 + gap) / (key + 5 + gap)).floor().clamp(4, 12);
         final rows = <List<String>>[
           for (var i = 0; i < _chars.length; i += cols)
             [for (var j = i; j < i + cols && j < _chars.length; j++) _chars[j]],
@@ -105,15 +105,15 @@ class _SearchPageState extends State<SearchPage> {
                 Padding(
                   padding: const EdgeInsets.only(right: gap),
                   child: keyCard(Icon(Icons.space_bar_rounded, size: d.t(24)), () => _add(' '),
-                      width: key * 2 + gap, id: 'space'),
+                      width: key * 2 + gap + 5, id: 'space'),
                 ),
                 Padding(
                   padding: const EdgeInsets.only(right: gap),
                   child: keyCard(Icon(Icons.backspace_outlined, size: d.t(24)), _backspace,
-                      width: key * 2 + gap, id: 'backspace'),
+                      width: key * 2 + gap + 5, id: 'backspace'),
                 ),
                 keyCard(Text('Clear', style: TextStyle(fontSize: d.t(16), fontWeight: FontWeight.w600)), _clear,
-                    width: key * 2 + gap, id: 'clear'),
+                    width: key * 2 + gap + 5, id: 'clear'),
               ],
             ),
           ],

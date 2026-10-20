@@ -80,8 +80,9 @@ class _Hero extends StatelessWidget {
             style: TextStyle(color: ChithramColors.textDim, fontSize: d.t(14)),
           ),
           const SizedBox(height: 18),
-          Row(
-            mainAxisSize: MainAxisSize.min,
+          Wrap(
+            spacing: 16,
+            runSpacing: 12,
             children: [
               FocusCard(
                 focusNode: focus.entry,
@@ -90,7 +91,6 @@ class _Hero extends StatelessWidget {
                 onActivate: () => openDetails(context, title: 'Hero billboard', hue: 40),
                 child: ActionLabel(icon: Icons.play_arrow_rounded, text: 'Play', primary: true),
               ),
-              const SizedBox(width: 16),
               FocusCard(
                 section: focus,
                 radius: 28,

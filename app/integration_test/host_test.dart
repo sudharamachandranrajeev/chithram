@@ -88,11 +88,12 @@ void main() {
       for (var i = 0; i < 3; i++) {
         await press(t, LogicalKeyboardKey.arrowRight);
       }
-      final node = FocusManager.instance.primaryFocus;
-      // Back out to the rail (3 tiles + the rail).
-      for (var i = 0; i < 4; i++) {
+      // Back along the row to its first tile; that is the last tile focused.
+      for (var i = 0; i < 3; i++) {
         await press(t, LogicalKeyboardKey.arrowLeft);
       }
+      final node = FocusManager.instance.primaryFocus;
+      await press(t, LogicalKeyboardKey.arrowLeft); // out to the rail
       expect(focusLabel(), 'rail Home');
       final railScroll = find
           .descendant(

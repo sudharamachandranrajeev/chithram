@@ -128,39 +128,39 @@ void main() {
       final seen = <String>[];
       final proxy = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
       proxy.listen((c) {
-        final it = StreamIterator<Uint8List>(c);
-        final pending = BytesBuilder();
-        () async {
-          Future<Uint8List> take(int n) async {
-            while (pending.length < n) {
-              if (!await it.moveNext()) throw StateError('eof');
-              pending.add(it.current);
-            }
-            final all = pending.takeBytes();
-            pending.add(all.sublist(n));
-            return Uint8List.fromList(all.sublist(0, n));
+        final buf = BytesBuilder();
+        var stage = 0;
+        Socket? up;
+        late StreamSubscription<Uint8List> sub;
+        sub = c.listen((data) async {
+          if (stage == 2) {
+            up!.add(data);
+            return;
           }
-
-          await take(3); // 5 1 0
-          c.add([5, 0]);
-          final h = await take(5); // 5 1 0 3 len
-          final rest = await take(h[4] + 2);
-          final host = String.fromCharCodes(rest.sublist(0, h[4]));
-          final p = (rest[h[4]] << 8) | rest[h[4] + 1];
-          seen.add('$host:$p');
-          final up = await Socket.connect(InternetAddress.loopbackIPv4, p);
-          c.add([5, 0, 0, 1, 0, 0, 0, 0, 0, 0]);
-          up.listen(c.add, onDone: c.destroy);
-          // pump the rest of the client's bytes upstream
-          () async {
-            final left = pending.takeBytes();
-            if (left.isNotEmpty) up.add(left);
-            while (await it.moveNext()) {
-              up.add(it.current);
-            }
-            up.destroy();
-          }();
-        }();
+          buf.add(data);
+          if (stage == 0 && buf.length >= 3) {
+            final b = buf.takeBytes();
+            buf.add(b.sublist(3));
+            c.add([5, 0]);
+            stage = 1;
+          }
+          final b2 = buf.toBytes();
+          if (stage == 1 && b2.length >= 5 && b2.length >= 5 + b2[4] + 2) {
+            stage = 3;
+            sub.pause();
+            final len = b2[4];
+            final host = String.fromCharCodes(b2.sublist(5, 5 + len));
+            final p = (b2[5 + len] << 8) | b2[6 + len];
+            seen.add('$host:$p');
+            up = await Socket.connect(InternetAddress.loopbackIPv4, p);
+            up!.listen(c.add, onDone: c.destroy);
+            c.add([5, 0, 0, 1, 0, 0, 0, 0, 0, 0]);
+            final left = b2.sublist(7 + len);
+            if (left.isNotEmpty) up!.add(left);
+            stage = 2;
+            sub.resume();
+          }
+        });
       });
       final b = HttpBroker(
         allowlist: HostAllowlist(['example.test']),

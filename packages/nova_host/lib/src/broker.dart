@@ -175,9 +175,11 @@ class HttpBroker {
     int? contentLength;
     var chunked = false;
     final cap = policy.maxBodyBytes + 70 * 1024;
+    var nChunks = 0;
     while (true) {
       final chunk = await c.next();
       if (chunk == null) break;
+      nChunks++;
       buf.add(chunk);
       if (buf.length > cap) throw _deny('response too large', uri.toString());
       final bytes = buf.toBytes();
@@ -212,6 +214,9 @@ class HttpBroker {
     }
     if (headEnd == null) throw _deny('connection closed before headers', uri.toString());
     final all = buf.toBytes();
+    if (all.length == headEnd && status == 200) {
+      log.add('DEBUG empty body: total=${all.length} headEnd=$headEnd cl=$contentLength chunked=$chunked chunks=$nChunks headers=$respHeaders');
+    }
     var payload = Uint8List.sublistView(all, headEnd);
     if (method == 'HEAD' || status == 204 || status == 304) {
       payload = Uint8List(0);

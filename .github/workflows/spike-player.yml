@@ -22,22 +22,8 @@ env:
   FLUTTER_VERSION: 3.47.7
 
 jobs:
-  fixtures:
-    name: ffmpeg fixtures
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
-      - run: bash packages/chithram_player/tool/make_fixtures.sh fixtures
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: player-fixtures
-          path: fixtures
-          retention-days: 3
-
   android-emulator:
     name: Android TV emulator (Media3)
-    needs: fixtures
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -55,10 +41,8 @@ jobs:
       - name: Build the debug APK
         working-directory: app
         run: flutter build apk --debug --target-platform android-x64
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
-        with:
-          name: player-fixtures
-          path: fixtures
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - run: bash packages/chithram_player/tool/make_fixtures.sh fixtures
       - name: Serve the fixtures
         run: |
           nohup python3 packages/chithram_player/tool/serve.py fixtures 8000 >serve.log 2>&1 &
@@ -81,6 +65,7 @@ jobs:
           script: bash packages/chithram_player/tool/emulator_check.sh app/build/app/outputs/flutter-apk/app-debug.apk emu-out
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
+        continue-on-error: true  # the repo's Actions artifact quota may be full
         with:
           name: player-emulator
           path: |
@@ -90,7 +75,6 @@ jobs:
 
   linux:
     name: Linux under Xvfb (media_kit)
-    needs: fixtures
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -105,10 +89,8 @@ jobs:
           cache: true
       - name: Add the plugin and the test to the app (CI only)
         run: bash packages/chithram_player/tool/patch_app.sh
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
-        with:
-          name: player-fixtures
-          path: fixtures
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - run: bash packages/chithram_player/tool/make_fixtures.sh fixtures
       - name: Serve the fixtures
         run: |
           nohup python3 packages/chithram_player/tool/serve.py fixtures 8000 >serve.log 2>&1 &
@@ -122,6 +104,7 @@ jobs:
         run: xvfb-run -a -s '-screen 0 1280x720x24' flutter test integration_test/player_desktop_test.dart -d linux
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
+        continue-on-error: true  # the repo's Actions artifact quota may be full
         with:
           name: player-linux
           path: serve.log

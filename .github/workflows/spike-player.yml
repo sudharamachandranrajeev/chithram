@@ -63,11 +63,16 @@ jobs:
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
           script: bash packages/chithram_player/tool/emulator_check.sh app/build/app/outputs/flutter-apk/app-debug.apk emu-out
+      - name: Results to the step summary
+        if: always()
+        run: |
+          { echo '### Android TV emulator (emulator-only figures)'; echo '```'; cat emu-out/summary.txt 2>/dev/null || echo 'no summary'; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         continue-on-error: true  # the repo's Actions artifact quota may be full
         with:
           name: player-emulator
+          retention-days: 2
           path: |
             emu-out
             serve.log
@@ -101,11 +106,18 @@ jobs:
         env:
           CHITHRAM_MPV_AO: 'null'
           LIBGL_ALWAYS_SOFTWARE: '1'
-        run: xvfb-run -a -s '-screen 0 1280x720x24' flutter test integration_test/player_desktop_test.dart -d linux
+        run: xvfb-run -a -s '-screen 0 1280x720x24' flutter test integration_test/player_desktop_test.dart -d linux 2>&1 | tee ../linux-test.log
+      - name: Results to the step summary
+        if: always()
+        run: |
+          { echo '### Linux under Xvfb (media_kit)'; echo '```'; grep -E 'CHITHRAM_DESKTOP|\+[0-9]|All tests passed|Some tests failed|Error|timeout' linux-test.log 2>/dev/null | tail -30 || echo 'no log'; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         continue-on-error: true  # the repo's Actions artifact quota may be full
         with:
           name: player-linux
-          path: serve.log
+          retention-days: 2
+          path: |
+            serve.log
+            linux-test.log
           if-no-files-found: ignore

@@ -61,7 +61,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/pbs"
           curl -fsSL -o "$RUNNER_TEMP/pbs.tgz" "https://github.com/astral-sh/python-build-standalone/releases/download/$PBS_RELEASE/${f//+/%2B}"
           echo "$sha  $RUNNER_TEMP/pbs.tgz" | sha256sum -c -
-          tar --force-local -xzf "$RUNNER_TEMP/pbs.tgz" -C "$RUNNER_TEMP/pbs"
+          (cd "$RUNNER_TEMP/pbs" && tar -xzf ../pbs.tgz)
           if [[ $RUNNER_OS == Windows ]]; then PY="$RUNNER_TEMP/pbs/python/python.exe"; else PY="$RUNNER_TEMP/pbs/python/bin/python3"; fi
           echo "PY_CMD=$PY" >> "$GITHUB_ENV"
 

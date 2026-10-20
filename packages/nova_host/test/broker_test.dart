@@ -129,14 +129,16 @@ void main() {
       final proxy = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
       proxy.listen((c) {
         final it = StreamIterator<Uint8List>(c);
+        final pending = BytesBuilder();
         () async {
           Future<Uint8List> take(int n) async {
-            final out = BytesBuilder();
-            while (out.length < n) {
-              await it.moveNext();
-              out.add(it.current);
+            while (pending.length < n) {
+              if (!await it.moveNext()) throw StateError('eof');
+              pending.add(it.current);
             }
-            return out.toBytes();
+            final all = pending.takeBytes();
+            pending.add(all.sublist(n));
+            return Uint8List.fromList(all.sublist(0, n));
           }
 
           await take(3); // 5 1 0
@@ -151,6 +153,8 @@ void main() {
           up.listen(c.add, onDone: c.destroy);
           // pump the rest of the client's bytes upstream
           () async {
+            final left = pending.takeBytes();
+            if (left.isNotEmpty) up.add(left);
             while (await it.moveNext()) {
               up.add(it.current);
             }

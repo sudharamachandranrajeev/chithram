@@ -1,0 +1,43 @@
+[
+ {
+  "videoID": "FIXTUREVOD1",
+  "hash": "abcd",
+  "segments": [
+   {
+    "category": "outro",
+    "actionType": "skip",
+    "segment": [
+     200.5,
+     212
+    ],
+    "UUID": "u2",
+    "videoDuration": 212
+   },
+   {
+    "category": "sponsor",
+    "actionType": "skip",
+    "segment": [
+     10.25,
+     40
+    ],
+    "UUID": "u1",
+    "videoDuration": 212
+   }
+  ]
+ },
+ {
+  "videoID": "OTHERVIDEO01",
+  "hash": "abcd",
+  "segments": [
+   {
+    "category": "sponsor",
+    "actionType": "skip",
+    "segment": [
+     1,
+     2
+    ],
+    "UUID": "x"
+   }
+  ]
+ }
+]

@@ -1,0 +1,156 @@
+{
+ "contents": {
+  "twoColumnSearchResultsRenderer": {
+   "primaryContents": {
+    "sectionListRenderer": {
+     "contents": [
+      {
+       "itemSectionRenderer": {
+        "contents": [
+         {
+          "videoRenderer": {
+           "videoId": "aaaaaaaaaa1",
+           "thumbnail": {
+            "thumbnails": [
+             {
+              "url": "https://i.ytimg.com/vi/aaaaaaaaaa1/hq720.jpg",
+              "width": 360,
+              "height": 202
+             }
+            ]
+           },
+           "title": {
+            "runs": [
+             {
+              "text": "First"
+             }
+            ]
+           },
+           "ownerText": {
+            "runs": [
+             {
+              "text": "Chan One",
+              "navigationEndpoint": {
+               "browseEndpoint": {
+                "browseId": "UCaaaaaaaaaaaaaaaaaaaaaa"
+               }
+              }
+             }
+            ]
+           },
+           "viewCountText": {
+            "simpleText": "1M views"
+           },
+           "lengthText": {
+            "simpleText": "3:45"
+           }
+          }
+         },
+         {
+          "shelfRenderer": {
+           "title": {
+            "simpleText": "ignored"
+           }
+          }
+         },
+         {
+          "videoRenderer": {
+           "videoId": "aaaaaaaaaa2",
+           "thumbnail": {
+            "thumbnails": [
+             {
+              "url": "https://i.ytimg.com/vi/aaaaaaaaaa2/hq720.jpg",
+              "width": 360,
+              "height": 202
+             }
+            ]
+           },
+           "title": {
+            "runs": [
+             {
+              "text": "Second Long"
+             }
+            ]
+           },
+           "ownerText": {
+            "runs": [
+             {
+              "text": "Chan Two",
+              "navigationEndpoint": {
+               "browseEndpoint": {
+                "browseId": "UCaaaaaaaaaaaaaaaaaaaaaa"
+               }
+              }
+             }
+            ]
+           },
+           "viewCountText": {
+            "simpleText": "2 views"
+           },
+           "lengthText": {
+            "simpleText": "1:02:03"
+           }
+          }
+         },
+         {
+          "videoRenderer": {
+           "videoId": "aaaaaaaaaa3",
+           "thumbnail": {
+            "thumbnails": [
+             {
+              "url": "https://i.ytimg.com/vi/aaaaaaaaaa3/hq720.jpg",
+              "width": 360,
+              "height": 202
+             }
+            ]
+           },
+           "title": {
+            "runs": [
+             {
+              "text": "Live now"
+             }
+            ]
+           },
+           "ownerText": {
+            "runs": [
+             {
+              "text": "Chan One",
+              "navigationEndpoint": {
+               "browseEndpoint": {
+                "browseId": "UCaaaaaaaaaaaaaaaaaaaaaa"
+               }
+              }
+             }
+            ]
+           },
+           "viewCountText": {
+            "simpleText": "30 watching"
+           },
+           "badges": [
+            {
+             "metadataBadgeRenderer": {
+              "style": "BADGE_STYLE_TYPE_LIVE_NOW",
+              "label": "LIVE NOW"
+             }
+            }
+           ]
+          }
+         }
+        ]
+       }
+      },
+      {
+       "continuationItemRenderer": {
+        "continuationEndpoint": {
+         "continuationCommand": {
+          "token": "TOKEN_PAGE_2"
+         }
+        }
+       }
+      }
+     ]
+    }
+   }
+  }
+ }
+}

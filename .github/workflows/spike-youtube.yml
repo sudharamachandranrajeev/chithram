@@ -1,0 +1,63 @@
+name: Spike - YouTube
+
+on:
+  push:
+    branches: [spike/youtube]
+    paths:
+      - 'packages/innertube/**'
+      - '.github/workflows/spike-youtube.yml'
+  pull_request:
+    paths:
+      - 'packages/innertube/**'
+      - '.github/workflows/spike-youtube.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: spike-youtube-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  fixtures:
+    name: Fixture tests (blocking)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          channel: stable
+          flutter-version: 3.47.7
+          cache: true
+      # The package is pure Dart, but it lives in the app's pub workspace.
+      - run: flutter pub get
+      - name: Analyze
+        working-directory: packages/innertube
+        run: dart analyze
+      - name: Test
+        working-directory: packages/innertube
+        run: dart test
+
+  live:
+    name: Live panel of 20 videos (non-blocking)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    needs: fixtures
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          channel: stable
+          flutter-version: 3.47.7
+          cache: true
+      - run: flutter pub get
+      - name: Resolve the panel
+        working-directory: packages/innertube
+        run: dart run tool/live_panel.dart panel_out
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: youtube-live-panel
+          path: packages/innertube/panel_out
+          if-no-files-found: ignore

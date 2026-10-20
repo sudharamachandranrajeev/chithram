@@ -38,7 +38,12 @@ jobs:
         run: flutter test
       - name: Focus, layout and keyboard tests
         working-directory: app
-        run: flutter test integration_test/host_test.dart
+        # flutter test treats anything under integration_test/ as a device test,
+        # so the host-run tests are copied next to the normal ones first.
+        run: |
+          mkdir test/_host
+          cp integration_test/host_test.dart integration_test/support.dart test/_host/
+          flutter test test/_host
 
   emulator:
     name: ${{ matrix.name }} emulator

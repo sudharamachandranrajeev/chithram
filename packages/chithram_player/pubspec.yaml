@@ -7,7 +7,24 @@ resolution: workspace
 environment:
   sdk: ^3.13.5
 
+dependencies:
+  flutter:
+    sdk: flutter
+  # Desktop engine (Windows, Linux). The native libmpv bundles
+  # (media_kit_libs_*) are declared by the app, same as before.
+  media_kit: ^1.2.6
+  media_kit_video: ^2.0.1
+
 dev_dependencies:
+  integration_test:
+    sdk: flutter
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: dev.chithram.player
+        pluginClass: ChithramPlayerPlugin

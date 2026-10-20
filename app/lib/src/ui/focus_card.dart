@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme.dart';
+import 'dpad.dart';
 
 /// Remembers where focus was in one section, so coming back to it (Right from
 /// the nav rail) lands on the same tile.
@@ -45,6 +46,7 @@ class FocusCard extends StatefulWidget {
     this.onActivate,
     this.focusNode,
     this.section,
+    this.onFocus,
     this.radius = 14,
   });
 
@@ -56,6 +58,9 @@ class FocusCard extends StatefulWidget {
 
   /// Records this tile as the section's last focused one.
   final SectionFocus? section;
+
+  /// Called when this tile gains focus (rails use it to remember the index).
+  final VoidCallback? onFocus;
   final double radius;
 
   @override
@@ -79,6 +84,7 @@ class _FocusCardState extends State<FocusCard> {
     setState(() => _focused = focused);
     if (focused) {
       widget.section?.remember(_node);
+      widget.onFocus?.call();
       Scrollable.ensureVisible(
         context,
         alignment: 0.5,
@@ -101,14 +107,19 @@ class _FocusCardState extends State<FocusCard> {
         }),
         // Like the default, but Left at a section's edge goes to the rail.
         DirectionalFocusIntent: CallbackAction<DirectionalFocusIntent>(onInvoke: (intent) {
-          final moved = _node.focusInDirection(intent.direction);
+          final moved = moveFocus(_node, intent.direction);
           if (!moved && intent.direction == TraversalDirection.left) {
             RailScope.maybeOf(context)?.focusRail();
           }
           return null;
         }),
       },
-      child: GestureDetector(
+      // Mouse hover moves focus (desktop); touch just taps.
+      child: MouseRegion(
+        onEnter: (_) {
+          if (!_node.hasFocus) _node.requestFocus();
+        },
+        child: GestureDetector(
         onTap: () {
           _node.requestFocus();
           widget.onActivate?.call();
@@ -138,6 +149,7 @@ class _FocusCardState extends State<FocusCard> {
             child: ClipRRect(borderRadius: radius, child: widget.child),
           ),
         ),
+      ),
       ),
     );
   }

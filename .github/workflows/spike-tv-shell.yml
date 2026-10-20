@@ -1,0 +1,86 @@
+name: Spike TV shell
+
+on:
+  push:
+    branches: [spike/tv-shell]
+    paths:
+      - 'app/lib/src/ui/**'
+      - 'app/integration_test/**'
+      - 'app/pubspec.yaml'
+      - '.github/tv-emulator.sh'
+      - '.github/workflows/spike-tv-shell.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: spike-tv-shell-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  host:
+    name: Analyze and widget tests (TV and phone size)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          channel: stable
+          flutter-version: 3.47.7
+          cache: true
+      - run: flutter pub get
+      - name: Analyze
+        working-directory: app
+        run: flutter analyze --no-fatal-infos
+      - name: Phase 0 widget test
+        working-directory: app
+        run: flutter test
+      - name: Focus, layout and keyboard tests
+        working-directory: app
+        run: flutter test integration_test/host_test.dart
+
+  emulator:
+    name: ${{ matrix.name }} emulator
+    needs: host
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: tv
+            image: 'system-images;android-36;android-tv;x86_64'
+            device: tv_1080p
+          - name: phone
+            image: 'system-images;android-34;google_apis;x86_64'
+            device: pixel_6
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          channel: stable
+          flutter-version: 3.47.7
+          cache: true
+      - run: flutter pub get
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Boot the emulator and run the checks
+        env:
+          IMAGE: ${{ matrix.image }}
+          DEVICE: ${{ matrix.device }}
+          NAME: ${{ matrix.name }}
+        run: bash .github/tv-emulator.sh out
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: tv-shell-${{ matrix.name }}
+          path: out
+          if-no-files-found: ignore

@@ -1,0 +1,31 @@
+{
+ "playabilityStatus": {
+  "status": "OK"
+ },
+ "streamingData": {
+  "expiresInSeconds": "21540",
+  "hlsManifestUrl": "https://manifest.googlevideo.com/api/manifest/hls_variant/expire/1790000000/id/FIXTURELIVE/file/index.m3u8"
+ },
+ "videoDetails": {
+  "videoId": "FIXTURELIVE1",
+  "title": "Fixture Live",
+  "lengthSeconds": "0",
+  "author": "Fixture Channel",
+  "isLive": true,
+  "isLiveContent": true,
+  "thumbnail": {
+   "thumbnails": [
+    {
+     "url": "https://i.ytimg.com/vi/FIXTUREVOD1/default.jpg",
+     "width": 120,
+     "height": 90
+    },
+    {
+     "url": "//i.ytimg.com/vi/FIXTUREVOD1/maxresdefault.jpg",
+     "width": 1280,
+     "height": 720
+    }
+   ]
+  }
+ }
+}

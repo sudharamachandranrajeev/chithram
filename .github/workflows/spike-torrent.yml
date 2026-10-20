@@ -46,7 +46,7 @@ jobs:
         run: |
           set -o pipefail
           mkdir -p ../../logs
-          E2E_SIZE_MB=200 cargo test --release -- --nocapture --test-threads=1 2>&1 | tee ../../logs/cargo-test.log
+          E2E_SIZE_MB=200 cargo test --release --locked -- --nocapture --test-threads=1 2>&1 | tee ../../logs/cargo-test.log
       - name: Results to summary
         if: always()
         run: |
@@ -102,7 +102,7 @@ jobs:
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
         with:
           workspaces: native/torrent
-      - run: cargo build --release --example seeder --lib
+      - run: cargo build --release --locked --example seeder --lib
       - name: Collect
         run: |
           mkdir -p ../../out/linux-x64 ../../out/tools
@@ -134,7 +134,7 @@ jobs:
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
         with:
           workspaces: native/torrent
-      - run: cargo build --release --lib --target x86_64-pc-windows-msvc
+      - run: cargo build --release --locked --lib --target x86_64-pc-windows-msvc
       - name: Collect
         run: |
           mkdir -p ../../out/windows-x64
@@ -166,7 +166,7 @@ jobs:
       - name: Build
         run: |
           echo "NDK: $ANDROID_NDK_HOME"
-          cargo ndk -P 24 -t arm64-v8a -t armeabi-v7a -t x86_64 -o ../../out/jniLibs build --release --lib
+          cargo ndk -P 24 -t arm64-v8a -t armeabi-v7a -t x86_64 -o ../../out/jniLibs build --release --locked --lib
           {
             echo '### Android .so sizes'
             echo '```'
@@ -197,7 +197,7 @@ jobs:
         with:
           workspaces: native/torrent
       - name: Build the library
-        run: cargo build --release --lib --manifest-path native/torrent/Cargo.toml
+        run: cargo build --release --locked --lib --manifest-path native/torrent/Cargo.toml
       - run: flutter pub get
       - name: Analyze
         run: |
@@ -230,7 +230,7 @@ jobs:
         with:
           workspaces: native/torrent
       - run: |
-          cargo build --release --lib --manifest-path native/torrent/Cargo.toml
+          cargo build --release --locked --lib --manifest-path native/torrent/Cargo.toml
           mkdir -p packages/torrent/prebuilt/linux-x64
           cp native/torrent/target/release/libchithram_torrent.so packages/torrent/prebuilt/linux-x64/
       - run: flutter pub get
@@ -261,7 +261,7 @@ jobs:
         with:
           workspaces: native/torrent
       - run: |
-          cargo build --release --lib --manifest-path native/torrent/Cargo.toml
+          cargo build --release --locked --lib --manifest-path native/torrent/Cargo.toml
           mkdir -p packages/torrent/prebuilt/windows-x64
           cp native/torrent/target/release/chithram_torrent.dll packages/torrent/prebuilt/windows-x64/
       - run: flutter pub get
@@ -302,8 +302,8 @@ jobs:
       - name: Build the x86_64 Android library and the host seeder
         working-directory: native/torrent
         run: |
-          cargo ndk -P 24 -t x86_64 -o ../../packages/torrent/android/src/main/jniLibs build --release --lib
-          cargo build --release --example seeder
+          cargo ndk -P 24 -t x86_64 -o ../../packages/torrent/android/src/main/jniLibs build --release --locked --lib
+          cargo build --release --locked --example seeder
       - name: Start the 50 MB seeder on the host
         run: |
           setsid nohup native/torrent/target/release/examples/seeder --size-mb 50 --port 16881 --dir "$RUNNER_TEMP/seed" --out "$RUNNER_TEMP/magnet.txt" >"$RUNNER_TEMP/seeder.log" 2>&1 &

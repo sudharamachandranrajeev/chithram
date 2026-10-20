@@ -56,9 +56,9 @@ jobs:
             grep -E '^test |test result|seeder ready|^added:|^range |^stats: .{0,160}' ../../logs/cargo-test.log | cut -c1-240
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
-          echo "---- Cargo.lock (base64) ----"
-          base64 -w0 Cargo.lock; echo
-          echo "---- end ----"
+          echo "==== CARGO.LOCK BEGIN ===="
+          cat Cargo.lock
+          echo "==== CARGO.LOCK END ===="
       - name: Versions and licence
         if: always()
         run: |

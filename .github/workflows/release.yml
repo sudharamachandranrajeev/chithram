@@ -1,0 +1,425 @@
+# Builds the Chithram app for Android (one APK per ABI), Windows and Linux. A v*
+# tag publishes a GitHub release with the APKs, the Windows installer (and a
+# portable zip), and the Linux AppImage / tarball. Running it by hand, or on the
+# weekly schedule, only builds and smoke-tests them (a dry run: no publish).
+
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+  schedule:
+    # Mondays 06:00 UTC: catches runner / toolchain breaks (Windows especially).
+    - cron: "0 6 * * 1"
+
+permissions:
+  contents: read
+
+env:
+  FLUTTER_VERSION: 3.47.7
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+      build: ${{ steps.v.outputs.build }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - id: v
+        run: |
+          if [[ $GITHUB_REF == refs/tags/v* ]]; then
+            version=${GITHUB_REF#refs/tags/v}
+          else
+            version=$(sed -n 's/^version: *\([^+]*\).*/\1/p' app/pubspec.yaml)
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "build=$GITHUB_RUN_NUMBER" >> "$GITHUB_OUTPUT"
+          echo "Chithram $version (build $GITHUB_RUN_NUMBER)"
+
+  android:
+    needs: version
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      - name: Signing key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.CHITHRAM_KEYSTORE_BASE64 }}
+        run: |
+          if [[ -n $KEYSTORE_BASE64 ]]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/chithram.jks"
+            echo "CHITHRAM_KEYSTORE=$RUNNER_TEMP/chithram.jks" >> "$GITHUB_ENV"
+          else
+            echo "::warning::No CHITHRAM_KEYSTORE_BASE64 secret: the APK is signed with a debug key"
+          fi
+      - name: Build the APK
+        env:
+          CHITHRAM_KEYSTORE_PASSWORD: ${{ secrets.CHITHRAM_KEYSTORE_PASSWORD }}
+          CHITHRAM_KEY_ALIAS: ${{ secrets.CHITHRAM_KEY_ALIAS }}
+          CHITHRAM_KEY_PASSWORD: ${{ secrets.CHITHRAM_KEY_PASSWORD }}
+        run: |
+          flutter build apk --release --split-per-abi \
+            --build-name=${{ needs.version.outputs.version }} --build-number=${{ needs.version.outputs.build }}
+          mkdir -p ../dist
+          for abi in arm64-v8a armeabi-v7a x86_64; do
+            cp build/app/outputs/flutter-apk/app-$abi-release.apk ../dist/Chithram-${{ needs.version.outputs.version }}-android-$abi.apk
+          done
+          ls -la ../dist
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: android
+          path: dist/*
+
+  windows:
+    needs: version
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: app
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      - name: Build
+        run: |
+          flutter build windows --release \
+            --build-name=${{ needs.version.outputs.version }} --build-number=${{ needs.version.outputs.build }}
+      - name: Bundle the Visual C++ runtime
+        run: |
+          # So the app runs on a fresh Windows without the VC++ redistributable.
+          release=build/windows/x64/runner/Release
+          for dll in msvcp140.dll msvcp140_1.dll msvcp140_2.dll vcruntime140.dll vcruntime140_1.dll; do
+            if [[ -f /c/Windows/System32/$dll ]]; then cp "/c/Windows/System32/$dll" "$release/"; fi
+          done
+          ls "$release"
+      - name: Portable zip
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force ..\dist | Out-Null
+          Compress-Archive -Path build\windows\x64\runner\Release\* `
+            -DestinationPath ..\dist\Chithram-${{ needs.version.outputs.version }}-windows-x64-portable.zip
+      - name: Installer
+        shell: pwsh
+        run: |
+          if (-not (Get-Command iscc -ErrorAction SilentlyContinue)) {
+            if (-not (Test-Path "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe")) { choco install innosetup -y --no-progress }
+            $env:PATH += ";${env:ProgramFiles(x86)}\Inno Setup 6"
+          }
+          iscc /Qp /DAppVersion=${{ needs.version.outputs.version }} windows\installer\chithram.iss
+          Copy-Item build\installer\*.exe ..\dist\
+      - name: Install, start and uninstall
+        shell: pwsh
+        working-directory: dist
+        run: |
+          $setup = (Get-Item Chithram-*-setup.exe).FullName
+          $log = Join-Path $env:RUNNER_TEMP 'setup.log'
+          $p = Start-Process $setup -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/CURRENTUSER', "/LOG=$log" -Wait -PassThru
+          if ($p.ExitCode -ne 0) { Get-Content $log; throw "setup exited with $($p.ExitCode)" }
+          $dir = Join-Path $env:LOCALAPPDATA 'Programs\Chithram'
+          Get-ChildItem $dir | Format-Table Name, Length
+          # Up for 20 s with libmpv loaded means main() got past MediaKit.
+          $app = Start-Process (Join-Path $dir 'chithram.exe') -PassThru
+          Start-Sleep -Seconds 20
+          if ($app.HasExited) { throw "Chithram exited with $($app.ExitCode) within 20 s" }
+          $modules = (Get-Process -Id $app.Id).Modules.ModuleName
+          try {
+            Add-Type -AssemblyName System.Windows.Forms, System.Drawing
+            $screen = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+            $shot = New-Object System.Drawing.Bitmap $screen.Width, $screen.Height
+            [System.Drawing.Graphics]::FromImage($shot).CopyFromScreen($screen.Location, [System.Drawing.Point]::Empty, $screen.Size)
+            New-Item -ItemType Directory -Force (Join-Path $env:RUNNER_TEMP smoke) | Out-Null
+            $shot.Save((Join-Path $env:RUNNER_TEMP 'smoke\windows.png'))
+          } catch { Write-Warning "no screenshot: $_" }
+          Stop-Process -Id $app.Id -Force
+          if ($modules -notcontains 'libmpv-2.dll') { throw "Chithram is running but libmpv-2.dll isn't loaded" }
+          Start-Sleep -Seconds 2
+          Start-Process (Join-Path $dir 'unins000.exe') -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART' -Wait
+          for ($i = 0; $i -lt 30 -and (Test-Path (Join-Path $dir 'chithram.exe')); $i++) { Start-Sleep -Seconds 1 }
+          if (Test-Path (Join-Path $dir 'chithram.exe')) { throw "chithram.exe is still there after uninstalling" }
+          'Installed, ran for 20 s with libmpv loaded, uninstalled'
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: windows
+          path: dist/*
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: smoke-windows
+          path: ${{ runner.temp }}/smoke
+          if-no-files-found: ignore
+
+  linux:
+    needs: version
+    # The oldest supported Ubuntu, so the build runs on older distros too.
+    runs-on: ubuntu-22.04
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Build tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libmpv-dev file patchelf >/dev/null
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      - name: Build
+        run: |
+          flutter build linux --release \
+            --build-name=${{ needs.version.outputs.version }} --build-number=${{ needs.version.outputs.build }}
+      - name: Tarball
+        run: |
+          version=${{ needs.version.outputs.version }}
+          mkdir -p ../dist "chithram-$version-linux-x64"
+          cp -r build/linux/x64/release/bundle/. "chithram-$version-linux-x64/"
+          cp linux/chithram.png "chithram-$version-linux-x64/"
+          # Built on Ubuntu 22.04, whose libmpv is libmpv.so.1; the distros
+          # people run now have libmpv.so.2 (the same render API), so the
+          # tarball asks for that. The AppImage carries its own libmpv.
+          for f in "chithram-$version-linux-x64/chithram" "chithram-$version-linux-x64"/lib/*.so; do
+            if readelf -d "$f" | grep -q 'NEEDED.*\[libmpv\.so\.1\]'; then
+              patchelf --replace-needed libmpv.so.1 libmpv.so.2 "$f"
+              echo "$f: libmpv.so.1 -> libmpv.so.2"
+            fi
+          done
+          ! readelf -d "chithram-$version-linux-x64/chithram" "chithram-$version-linux-x64"/lib/*.so | grep 'libmpv\.so\.1'
+          cat > "chithram-$version-linux-x64/README.txt" <<'EOF'
+          Chithram for Linux. Needs mpv's library (libmpv.so.2) and GTK 3:
+            Arch: pacman -S mpv   Debian 12+ / Ubuntu 24.04+: apt install libmpv2   Fedora: dnf install mpv-libs
+          On an older system, use the AppImage, which carries its own.
+          Run ./chithram from this folder.
+          EOF
+          tar czf "../dist/Chithram-$version-linux-x64.tar.gz" "chithram-$version-linux-x64"
+      - name: AppImage
+        continue-on-error: true
+        run: |
+          version=${{ needs.version.outputs.version }}
+          curl -fsSLo linuxdeploy https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+          chmod +x linuxdeploy
+          app=AppDir
+          mkdir -p $app/usr/bin $app/usr/lib $app/usr/share/applications $app/usr/share/icons/hicolor/256x256/apps
+          cp -r build/linux/x64/release/bundle/. $app/usr/bin/
+          cp linux/chithram.png $app/usr/share/icons/hicolor/256x256/apps/chithram.png
+          cat > $app/usr/share/applications/chithram.desktop <<'EOF'
+          [Desktop Entry]
+          Type=Application
+          Name=Chithram
+          Comment=Streaming, live TV and torrents from your own sources
+          Exec=chithram
+          Icon=chithram
+          Categories=AudioVideo;Video;Player;
+          StartupWMClass=chithram
+          EOF
+          sed -i 's/^ *//' $app/usr/share/applications/chithram.desktop
+          # GTK and glib come from the system (every desktop has GTK 3, and the
+          # system's input methods and GIO modules only work with its own);
+          # libmpv and what it needs travel in the AppImage, found through
+          # their $ORIGIN runpaths, so nothing the system's GTK loads changes.
+          mpv=$(ldconfig -p | awk '/libmpv\.so\.[0-9] /{print $NF; exit}')
+          cat > AppRun <<'EOF'
+          #!/bin/sh
+          HERE="$(dirname "$(readlink -f "$0")")"
+          export LIBMPV_LIBRARY_PATH="$HERE/usr/lib/@LIBMPV@"
+          exec "$HERE/usr/bin/chithram" "$@"
+          EOF
+          sed -i -e 's/^ *//' -e "s/@LIBMPV@/$(basename "$mpv")/" AppRun
+          chmod +x AppRun
+          # libmpv links libjack and libusb, which linuxdeploy's excludelist
+          # leaves to the system, but few desktops have libjack without mpv.
+          mkdir -p $app/usr/lib
+          for name in libjack.so.0 libusb-1.0.so.0; do
+            lib=$(ldconfig -p | awk -v n="$name" '$1 == n {print $NF; exit}')
+            [[ -n $lib ]] || { echo "::warning::no $name to bundle"; continue; }
+            cp -L "$lib" "$app/usr/lib/$name"
+            patchelf --set-rpath '$ORIGIN' "$app/usr/lib/$name"
+          done
+          excludes=()
+          for lib in libgtk-3 libgdk-3 libgdk_pixbuf-2.0 libglib-2.0 libgobject-2.0 libgio-2.0 libgmodule-2.0 libgthread-2.0 \
+                     libcairo libcairo-gobject libpango-1.0 libpangocairo-1.0 libpangoft2-1.0 libatk-1.0 libatk-bridge-2.0 \
+                     libatspi libepoxy; do
+            excludes+=(--exclude-library "$lib.so*")
+          done
+          libs=()
+          for so in $app/usr/bin/lib/*.so; do
+            [[ $(basename "$so") == libapp.so ]] || libs+=(--library "$so")
+          done
+          LDAI_OUTPUT="../dist/Chithram-$version-linux-x86_64.AppImage" APPIMAGE_EXTRACT_AND_RUN=1 \
+            ./linuxdeploy --appdir $app --executable $app/usr/bin/chithram \
+            --library "$mpv" "${libs[@]}" "${excludes[@]}" \
+            --desktop-file $app/usr/share/applications/chithram.desktop \
+            --icon-file $app/usr/share/icons/hicolor/256x256/apps/chithram.png \
+            --custom-apprun AppRun --output appimage
+          if ls $app/usr/lib | grep -E '^lib(gtk-3|glib-2\.0|gio-2\.0)\.so'; then
+            echo "::error::GTK or glib went into the AppImage"; rm -f ../dist/*.AppImage; exit 1
+          fi
+          ls -la ../dist
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: linux
+          path: dist/*
+
+  # The APK installs and starts on an emulator.
+  android-smoke:
+    name: Android app starts (emulator)
+    needs: android
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: android
+          path: dist
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2
+        with:
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          script: bash .github/android-smoke.sh smoke
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: smoke-android
+          path: smoke
+          if-no-files-found: ignore
+
+  # The Linux builds start on other distros: the AppImage with nothing but GTK
+  # and Mesa installed, the tarball once mpv is there too.
+  linux-smoke:
+    name: Linux app starts on ${{ matrix.image }}
+    needs: linux
+    runs-on: ubuntu-latest
+    container: ${{ matrix.image }}
+    strategy:
+      fail-fast: false
+      matrix:
+        image: ["ubuntu:24.04", "fedora:latest", "archlinux:latest"]
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: linux
+          path: dist
+      - name: GTK, Mesa and Xvfb
+        run: |
+          if command -v apt-get >/dev/null; then
+            apt-get update -qq
+            DEBIAN_FRONTEND=noninteractive apt-get install -y -qq libgtk-3-0t64 libgl1-mesa-dri libegl1 libgles2 libasound2t64 xvfb xauth >/dev/null
+          elif command -v dnf >/dev/null; then
+            dnf install -y -q gtk3 mesa-dri-drivers mesa-libEGL libglvnd-gles alsa-lib xorg-x11-server-Xvfb xorg-x11-xauth util-linux
+          else
+            pacman -Syu --noconfirm --needed gtk3 mesa alsa-lib xorg-server-xvfb xorg-xauth >/dev/null
+          fi
+      - name: Smoke test
+        shell: bash
+        run: |
+          set -u
+          # Runs the app for 20 s; it should still be up, with no missing
+          # libraries and no exception from main (libmpv loads at start).
+          smoke() {
+            local log=$1; shift
+            set +e
+            HOME=$PWD/home timeout 20 xvfb-run -a "$@" >"$log" 2>&1
+            local code=$?
+            set -e
+            cat "$log"
+            if [[ $code != 124 ]]; then echo "::error::$* exited with $code"; return 1; fi
+            if grep -qE 'Unhandled Exception|Cannot find libmpv|error while loading shared libraries|symbol lookup error|undefined symbol|cannot open shared object' "$log"; then
+              echo "::error::$* failed to start"; return 1
+            fi
+            echo "$* ran for 20 s"
+          }
+          mkdir -p home
+          failed=0
+          appimage=$(ls dist/*.AppImage 2>/dev/null | head -n1 || true)
+          if [[ -n $appimage ]]; then
+            chmod +x "$appimage"
+            if ! smoke appimage.log env APPIMAGE_EXTRACT_AND_RUN=1 "$appimage"; then
+              failed=1
+              # What the bundled libmpv can't find here.
+              (cd "$RUNNER_TEMP" && "$GITHUB_WORKSPACE/$appimage" --appimage-extract >/dev/null 2>&1 \
+                && LD_LIBRARY_PATH=squashfs-root/usr/lib ldd squashfs-root/usr/lib/libmpv.so.* | grep 'not found') || true
+            fi
+          else
+            echo "::warning::no AppImage in this build"
+          fi
+          if command -v apt-get >/dev/null; then
+            DEBIAN_FRONTEND=noninteractive apt-get install -y -qq libmpv2 >/dev/null
+          elif command -v dnf >/dev/null; then
+            dnf install -y -q mpv-libs
+          else
+            pacman -S --noconfirm --needed mpv >/dev/null
+          fi
+          tar xzf dist/*.tar.gz
+          smoke tarball.log "$(ls -d chithram-*-linux-x64)/chithram" || failed=1
+          exit $failed
+
+  publish:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [version, android, android-smoke, windows, linux, linux-smoke]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      # The builds only (not the smoke tests' screenshots and logs).
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: android
+          path: dist
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: windows
+          path: dist
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: linux
+          path: dist
+      - name: Checksums
+        run: |
+          cd dist
+          sha256sum * > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+      - name: Release notes
+        run: |
+          version=${{ needs.version.outputs.version }}
+          # The CHANGELOG section for this version.
+          awk -v v="$version" '$0 ~ "^## " {p = index($0, v) > 0; next} p' CHANGELOG.md > notes.md
+          [[ -s notes.md ]] || echo "Chithram $version" > notes.md
+          cat notes.md
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag=${GITHUB_REF#refs/tags/}
+          flags=()
+          [[ $tag == *-* || $tag == v0.* ]] && flags+=(--prerelease)
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release upload "$tag" dist/* --clobber
+          else
+            gh release create "$tag" dist/* --title "Chithram ${tag#v}" --notes-file notes.md "${flags[@]}"
+          fi

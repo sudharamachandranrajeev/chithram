@@ -1,0 +1,13 @@
+name: iptv
+description: "IPTV playlist (M3U, Xtream) and XMLTV EPG parsers."
+version: 0.0.1
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.13.5
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0

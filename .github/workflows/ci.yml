@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  dart:
+    name: Flutter app and packages (analyze, test)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          channel: stable
+          flutter-version: 3.47.7
+          cache: true
+      # One pub workspace: a single resolution and a single pubspec.lock at the root.
+      - run: flutter pub get
+      # No Flutter on the dev machine, so the lockfile is resolved here. If it
+      # is missing or out of date, it is printed and uploaded: commit it.
+      - name: Lockfile status
+        run: |
+          git status --short pubspec.lock
+          git diff -- pubspec.lock
+          if [[ -n $(git status --porcelain pubspec.lock) ]]; then
+            echo "::warning::pubspec.lock is missing or out of date (see the pubspec-lock artifact)"
+          fi
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: pubspec-lock
+          path: pubspec.lock
+      - name: Analyze
+        run: |
+          for d in app packages/innertube packages/iptv packages/chithram_player; do
+            echo "::group::analyze $d"
+            (cd "$d" && flutter analyze --no-fatal-infos)
+            echo "::endgroup::"
+          done
+      - name: Test
+        run: |
+          for d in app packages/innertube packages/iptv packages/chithram_player; do
+            echo "::group::test $d"
+            (cd "$d" && flutter test)
+            echo "::endgroup::"
+          done

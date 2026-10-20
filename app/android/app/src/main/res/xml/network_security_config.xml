@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Cleartext (http://) is allowed on purpose: IPTV playlists and live streams
+     that users add themselves are very often plain http, and so are many
+     torrent-stream and LAN sources. The app's own traffic (updates, metadata,
+     YouTube) uses https only; the UI warns before sending credentials over http. -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system"/>
+        </trust-anchors>
+    </base-config>
+</network-security-config>

@@ -1,0 +1,11 @@
+# Pub workspace root: one resolution (and one pubspec.lock) for the app and the
+# packages. Run `flutter pub get` here or in any member.
+name: chithram_workspace
+publish_to: none
+environment:
+  sdk: ^3.13.5
+workspace:
+  - app
+  - packages/innertube
+  - packages/iptv
+  - packages/chithram_player

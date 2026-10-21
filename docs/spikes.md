@@ -44,7 +44,7 @@ The registry and the `app.dart` hook are set in S0; spikes edit only their own p
 - Accept: ffmpeg fixtures served via `adb reverse`; first-frame logcat marker < 2.5 s on TV emulator; seek works; DPAD_CENTER pauses and resumes; merged duration matches; media_kit plays under Xvfb.
 
 ### spike/nova
-- Chaquopy 17.1.0 (Python 3.11) on Android; python-build-standalone 3.13 on desktop.
+- Official CPython in an `isolatedProcess` service on Android; python-build-standalone 3.13 on desktop.
 - Child process has no network; host brokers HTTP with a per-engine domain allowlist.
 - Sandbox: seccomp/Landlock on Linux, AppContainer + Job on Windows, `:nova` isolatedProcess on Android.
 - Signed minisign repos with TOFU key pin. Vendor qBittorrent `helpers.py`, `novaprinter.py`, `socks.py` (BSD-3).

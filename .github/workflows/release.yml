@@ -100,6 +100,7 @@ jobs:
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: android
+          retention-days: 2
           path: dist/*
 
   windows:
@@ -193,11 +194,13 @@ jobs:
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: windows
+          retention-days: 2
           path: dist/*
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
           name: smoke-windows
+          retention-days: 2
           path: ${{ runner.temp }}/smoke
           if-no-files-found: ignore
 
@@ -325,6 +328,7 @@ jobs:
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: linux
+          retention-days: 2
           path: dist/*
 
   # The APK installs and starts on an emulator.
@@ -355,6 +359,7 @@ jobs:
         if: always()
         with:
           name: smoke-android
+          retention-days: 2
           path: smoke
           if-no-files-found: ignore
 

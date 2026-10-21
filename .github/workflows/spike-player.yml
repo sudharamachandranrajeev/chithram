@@ -52,7 +52,7 @@ jobs:
       - name: Free disk for the system image
         run: |
           cp app/build/app/outputs/flutter-apk/app-debug.apk "$RUNNER_TEMP/app-debug.apk"
-          rm -rf app/build ~/.gradle
+          rm -rf app/build ~/.gradle || true  # Gradle daemon may still write
           sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost /opt/hostedtoolcache/CodeQL /usr/local/lib/android/sdk/ndk
           docker system prune -af >/dev/null 2>&1 || true
           df -h /

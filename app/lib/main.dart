@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';
 
+import 'src/core/services.dart';
 import 'src/smoke.dart';
 import 'src/ui/app.dart';
 
@@ -18,7 +19,7 @@ Future<void> main(List<String> args) async {
       debugPrint('libmpv could not be loaded: $error');
     }
   }
-  runApp(const ChithramApp());
+  runApp(ChithramApp(services: await AppServices.open()));
   final smoke = smokeTarget(args);
   if (smoke != null) unawaited(runSmoke(smoke));
 }

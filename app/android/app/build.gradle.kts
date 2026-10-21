@@ -21,7 +21,8 @@ android {
         // Android 7.0+ (API 24): older Android TV boxes (armeabi-v7a), and the floor
         // for the Media3 and Chaquopy spikes.
         minSdk = 24
-        targetSdk = flutter.targetSdkVersion
+        // Pinned: local-network permission changes in a later SDK must not arrive silently.
+        targetSdk = 36
         // Uses the version code from pubspec.yaml. When using split APKs, 1000 * ABI_VERSION
         // is added automatically by Flutter. (https://developer.android.com/studio/build/configure-apk-splits#configure-APK-versions)
         // You can force using the value of versionCode by specifying the `-P force-version-code-ignoring-abi=true`

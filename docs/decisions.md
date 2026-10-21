@@ -37,9 +37,10 @@ Roadmap:
 
 ## Interview answers (owner, 2026-10-20): these override the defaults above
 - Licence MIT; GitHub repo private until MVP, then public.
-- MVP sources: YouTube + IPTV + torrent WITH search. Torrent search = Torznab (Jackett/Prowlarr) + plugin repos,
-  including qBittorrent-compatible Python search plugins (nova2 API) on every platform: embed CPython via Chaquopy (MIT) on
-  Android, system/bundled Python on desktop; plugins sandboxed (network only, no file access, time/output limits).
+- MVP sources: YouTube + IPTV + torrent WITH search. Torrent search = Torznab (user-run indexer managers) + plugin repos,
+  including Python search plugins that use the nova2-style API, on every platform: official CPython in an
+  `isolatedProcess` service on Android (replaced the earlier Chaquopy plan), system/bundled Python on desktop; plugins
+  sandboxed (network only, no file access, time/output limits).
   Chithram ships NO indexers/plugins/piracy-site scrapers and does NOT do mirror-domain hopping (declined: court-ordered
   blocks in India). Users add plugin repos / Torznab URLs themselves.
 - Dynamic sources: health checks prune dead streams/sources; catalogues + user-added plugin repos refresh in background at
@@ -55,3 +56,30 @@ Roadmap:
 - Metadata: TMDB with user's own free key; filename fallback.
 - Defaults set by main session (user didn't object yet): GitHub Releases + Obtainium; Stremio addons v1 user-pasted.
 - Model routing per user: Opus decides, Sonnet builds.
+
+## 0.2.0 "First light" (architect decisions, 2026-10-21)
+
+Full plan: [roadmap.md](roadmap.md). Decisions that bind every later version:
+- State: no package. Services are `ChangeNotifier` / `ValueListenable` objects in one `AppServices` object, read through
+  an `AppServicesScope` inherited widget; widget tests pass fakes. From 0.3.0 the UI also uses drift `watch()` streams.
+- Routing: imperative Navigator. Sections are roots inside `Shell`; drill-downs are pushed routes with their own
+  `FocusScope` and `Overscan`. A global `navigatorKey` in `AppServices` lets incoming transfers show prompts.
+- One intake path: typed, pasted and received text all go through `classify()` then `handleIntake()`. It confirms
+  first and routes to a handler screen; nothing auto-plays.
+- Stable item ids, prefixed by source: `yt:`, `ytc:`, `iptv:`, `src:`, `bt:<btih>/<file>`, `url:<sha256[0:16]>`, later
+  `file:` and `addon:`. One item table keyed by id from 0.3.0.
+- Persistence: JSON files (`JsonFileIptvStore`, `prefs.json`, `resume.json`, written atomically) until 0.3.0 brings one
+  drift database that imports them. Generated files are committed, with a CI freshness job.
+- Player contract: every source produces a `PlayRequest`; its `resolve()` returns a `MediaSpec`. One player route serves
+  all sources. DRM-protected streams fail with a clear message and are never handled.
+- Logging: `core/redact.dart` reduces URLs to their host. Tokens, passwords and query strings are never logged.
+- Public text: only YouTube, LocalSend, iptv-org, Free-TV and open format or protocol names. The addon client is
+  called "Addons".
+- Owner decision (overrides the earlier "no built-in URLs" idea): iptv-org and Free-TV stay as opt-in first-run
+  suggestions. Nothing loads until the user taps one, `CatalogueEndpoints`, `Source.iptvOrg` and `Source.freeTv` stay,
+  and the iptv-org blocklist stays mandatory.
+- Fixed in the prep step: `chithram_player` is an app dependency again (Android plugin registration follows the app's
+  declared dependencies; a missing one broke the player spike on main), and `depend_on_referenced_packages` is an
+  analyzer error. Artifact retention is 2 days everywhere.
+- New dependencies: `path_provider`, `package_info_plus`, `crypto` (app); `basic_utils` (LocalSend certificate).
+  `targetSdk` is pinned to 36.

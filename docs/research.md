@@ -46,12 +46,12 @@ GitHub repo; Windows app, Android app (phone + TV), Linux program. "Research rev
 ## IPTV / Live TV
 - iptv-org/iptv (CC0/Unlicense, links only, takedown process); iptv-org/api JSON (channels/streams/guides/blocklist,
   stream referrer + user_agent); iptv-org/epg grabbers → XMLTV. Free-TV/IPTV m3u8 (no license). i.mjh.nz FAST
-  aggregators (Pluto/Samsung/Plex/Roku) — ToS risk, don't bundle.
+  aggregators (ad-supported streaming services) — ToS risk, don't bundle.
 - Xtream Codes API (player_api.php live/vod/series, short EPG, xmltv.php, timeshift catch-up). M3U catchup tags.
 - XMLTV 50-100 MB: SAX parse in isolate → SQLite indexed, gzip.
 - Health check pool (8-16, TTFB, 0x47 TS sync, 24 h cache, mark dead). Fast zap: single player swap, pre-open N±1,
   mpv low-latency profile + small probe; ExoPlayer small bufferForPlaybackMs + live target offset + chunkless HLS.
-- References: Kodi PVR IPTV Simple, Hypnotix, IPTVnator, Open-TV, TiviMate (UX ref: groups, EPG grid, multiview).
+- References: open-source IPTV clients and commercial player apps (UX ref: groups, EPG grid, multiview).
 - Stremio addon protocol: open JSON/HTTP (manifest, catalog, meta, stream, subtitles); own client possible without
   Stremio code; community addons return infoHash streams → torrent sidecar. Ship no addon URLs.
 - Jellyfin/Plex/Emby/DLNA optional later.

@@ -1,12 +1,12 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
+import '../features/receive/receive_settings.dart';
+import '../features/torrents/torrent_settings.dart';
 import '../theme.dart';
 import 'dims.dart';
 import 'focus_card.dart';
 import 'home_page.dart' show ActionLabel;
-import 'player_test_page.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key, required this.focus});
@@ -15,7 +15,6 @@ class SettingsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final desktop = Platform.isWindows || Platform.isLinux;
     final d = Dims.of(context);
     return Padding(
       padding: EdgeInsets.all(d.phone ? 16 : 32),
@@ -31,22 +30,40 @@ class SettingsPage extends StatelessWidget {
             style: TextStyle(color: ChithramColors.textDim, fontSize: d.t(14)),
           ),
           const SizedBox(height: 28),
-          Padding(
-            padding: const EdgeInsets.all(8),
-            child: FocusCard(
-              focusNode: focus.entry,
-              section: focus,
-              radius: 24,
-              onActivate: desktop
-                  ? () => Navigator.of(context).push(
-                        MaterialPageRoute<void>(builder: (_) => const PlayerTestPage()),
-                      )
-                  : () {},
-              child: ActionLabel(text: desktop ? 'Player test (media_kit)' : 'About Chithram 0.1.0'),
-            ),
-          ),
+          // The first section takes the page's entry node.
+          TorrentSettings(entry: focus),
+          const ReceiveSettings(),
+          const AboutSettings(),
         ],
       ),
+      ),
+    );
+  }
+}
+
+/// The version, read from the platform (blank where that is unavailable).
+class AboutSettings extends StatelessWidget {
+  const AboutSettings({super.key});
+
+  static Future<String> _version() async {
+    try {
+      return (await PackageInfo.fromPlatform()).version;
+    } catch (_) {
+      return '';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(8),
+      child: FocusCard(
+        radius: 24,
+        onActivate: () {},
+        child: FutureBuilder<String>(
+          future: _version(),
+          builder: (context, snap) => ActionLabel(text: 'About Chithram ${snap.data ?? ''}'.trim()),
+        ),
       ),
     );
   }

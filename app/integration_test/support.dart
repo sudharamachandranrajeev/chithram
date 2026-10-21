@@ -1,3 +1,4 @@
+import 'package:chithram/src/ui/keys.dart';
 import 'package:chithram/src/ui/sections.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -41,4 +42,50 @@ Future<void> dpadTo(WidgetTester t, Finder target) async {
     await press(t, key);
   }
   fail('D-pad never reached $target (focus: ${focusLabel()})');
+}
+
+/// Fixture server for the end-to-end suite (`.github/e2e.sh host-services`).
+const e2eBase = String.fromEnvironment('E2E_BASE', defaultValue: 'http://127.0.0.1:8000');
+
+/// Magnet of `movie.mkv`, seeded on [e2ePeer].
+const e2eMagnet = String.fromEnvironment('E2E_MAGNET');
+const e2ePeer = String.fromEnvironment('E2E_PEER', defaultValue: '127.0.0.1:16881');
+
+/// Parses the player's `m:ss` / `h:mm:ss` position text.
+Duration parsePosition(String text) {
+  final parts = text.split(':').map(int.parse).toList();
+  return switch (parts.length) {
+    2 => Duration(minutes: parts[0], seconds: parts[1]),
+    3 => Duration(hours: parts[0], minutes: parts[1], seconds: parts[2]),
+    _ => throw FormatException('not a position: $text'),
+  };
+}
+
+/// Pumps in real time until the open player route shows a position of at
+/// least [atLeast]. Fails after [timeout]. An error the player reports on the
+/// way is printed and only fails the wait if playback never gets there.
+Future<Duration> waitForPlayback(
+  WidgetTester t, {
+  Duration atLeast = const Duration(seconds: 2),
+  Duration timeout = const Duration(seconds: 30),
+}) async {
+  final watch = Stopwatch()..start();
+  var last = Duration.zero;
+  String? error;
+  while (watch.elapsed < timeout) {
+    await t.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 250)));
+    await t.pump();
+    final errorText = find.byKey(Keys.playerError);
+    if (error == null && errorText.evaluate().isNotEmpty) {
+      error = t.widget<Text>(errorText).data;
+      // ignore: avoid_print
+      print('CHITHRAM_E2E player reported an error after ${watch.elapsed}: $error');
+    }
+    final position = find.byKey(Keys.playerPosition);
+    if (position.evaluate().isNotEmpty) {
+      last = parsePosition(t.widget<Text>(position).data!);
+      if (last >= atLeast) return last;
+    }
+  }
+  fail('playback did not reach $atLeast in $timeout (last position $last, player error: $error)');
 }

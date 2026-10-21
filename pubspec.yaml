@@ -8,6 +8,7 @@ workspace:
   - app
   - packages/innertube
   - packages/iptv
+  - packages/localsend_rx
   - packages/chithram_player
   - packages/nova_host
   - packages/torrent

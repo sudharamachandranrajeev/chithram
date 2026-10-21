@@ -10,6 +10,10 @@
 include: package:flutter_lints/flutter.yaml
 
 analyzer:
+  errors:
+    # An import of a package the app does not declare compiles through the pub
+    # workspace but is not registered as an Android plugin.
+    depend_on_referenced_packages: error
   exclude:
     - build/**
     - android/**

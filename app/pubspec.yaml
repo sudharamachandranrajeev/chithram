@@ -1,7 +1,7 @@
 name: chithram
 description: "Chithram: a bring-your-own-sources media app for Android TV, phones and desktop"
 publish_to: 'none'
-version: 0.1.0+1
+version: 0.2.0+1
 resolution: workspace
 
 environment:
@@ -16,11 +16,26 @@ dependencies:
   media_kit_libs_windows_video: ^1.0.11
   media_kit_libs_linux: ^1.2.1
 
-  # Spike stubs: path deps so each spike can fill in its package.
-  nova_host:
-    path: ../packages/nova_host
+  # App directories (torrent cache, JSON stores, certificate) and the About page.
+  path_provider: ^2.1.5
+  package_info_plus: ^10.2.2
+  crypto: ^3.0.6
+
+  # Workspace packages. chithram_player must stay listed: Android plugin
+  # registration follows the app's declared dependencies only.
+  chithram_player:
+    path: ../packages/chithram_player
+  innertube:
+    path: ../packages/innertube
+  iptv:
+    path: ../packages/iptv
+  localsend_rx:
+    path: ../packages/localsend_rx
   torrent:
     path: ../packages/torrent
+  # Debug-only spike page (see lib/src/spikes/).
+  nova_host:
+    path: ../packages/nova_host
 
 dev_dependencies:
   flutter_test:

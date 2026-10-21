@@ -20,7 +20,9 @@ void livetvE2e() {
       await t.pumpWidget(ChithramApp(services: AppServices.memory(iptv: iptv)));
       await t.pumpAndSettle();
 
-      await t.tap(find.byKey(const ValueKey('nav-liveTv')));
+      // Rail: Home -> Search -> Live TV (a tap on the rail does not switch section).
+      await t.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await t.sendKeyEvent(LogicalKeyboardKey.arrowDown);
       // The page loads its sources on real I/O ticks.
       for (var i = 0; i < 40 && find.byKey(LiveTvKeys.addPlaylist).evaluate().isEmpty; i++) {
         await t.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));

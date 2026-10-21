@@ -1,0 +1,3 @@
+tags:
+  # Needs working multicast loopback; skipped on runners without it.
+  multicast: {}

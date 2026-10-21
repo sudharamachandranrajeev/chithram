@@ -26,8 +26,9 @@ String railLabel(Section s) => 'rail ${s.label}';
 
 /// Moves focus to [target] using only D-pad presses (geometry based).
 Future<void> dpadTo(WidgetTester t, Finder target) async {
-  final goal = t.getRect(target).center;
   for (var i = 0; i < 80; i++) {
+    // Re-read every time: focusing scrolls the page.
+    final goal = t.getRect(target).center;
     final cur = FocusManager.instance.primaryFocus!.rect;
     final delta = goal - cur.center;
     if (delta.distance < 4) return;

@@ -32,10 +32,12 @@ void main() {
       print('CHITHRAM_DESKTOP open->2s ${sw.elapsedMilliseconds} ms, duration $d');
       expect(d.inMilliseconds, inInclusiveRange(59000, 61000), reason: 'merged duration');
 
+      final paused = engine.playing.firstWhere((p) => !p);
       await engine.pause();
-      await _within(engine.playing.firstWhere((p) => !p), 'paused');
+      await _within(paused, 'paused');
+      final resumed = engine.playing.firstWhere((p) => p);
       await engine.play();
-      await _within(engine.playing.firstWhere((p) => p), 'playing');
+      await _within(resumed, 'playing');
 
       final seeked = engine.position.firstWhere((p) => p >= const Duration(seconds: 30));
       await engine.seek(const Duration(seconds: 30));

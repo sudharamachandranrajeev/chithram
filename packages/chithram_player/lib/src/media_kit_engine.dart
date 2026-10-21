@@ -21,22 +21,26 @@ class MediaKitPlayerEngine implements PlayerEngine {
   static Future<MediaKitPlayerEngine> create() async {
     MediaKit.ensureInitialized();
     final engine = MediaKitPlayerEngine._();
-    // CI has no sound card: CHITHRAM_MPV_AO=null routes audio to the null output.
-    final ao = Platform.environment['CHITHRAM_MPV_AO'];
-    if (ao != null && ao.isNotEmpty) {
-      await (engine._player.platform as NativePlayer).setProperty('ao', ao);
-    }
     return engine;
   }
 
   late final Player _player;
   late final VideoController _controller;
   StreamSubscription<Duration>? _audioWait;
+  bool _aoApplied = false;
 
   @override
   Future<void> open(MediaSpec spec) async {
     await _audioWait?.cancel();
     _audioWait = null;
+    // Set here, not in create(): mpv property writes wait for the video
+    // controller, which only initialises once [view] is in the widget tree.
+    // CI has no sound card: CHITHRAM_MPV_AO=null routes audio to the null output.
+    final ao = Platform.environment['CHITHRAM_MPV_AO'];
+    if (!_aoApplied && ao != null && ao.isNotEmpty) {
+      _aoApplied = true;
+      await (_player.platform as NativePlayer).setProperty('ao', ao);
+    }
     final audio = spec.audioUrl;
     await _player.open(
       Media(

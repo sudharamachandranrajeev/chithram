@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:chithram_player/chithram_player.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 

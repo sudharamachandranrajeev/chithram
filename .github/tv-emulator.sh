@@ -72,10 +72,20 @@ adb logcat -c
 phase "flutter drive"
 cd "$root/app"
 status=0
-SCREENSHOT_DIR="$out/screenshots" timeout 1200 flutter drive \
-  --driver=integration_test/driver.dart --target=integration_test/app_test.dart \
-  --use-application-binary="$out/test-debug.apk" \
-  -d emulator-5554 2>&1 | tee "$out/drive.log" || status=$?
+# The VM service sometimes never connects on a fresh emulator, so retry once.
+for attempt in 1 2; do
+  phase "flutter drive attempt $attempt"
+  adb shell am force-stop $PKG || true
+  adb shell input keyevent KEYCODE_HOME || true
+  status=0
+  SCREENSHOT_DIR="$out/screenshots" timeout 600 flutter drive \
+    --driver=integration_test/driver.dart --target=integration_test/app_test.dart \
+    --use-application-binary="$out/test-debug.apk" \
+    -d emulator-5554 2>&1 | tee "$out/drive-$attempt.log" || status=$?
+  cp "$out/drive-$attempt.log" "$out/drive.log"
+  [[ $status -eq 0 ]] && break
+  adb logcat -d >"$out/logcat-drive-$attempt.txt" || true
+done
 adb logcat -d >"$out/logcat.txt" || true
 if [[ $status -ne 0 ]]; then
   echo "::error::integration tests failed on $NAME"
@@ -86,7 +96,12 @@ phase "cold start, adb keys"
 adb uninstall $PKG >/dev/null 2>&1 || true
 adb install -r "$out/app-release.apk"
 
+# Let the emulator settle after the tests; the first start is a warm-up.
+adb shell am force-stop $PKG
+sleep 45
+adb shell cat /proc/loadavg | sed 's/^/loadavg before cold start: /'
 times=()
+adb shell am start -W -n $PKG/.MainActivity >/dev/null; sleep 5
 for i in 1 2 3 4 5; do
   adb shell am force-stop $PKG
   sleep 2

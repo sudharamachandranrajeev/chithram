@@ -1,0 +1,12 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- CPython (stdlib zip, extension modules) is read from the extracted native
+         library directory by the isolated process, so the libs must be extracted. -->
+    <application android:extractNativeLibs="true">
+        <!-- Plugins run only here: own uid (99000-99999), no INTERNET, no app data. -->
+        <service
+            android:name=".NovaIsolatedService"
+            android:process=":novaiso"
+            android:isolatedProcess="true"
+            android:exported="false" />
+    </application>
+</manifest>

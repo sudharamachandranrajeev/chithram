@@ -1,0 +1,25 @@
+{
+ "name": "Test repo",
+ "plugins": [
+  {
+   "adult": false,
+   "file": "demo.py",
+   "hosts": [
+    "cdn.example.test"
+   ],
+   "id": "demo",
+   "name": "Demo",
+   "sha256": "cd0cc263f03b0c6e181418a28582dd337f599bbda2377c5ddd2a243dedb15141",
+   "version": "1.0"
+  },
+  {
+   "adult": true,
+   "file": "adultdemo.py",
+   "id": "adultdemo",
+   "name": "Adult demo",
+   "sha256": "962789c43190bc5e775524fb146930054fca71741501020150f2f00459045a52",
+   "version": "1.0"
+  }
+ ],
+ "version": 1
+}

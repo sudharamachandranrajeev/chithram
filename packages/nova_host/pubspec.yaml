@@ -1,13 +1,26 @@
 name: nova_host
-description: "Spike stub: nova_host (placeholder until its spike lands)."
+description: "Chithram nova host: sandboxed qBittorrent-style search plugins (broker, signed repos, process launch)."
 version: 0.0.1
 publish_to: none
 resolution: workspace
 
 environment:
   sdk: ^3.13.5
+  flutter: ">=3.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  crypto: ^3.0.6
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: dev.chithram.nova_host
+        pluginClass: NovaHostPlugin

@@ -1,0 +1,16 @@
+Third-party code vendored in python/nova/vendor/
+
+Source: https://github.com/qbittorrent/qBittorrent  (src/searchengine/nova3, commit a87f8f9c282e7341b1f4f9e9a5a66c869d2366a6)
+
+- helpers.py     BSD-3-Clause, Copyright (c) Christophe DUMEZ <chris@qbittorrent.org>.
+                 MODIFIED: retrieve_url / download_file call the host broker
+                 (nova_broker) instead of opening sockets; no temp files.
+- novaprinter.py BSD-3-Clause (same header as upstream). MODIFIED: prettyPrinter
+                 hands the result dict to the runner (validated, sent as NDJSON).
+                 anySizeToBytes is unchanged.
+- socks.py       PySocks 1.7.1, BSD-3-Clause, Copyright 2006 Dan-Haim. Unmodified.
+                 Kept only so plugins that `import socks` still import; the
+                 sandboxed process has no network, so it cannot connect.
+
+The full licence text of each file is its own header. Redistributions must keep
+those headers and this notice.

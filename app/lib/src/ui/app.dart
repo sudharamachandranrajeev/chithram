@@ -3,8 +3,6 @@ import 'package:flutter/material.dart';
 import '../core/services.dart';
 import '../spikes/registry.dart';
 import '../theme.dart';
-import '../intake/intake.dart';
-import 'search_page.dart';
 import 'shell.dart';
 
 class ChithramApp extends StatefulWidget {
@@ -20,12 +18,6 @@ class ChithramApp extends StatefulWidget {
 
 class _ChithramAppState extends State<ChithramApp> {
   late final AppServices _services = widget.services ?? AppServices.memory();
-
-  @override
-  void initState() {
-    super.initState();
-    IntakeHooks.search = openSearch;
-  }
 
   @override
   Widget build(BuildContext context) {

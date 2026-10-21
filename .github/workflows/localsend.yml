@@ -1,7 +1,8 @@
 # Interop: our LocalSend receiver against the upstream command-line app. The
 # upstream app (Apache-2.0) is built from source at a pinned revision, only
 # here, only for this test. It is never part of a release. A weekly run uses
-# the newest upstream tag, so protocol drift shows up without blocking a PR.
+# the upstream default branch, so protocol drift shows up without blocking a PR
+# (released tags up to v1.18.2 have no headless `send --to`, which this needs).
 name: LocalSend interop
 
 on:
@@ -23,7 +24,7 @@ on:
   workflow_dispatch:
     inputs:
       upstream_ref:
-        description: 'Upstream tag or commit to build (default: the pinned revision)'
+        description: 'Upstream branch, tag or commit to build (default: the pinned revision)'
         required: false
 
 concurrency:
@@ -35,8 +36,8 @@ permissions:
 
 env:
   FLUTTER_VERSION: 3.47.7
-  # v1.18.2
-  PINNED_UPSTREAM: af0416be50770a97760f7070684bc667b759a15c
+  # Upstream main on 2026-10-21: the first revisions with `send --to <ip> --text`.
+  PINNED_UPSTREAM: 6e37efd5fe750299758b6778d2b150b31af3b95d
 
 jobs:
   interop:
@@ -54,7 +55,7 @@ jobs:
           if [ -n "$INPUT_REF" ]; then
             ref="$INPUT_REF"
           elif [ "${{ github.event_name }}" = "schedule" ]; then
-            ref=$(gh api repos/localsend/localsend/tags --jq '.[0].name')
+            ref=main
           else
             ref="$PINNED_UPSTREAM"
           fi

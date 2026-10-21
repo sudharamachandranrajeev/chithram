@@ -6,7 +6,9 @@ import 'package:chithram/src/features/torrents/torrent_files_page.dart';
 import 'package:chithram/src/features/torrents/torrent_logic.dart';
 import 'package:chithram/src/ui/app.dart';
 import 'package:chithram/src/ui/keys.dart';
+import 'package:chithram/src/ui/sections.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'support.dart';
@@ -30,8 +32,13 @@ void torrentE2e() {
       await t.pumpAndSettle();
       expect(services.torrents.guard.needsChoice, isTrue, reason: 'the choice starts unset');
 
-      await t.tap(find.byKey(const ValueKey('nav-torrents')));
-      await t.pumpAndSettle();
+      // D-pad: down the rail to Torrents, then into the section. (A tap on a
+      // rail item focuses the section it replaces, not the one tapped.)
+      for (var i = 0; i < Section.torrents.index; i++) {
+        await press(t, LogicalKeyboardKey.arrowDown);
+      }
+      await press(t, LogicalKeyboardKey.arrowRight);
+      expect(find.byKey(TorrentKeys.pasteMagnet), findsOneWidget);
       await t.tap(find.byKey(TorrentKeys.pasteMagnet));
       await t.pumpAndSettle();
       await t.enterText(find.byKey(Keys.textEntryField), e2eMagnet);

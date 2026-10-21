@@ -21,12 +21,11 @@ dependencies:
     path: ../packages/nova_host
   torrent:
     path: ../packages/torrent
-  chithram_player:
-    path: ../packages/chithram_player
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  # On-device tests in integration_test/ (TV emulator CI).
   integration_test:
     sdk: flutter
   flutter_lints: ^6.0.0

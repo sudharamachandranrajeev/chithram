@@ -86,6 +86,7 @@ class AcceptanceSuite {
     required this.tmpDir,
     this.limits,
     this.log,
+    this.expectIsolatedUid = false,
   });
 
   final SessionStarter start;
@@ -95,6 +96,13 @@ class AcceptanceSuite {
   final String tmpDir;
   final NovaLimits? limits;
   final void Function(String)? log;
+
+  /// Android: the plugin must run as an isolated uid (99000-99999).
+  final bool expectIsolatedUid;
+
+  static const androidChecks = ['isolated-uid'];
+
+  List<String> get names => [...checkNames, if (expectIsolatedUid) ...androidChecks];
 
   static const checkNames = [
     'good-engine',
@@ -147,7 +155,7 @@ class AcceptanceSuite {
     File(_secretPath).writeAsStringSync(_secretText);
     final out = <CheckResult>[];
     try {
-      for (final name in checkNames) {
+      for (final name in names) {
         if (only != null && !only.contains(name)) continue;
         _server.hits.clear();
         CheckResult r;
@@ -188,6 +196,11 @@ class AcceptanceSuite {
 
   Future<CheckResult> _check(String name) async {
     switch (name) {
+      case 'isolated-uid':
+        final o = await _run('fx_good');
+        final uid = o.uid;
+        final ok = uid != null && uid >= 99000 && uid <= 99999;
+        return CheckResult(name, ok, 'plugin uid=$uid (isolated range 99000-99999) ${o.summary}');
       case 'good-engine':
         final o = await _run('fx_good');
         final ok = o.status == SearchStatus.ok &&

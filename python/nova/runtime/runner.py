@@ -110,7 +110,11 @@ class Runner:
         nova_broker.install_shims()
         # preload so audit-blocked imports are not needed later
         import json, re, html, gzip, io, base64, datetime, urllib.parse, urllib.error, xml.etree.ElementTree  # noqa
-        import subprocess, threading, tempfile, shutil, random, time, hashlib, ssl, http.cookiejar, collections  # noqa
+        import subprocess, threading, tempfile, shutil, random, time, hashlib, http.cookiejar, collections  # noqa
+        try:
+            import ssl  # noqa  (absent in the Android build: no TLS in the plugin process, the host does it)
+        except ImportError:
+            pass
         import socket  # noqa  (importing is allowed; using it is not)
         import importlib
         for m in ("socks", "novaprinter", "helpers"):  # vendored (patched) copies answer `import helpers` etc.
@@ -148,7 +152,7 @@ class Runner:
         if cls is None:
             raise RuntimeError("no engine class %r in plugin" % name)
         eng = cls()
-        self.t.send({"op": "meta", "name": str(getattr(eng, "name", name))[:128],
+        self.t.send({"op": "meta", "uid": os.getuid() if hasattr(os, "getuid") else -1, "name": str(getattr(eng, "name", name))[:128],
                      "url": str(getattr(eng, "url", ""))[:512],
                      "categories": sorted(map(str, getattr(eng, "supported_categories", {}) or {}))[:32]})
         cat = msg.get("cat") or "all"

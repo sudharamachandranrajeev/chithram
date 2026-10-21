@@ -143,7 +143,7 @@ jobs:
           flutter test --reporter expanded test/acceptance_test.dart
 
   android:
-    name: Android TV emulator (Chaquopy, isolatedProcess)
+    name: Android TV emulator (CPython, isolatedProcess)
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:

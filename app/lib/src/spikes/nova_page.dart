@@ -64,25 +64,40 @@ class _NovaSpikePageState extends State<NovaSpikePage> {
     if (_busy) return;
     setState(() => _busy = true);
     _say('suite start platform=${Platform.operatingSystem}');
+    var passed = 0, failed = 0;
     try {
+      // Android: the app's filesDir holds the fake secret and is the "$HOME" the
+      // plugin tries to write to; it is the parent of the cache dir.
       final home = Platform.isAndroid
-          ? Directory.systemTemp.path
+          ? '${Directory.systemTemp.parent.path}/files'
           : (Platform.environment['HOME'] ?? Platform.environment['USERPROFILE'] ?? Directory.systemTemp.path);
-      final suite = AcceptanceSuite(
-        start: _starter(),
-        homeDir: home,
-        tmpDir: Directory.systemTemp.path,
-        log: _say,
-      );
-      final rs = await suite.run();
+      // Android runs the suite twice: with the Python audit hook, and with only the
+      // OS isolation (isolated uid) in force.
+      for (final audit in Platform.isAndroid ? [true, false] : [true]) {
+        _say('MODE audit=${audit ? 'on' : 'off'}');
+        final suite = AcceptanceSuite(
+          start: Platform.isAndroid ? () => AndroidNovaSession.start(audit: audit) : _starter(),
+          homeDir: home,
+          tmpDir: Directory.systemTemp.path,
+          log: _say,
+          expectIsolatedUid: Platform.isAndroid,
+        );
+        final rs = await suite.run();
+        for (final r in rs) {
+          _say('CHECK audit=${audit ? 'on' : 'off'} ${r.ok ? 'PASS' : 'FAIL'} ${r.name}');
+        }
+        _say('SUITE_JSON ${suiteJson(rs)}');
+        passed += rs.where((r) => r.ok).length;
+        failed += rs.where((r) => !r.ok).length;
+      }
       if (Platform.isAndroid && AndroidNovaSession.lastReport != null) {
         _say(AndroidNovaSession.lastReport!.line);
       }
-      for (final r in rs) {
-        _say('CHECK ${r.ok ? 'PASS' : 'FAIL'} ${r.name}');
-      }
-      _say('SUITE_JSON ${suiteJson(rs)}');
-      _say('SUITE_DONE passed=${rs.where((r) => r.ok).length} failed=${rs.where((r) => !r.ok).length}');
+      _say('SUITE_DONE passed=$passed failed=$failed');
+    } on PluginsUnavailable catch (e) {
+      _say('NOVA_PLUGINS=disabled reason="${e.reason}" (search falls back to Torznab only)');
+      _say('NOVA_ISOLATED=no detail="${e.reason}"');
+      _say('SUITE_DONE passed=0 failed=-1');
     } catch (e, st) {
       _say('SUITE_ERROR $e\n$st');
       _say('SUITE_DONE passed=0 failed=-1');

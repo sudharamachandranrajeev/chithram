@@ -1,11 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <application>
-        <!-- Same-UID fallback: Chaquopy Python in its own process (kill-able, no UI). -->
-        <service
-            android:name=".NovaService"
-            android:process=":nova"
-            android:exported="false" />
-        <!-- Tried first: isolated uid, no app data, no INTERNET. Chaquopy may not start there. -->
+    <!-- CPython (stdlib zip, extension modules) is read from the extracted native
+         library directory by the isolated process, so the libs must be extracted. -->
+    <application android:extractNativeLibs="true">
+        <!-- Plugins run only here: own uid (99000-99999), no INTERNET, no app data. -->
         <service
             android:name=".NovaIsolatedService"
             android:process=":novaiso"

@@ -5,23 +5,27 @@ import 'package:flutter/services.dart';
 
 import 'session.dart';
 
-/// Result of the Android service start-up, for the report.
-class AndroidStartReport {
-  AndroidStartReport(this.isolatedTried, this.isolatedStarted, this.isolatedDetail, this.mode, this.detail);
-  final bool isolatedTried;
-  final bool isolatedStarted;
-  final String isolatedDetail;
-
-  /// `isolated` or `same-uid`: the service that finally runs the plugins.
-  final String mode;
-  final String detail;
-
-  String get line =>
-      'NOVA_ISOLATED=${isolatedStarted ? 'yes' : 'no'} detail="$isolatedDetail" running=$mode "$detail"';
+/// Plugins cannot run on this device. Search falls back to Torznab only.
+/// There is deliberately no same-UID fallback: plugin code only ever runs in an
+/// isolated-process service (separate uid, no network, no app data).
+class PluginsUnavailable implements Exception {
+  PluginsUnavailable(this.reason);
+  final String reason;
+  @override
+  String toString() => 'PluginsUnavailable: $reason';
 }
 
-/// A runner inside the Android `:nova` service (Chaquopy). Same NDJSON as the
-/// desktop process, carried over a Messenger instead of pipes.
+/// Result of starting the isolated plugin service, for the report.
+class AndroidStartReport {
+  AndroidStartReport(this.isolated, this.detail);
+  final bool isolated;
+  final String detail;
+  String get line => 'NOVA_ISOLATED=${isolated ? 'yes' : 'no'} detail="$detail"';
+}
+
+/// A runner inside the Android isolated-process service (CPython from python.org,
+/// embedded through JNI). Same NDJSON as the desktop process, carried over a
+/// Messenger (chunked, to stay under the Binder limit) instead of pipes.
 class AndroidNovaSession implements NovaSession {
   AndroidNovaSession._(this.limits) {
     _timer = Timer(limits.wall + const Duration(seconds: 3), () => kill('wall-timeout'));
@@ -30,9 +34,11 @@ class AndroidNovaSession implements NovaSession {
   static const MethodChannel _ch = MethodChannel('dev.chithram/nova_host');
   static AndroidNovaSession? _active;
   static AndroidStartReport? lastReport;
-  static bool? _isolatedWorks; // null = not tried yet
-  static String _isolatedDetail = 'not tried';
   static bool _wired = false;
+
+  /// Set when the platform cannot run plugins (e.g. armeabi-v7a, or the isolated
+  /// service failed to start). Cached: we do not retry into a weaker mode.
+  static String? disabledReason;
 
   static void _wire() {
     if (_wired) return;
@@ -46,23 +52,18 @@ class AndroidNovaSession implements NovaSession {
     });
   }
 
-  /// Tries the isolated service once per app run, then falls back to the plain `:nova` one.
-  static Future<AndroidNovaSession> start({NovaLimits limits = const NovaLimits(), bool tryIsolated = true}) async {
+  /// [audit] false runs with the kernel/uid isolation only (CI proves both).
+  static Future<AndroidNovaSession> start({NovaLimits limits = const NovaLimits(), bool audit = true}) async {
     _wire();
-    Map<Object?, Object?>? r;
-    var mode = 'same-uid';
-    if (tryIsolated && _isolatedWorks != false) {
-      r = await _ch.invokeMapMethod<Object?, Object?>('start', {'isolated': true});
-      _isolatedWorks = r?['started'] == true;
-      _isolatedDetail = '${r?['detail']}';
-      if (_isolatedWorks!) mode = 'isolated';
-    }
-    if (mode != 'isolated') {
-      r = await _ch.invokeMapMethod<Object?, Object?>('start', {'isolated': false});
-    }
+    if (disabledReason != null) throw PluginsUnavailable(disabledReason!);
+    final r = await _ch.invokeMapMethod<Object?, Object?>('start', {'audit': audit});
     final started = r?['started'] == true;
-    lastReport = AndroidStartReport(tryIsolated, _isolatedWorks == true, _isolatedDetail, mode, '${r?['detail']}');
-    if (!started) throw StateError('Android Python service did not start: ${r?['detail']}');
+    final detail = '${r?['detail']}';
+    lastReport = AndroidStartReport(started, detail);
+    if (!started) {
+      disabledReason = detail;
+      throw PluginsUnavailable(detail);
+    }
     final s = AndroidNovaSession._(limits);
     _active = s;
     return s;

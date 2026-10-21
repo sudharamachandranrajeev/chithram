@@ -34,9 +34,13 @@ class SearchOutcome {
     this.stderrHead = '',
     this.exitCode,
     this.adult = false,
+    this.uid,
   });
 
   final SearchStatus status;
+
+  /// uid the plugin process runs as (Android isolated range is 99000-99999).
+  final int? uid;
   final List<Map<String, Object?>> results;
   final Duration elapsed;
   final List<String> brokerLog;
@@ -71,6 +75,7 @@ class NovaHost {
     HttpBroker? broker;
     final results = <Map<String, Object?>>[];
     String? name, url;
+    int? uid;
     var status = SearchStatus.error;
     String? reason = 'runner ended without a result';
     var rejected = 0;
@@ -89,6 +94,7 @@ class NovaHost {
           case 'meta':
             name = m['name'] as String?;
             url = m['url'] as String?;
+            uid = (m['uid'] as num?)?.toInt();
             broker = HttpBroker(allowlist: HostAllowlist.forEngine(url ?? '', engine.hosts), policy: policy);
           case 'http':
             final b = broker;
@@ -155,6 +161,7 @@ class NovaHost {
       stderrHead: session.stderrHead,
       exitCode: code,
       adult: engine.adult,
+      uid: uid,
     );
   }
 

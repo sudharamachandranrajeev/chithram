@@ -16,8 +16,8 @@ import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 
 /**
- * Bridges Dart to the :nova / :novaiso Python services.
- * Dart -> start{isolated}, send{line}, stop. Native -> Dart: line(String), ended().
+ * Bridges Dart to the :novaiso isolated Python service.
+ * Dart -> start{audit}, send{line}, stop. Native -> Dart: line(String), ended().
  */
 class NovaHostPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
     private lateinit var channel: MethodChannel
@@ -29,12 +29,16 @@ class NovaHostPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
     private var pendingStart: MethodChannel.Result? = null
     private var timeout: Runnable? = null
 
+    private val assembler = LineAssembler()
+
     private val inbound = Messenger(object : Handler(Looper.getMainLooper()) {
         override fun handleMessage(msg: Message) {
-            val line = msg.data.getString("line") ?: ""
             when (msg.what) {
-                NovaProtocol.MSG_STARTED -> finishStart(msg.arg1 == 1, line)
-                NovaProtocol.MSG_LINE -> if (line.isNotEmpty()) channel.invokeMethod("line", line)
+                NovaProtocol.MSG_STARTED -> finishStart(msg.arg1 == 1, msg.data.getString("line") ?: "")
+                NovaProtocol.MSG_LINE -> {
+                    val line = assembler.add(msg)
+                    if (!line.isNullOrEmpty()) channel.invokeMethod("line", line)
+                }
             }
         }
     })
@@ -52,12 +56,10 @@ class NovaHostPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
 
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
         when (call.method) {
-            "start" -> start(call.argument<Boolean>("isolated") == true, result)
+            "start" -> start(call.argument<Boolean>("audit") != false, result)
             "send" -> {
-                val m = Message.obtain(null, NovaProtocol.MSG_FEED)
-                m.data = Bundle().apply { putString("line", call.argument<String>("line")) }
                 try {
-                    service?.send(m)
+                    for (m in NovaProtocol.chunks(call.argument<String>("line") ?: "", NovaProtocol.MSG_FEED)) service?.send(m)
                     result.success(true)
                 } catch (t: Throwable) {
                     result.success(false)
@@ -79,15 +81,17 @@ class NovaHostPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
         if (!ok) stop()
     }
 
-    private fun start(isolated: Boolean, result: MethodChannel.Result) {
+    private fun start(audit: Boolean, result: MethodChannel.Result) {
         stop()
         pendingStart = result
-        val cls = if (isolated) NovaIsolatedService::class.java else NovaService::class.java
+        // Only the isolated service exists: there is no same-UID fallback.
+        val cls = NovaIsolatedService::class.java
         val c = object : ServiceConnection {
             override fun onServiceConnected(name: ComponentName, binder: IBinder) {
                 val s = Messenger(binder)
                 service = s
                 val m = Message.obtain(null, NovaProtocol.MSG_START)
+                m.data = Bundle().apply { putBoolean("audit", audit) }
                 m.replyTo = inbound
                 try {
                     s.send(m)
@@ -118,7 +122,7 @@ class NovaHostPlugin : FlutterPlugin, MethodChannel.MethodCallHandler {
             finishStart(false, "bindService returned false for ${cls.simpleName}")
             return
         }
-        val t = Runnable { finishStart(false, "timeout waiting for Python to start (30 s)") }
+        val t = Runnable { finishStart(false, "timeout waiting for the isolated Python service (30 s)") }
         timeout = t
         main.postDelayed(t, 30_000)
     }

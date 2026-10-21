@@ -1,13 +1,11 @@
 group = "dev.chithram.nova_host"
 version = "1.0"
 
-// Chaquopy (MIT) runs CPython 3.11 inside the Android app. Applied here, in the
-// plugin's library module; the plugin artifact itself is declared (with
-// `apply false`) in app/android/settings.gradle.kts.
+// CPython's official Android build (python.org, PEP 738) is embedded through JNI.
+// tool/fetch_cpython_android.py lays out jniLibs and headers (git-ignored).
 plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.android")
-    id("com.chaquo.python")
 }
 
 android {
@@ -23,8 +21,14 @@ android {
         minSdk = 24
         consumerProguardFiles("consumer-rules.pro")
         ndk {
-            // Python 3.11 is the newest Chaquopy Python that still has armeabi-v7a.
-            abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64")
+            // python.org publishes aarch64 and x86_64 only: armeabi-v7a gets no plugins.
+            abiFilters += listOf("arm64-v8a", "x86_64")
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
         }
     }
 }
@@ -35,17 +39,15 @@ kotlin {
     }
 }
 
-chaquopy {
-    defaultConfig {
-        version = "3.11"
-        // No pip packages and no .pyc compilation: no build Python needed.
-        pyc {
-            src = false
-        }
-    }
-    sourceSets {
-        getByName("main") {
-            srcDir("../../../python/nova/runtime")
-        }
-    }
+val prepareCpythonAndroid = tasks.register<Exec>("prepareCpythonAndroid") {
+    workingDir = projectDir
+    commandLine("python3", "../tool/fetch_cpython_android.py")
+    inputs.file("../tool/fetch_cpython_android.py")
+    inputs.dir("../../../python/nova/runtime")
+    outputs.dir("src/main/jniLibs")
+    outputs.dir("cpython")
+}
+
+tasks.matching { it.name == "preBuild" }.configureEach {
+    dependsOn(prepareCpythonAndroid)
 }

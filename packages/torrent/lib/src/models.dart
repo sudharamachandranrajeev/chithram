@@ -24,11 +24,17 @@ class TorrentFile {
 
 /// Result of adding a magnet / .torrent.
 class TorrentInfo {
-  const TorrentInfo({required this.id, required this.name, required this.files});
+  const TorrentInfo({
+    required this.id,
+    required this.name,
+    required this.infoHash,
+    required this.files,
+  });
 
   factory TorrentInfo.fromJson(Map<String, dynamic> j) => TorrentInfo(
         id: j['id'] as int,
         name: j['name'] as String?,
+        infoHash: (j['info_hash'] as String).toLowerCase(),
         files: [
           for (final f in (j['files'] as List<dynamic>))
             TorrentFile.fromJson((f as Map).cast<String, dynamic>()),
@@ -37,6 +43,9 @@ class TorrentInfo {
 
   final int id;
   final String? name;
+
+  /// 40 lower-case hex characters; the `bt:` item id is built from it.
+  final String infoHash;
   final List<TorrentFile> files;
 }
 
@@ -51,6 +60,17 @@ class TorrentStats {
   int get totalBytes => (raw['total_bytes'] as num?)?.toInt() ?? 0;
   bool get finished => raw['finished'] as bool? ?? false;
   String? get error => raw['error'] as String?;
+
+  /// Connected peers, or null when not live.
+  int? get livePeers {
+    final live = raw['live'];
+    if (live is! Map) return null;
+    final snapshot = live['snapshot'];
+    if (snapshot is! Map) return null;
+    final peers = snapshot['peer_stats'];
+    if (peers is Map && peers['live'] is num) return (peers['live'] as num).toInt();
+    return null;
+  }
 
   /// Download speed as librqbit reports it (MiB/s), or null when not live.
   double? get downloadMibPerSec {

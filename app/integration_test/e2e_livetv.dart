@@ -41,7 +41,15 @@ void livetvE2e() {
       for (var i = 0; i < 40 && (await t.runAsync(iptv.snapshot))!.channels.values.expand((e) => e).isEmpty; i++) {
         await t.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 250)));
       }
+      for (var i = 0; i < 40 && find.text('E2E HLS').evaluate().isEmpty; i++) {
+        await t.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+        await t.pump(const Duration(milliseconds: 100));
+      }
       await t.pumpAndSettle();
+      // The list is lazy: bring the first row into view if it is below the sources.
+      if (find.text('E2E HLS').evaluate().isEmpty) {
+        await t.scrollUntilVisible(find.text('E2E HLS'), 120, scrollable: find.byType(Scrollable).first);
+      }
       expect(find.text('E2E HLS'), findsOneWidget);
 
       await t.tap(find.text('E2E HLS'));

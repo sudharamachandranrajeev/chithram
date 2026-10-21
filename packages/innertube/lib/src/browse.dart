@@ -14,6 +14,18 @@ final _channelIdRe = RegExp(r'^UC[A-Za-z0-9_-]{22}$');
 /// Search's "Videos" filter.
 const _videosOnly = 'EgIQAQ==';
 
+/// Search filter params for [InnertubeBrowse.search].
+abstract final class SearchFilter {
+  /// Videos only (the default).
+  static const videos = _videosOnly;
+
+  /// Currently live streams.
+  static const live = 'EgJAAQ==';
+
+  /// Videos under 4 minutes: what Shorts (<= 60 s) are served as in search.
+  static const underFourMinutes = 'EgQQARgB';
+}
+
 /// Search, channel uploads and video details, with continuation paging.
 /// Keep calling [Page.continuation] back into the same method until it is
 /// null.
@@ -33,13 +45,14 @@ class InnertubeBrowse {
   static const _cookies = {'Cookie': 'CONSENT=YES+cb; SOCS=CAI'};
 
   /// Videos matching [query]; pass the previous page's `continuation`.
-  Future<Page<VideoItem>> search(String query, {String? continuation}) async {
+  /// [params] is a [SearchFilter] value.
+  Future<Page<VideoItem>> search(String query, {String? continuation, String params = _videosOnly}) async {
     final body = <String, Object?>{'context': _context};
     if (continuation != null) {
       body['continuation'] = continuation;
     } else {
       body['query'] = query;
-      body['params'] = _videosOnly;
+      body['params'] = params;
     }
     return parseVideoPage(await net.postJson(_searchApi, body, headers: _cookies));
   }

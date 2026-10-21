@@ -7,6 +7,21 @@ import 'package:media_kit_video/media_kit_video.dart';
 
 import 'player_engine.dart';
 
+/// Headers for libmpv. `Range` is dropped: ffmpeg's http protocol sends no
+/// Range header of its own when the user headers contain one, so every seek
+/// would re-request from byte 0. mpv asks for ranges itself.
+Map<String, String> mpvHeaders(Map<String, String> headers) => {
+      for (final e in headers.entries)
+        if (e.key.toLowerCase() != 'range') e.key: e.value,
+    };
+
+/// False for log lines media_kit reports as errors that playback survives.
+/// "Could not open codec." is mpv's decoder log when a hardware decoder (VA-API,
+/// VDPAU, ...) fails to start; it then falls back to software and plays on.
+/// Showing it would put an error panel over a working video. A decoder that
+/// fails for real is also reported as a failed file load, which still arrives.
+bool isFatalMpvError(String text) => !text.startsWith('Could not open codec');
+
 /// libmpv through media_kit (Windows, Linux).
 ///
 /// Separate audio (YouTube DASH) is attached with mpv's `audio-add` command.
@@ -45,7 +60,7 @@ class MediaKitPlayerEngine implements PlayerEngine {
     await _player.open(
       Media(
         spec.videoUrl,
-        httpHeaders: spec.headers.isEmpty ? null : spec.headers,
+        httpHeaders: mpvHeaders(spec.headers).isEmpty ? null : mpvHeaders(spec.headers),
         start: spec.startPosition == Duration.zero ? null : spec.startPosition,
       ),
       play: audio == null,
@@ -82,7 +97,7 @@ class MediaKitPlayerEngine implements PlayerEngine {
   @override
   Stream<bool> get playing => _player.stream.playing;
   @override
-  Stream<String> get error => _player.stream.error;
+  Stream<String> get error => _player.stream.error.where(isFatalMpvError);
 
   @override
   Widget get view => Video(controller: _controller, controls: NoVideoControls);

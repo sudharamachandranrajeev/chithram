@@ -62,8 +62,8 @@ Duration parsePosition(String text) {
 }
 
 /// Pumps in real time until the open player route shows a position of at
-/// least [atLeast]. Fails after [timeout]. An error the player reports on the
-/// way is printed and only fails the wait if playback never gets there.
+/// least [atLeast]. Fails after [timeout], and at once if the player shows an
+/// error.
 Future<Duration> waitForPlayback(
   WidgetTester t, {
   Duration atLeast = const Duration(seconds: 2),
@@ -71,15 +71,12 @@ Future<Duration> waitForPlayback(
 }) async {
   final watch = Stopwatch()..start();
   var last = Duration.zero;
-  String? error;
   while (watch.elapsed < timeout) {
     await t.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 250)));
     await t.pump();
     final errorText = find.byKey(Keys.playerError);
-    if (error == null && errorText.evaluate().isNotEmpty) {
-      error = t.widget<Text>(errorText).data;
-      // ignore: avoid_print
-      print('CHITHRAM_E2E player reported an error after ${watch.elapsed}: $error');
+    if (errorText.evaluate().isNotEmpty) {
+      fail('player error after ${watch.elapsed}: ${t.widget<Text>(errorText).data}');
     }
     final position = find.byKey(Keys.playerPosition);
     if (position.evaluate().isNotEmpty) {
@@ -87,5 +84,15 @@ Future<Duration> waitForPlayback(
       if (last >= atLeast) return last;
     }
   }
-  fail('playback did not reach $atLeast in $timeout (last position $last, player error: $error)');
+  fail('playback did not reach $atLeast in $timeout (last position $last)');
 }
+
+/// Real-time wait that keeps the frames coming.
+Future<void> settle(WidgetTester t, Duration d) async {
+  await t.runAsync(() => Future<void>.delayed(d));
+  await t.pump();
+}
+
+/// The player's current position text.
+Duration playerPosition(WidgetTester t) =>
+    parsePosition(t.widget<Text>(find.byKey(Keys.playerPosition)).data!);

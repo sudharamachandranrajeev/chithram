@@ -1,0 +1,50 @@
+name: IPTV package
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/iptv/**'
+      - 'pubspec.yaml'
+      - 'pubspec.lock'
+      - '.github/workflows/iptv.yml'
+  pull_request:
+    paths:
+      - 'packages/iptv/**'
+      - 'pubspec.yaml'
+      - 'pubspec.lock'
+      - '.github/workflows/iptv.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: iptv-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  iptv:
+    name: Analyze, test, perf
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          channel: stable
+          flutter-version: 3.47.7
+          cache: true
+      # The package is pure Dart but lives in the Flutter pub workspace.
+      - run: flutter pub get
+      - name: Analyze
+        working-directory: packages/iptv
+        run: dart analyze
+      - name: Unit tests
+        working-directory: packages/iptv
+        run: dart test --exclude-tags perf
+        timeout-minutes: 5
+      - name: Performance tests (timings go to the step summary)
+        working-directory: packages/iptv
+        run: dart test --tags perf -r expanded
+        timeout-minutes: 10

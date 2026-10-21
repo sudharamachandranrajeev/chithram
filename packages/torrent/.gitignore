@@ -1,0 +1,3 @@
+# Prebuilt native libraries are produced by CI (native/torrent) and dropped here.
+/prebuilt/
+/android/src/main/jniLibs/

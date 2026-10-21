@@ -14,11 +14,45 @@ permissions:
   contents: read
 
 jobs:
+  rust:
+    name: Torrent engine (cargo test, cargo deny)
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: native/torrent
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+        with:
+          toolchain: stable
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
+        with:
+          workspaces: native/torrent
+      - run: cargo test --release --locked -- --test-threads=1
+      - uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25 # v2
+        with:
+          manifest-path: native/torrent/Cargo.toml
+          command: check
+
   dart:
     name: Flutter app and packages (analyze, test)
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+        with:
+          toolchain: stable
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
+        with:
+          workspaces: native/torrent
+      # The same library the release builds bundle; packages/torrent tests load it.
+      - name: Torrent library (linux, for the FFI tests and bundling)
+        run: |
+          cargo build --release --locked --lib --manifest-path native/torrent/Cargo.toml
+          mkdir -p packages/torrent/prebuilt/linux-x64
+          cp native/torrent/target/release/libchithram_torrent.so packages/torrent/prebuilt/linux-x64/
       - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
         with:
           channel: stable
@@ -39,17 +73,33 @@ jobs:
         with:
           name: pubspec-lock
           path: pubspec.lock
+      # Pure-Dart packages (no `sdk: flutter`) use dart analyze / dart test.
       - name: Analyze
         run: |
-          for d in app packages/innertube packages/iptv packages/chithram_player packages/nova_host packages/torrent; do
+          for d in app packages/*/; do
+            d=${d%/}
+            [[ -f $d/pubspec.yaml ]] || continue
             echo "::group::analyze $d"
-            (cd "$d" && flutter analyze --no-fatal-infos)
+            if grep -q 'sdk: flutter' "$d/pubspec.yaml"; then
+              (cd "$d" && flutter analyze --no-fatal-infos)
+            else
+              (cd "$d" && dart analyze)
+            fi
             echo "::endgroup::"
           done
       - name: Test
+        env:
+          CHITHRAM_TORRENT_LIB: ${{ github.workspace }}/packages/torrent/prebuilt/linux-x64/libchithram_torrent.so
         run: |
-          for d in app packages/innertube packages/iptv packages/chithram_player packages/nova_host packages/torrent; do
+          for d in app packages/*/; do
+            d=${d%/}
+            [[ -f $d/pubspec.yaml ]] || continue
+            [[ -d $d/test ]] || continue
             echo "::group::test $d"
-            (cd "$d" && flutter test)
+            if grep -q 'sdk: flutter' "$d/pubspec.yaml"; then
+              (cd "$d" && flutter test)
+            else
+              (cd "$d" && dart test)
+            fi
             echo "::endgroup::"
           done

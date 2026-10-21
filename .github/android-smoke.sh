@@ -9,7 +9,8 @@ mkdir -p "$out"
 apk=$(ls dist/*x86_64.apk | head -n1)
 adb install -r "$apk"
 adb logcat -c
-adb shell am start -W -n dev.chithram.chithram/.MainActivity
+# --smoke makes main() start the bundled torrent engine and check its /health.
+adb shell am start -W -n dev.chithram.chithram/.MainActivity --esal dart_entrypoint_args --smoke
 sleep 20
 adb exec-out screencap -p >"$out/android.png" || true
 adb logcat -d >"$out/logcat.txt" || true
@@ -22,6 +23,11 @@ fi
 if grep -qE 'FATAL EXCEPTION|Unhandled Exception' "$out/logcat.txt"; then
   grep -E -A20 'FATAL EXCEPTION|Unhandled Exception' "$out/logcat.txt" | head -80
   echo "::error::Chithram threw an exception at start"
+  exit 1
+fi
+if ! grep -q 'CHITHRAM_SMOKE torrent health=200' "$out/logcat.txt"; then
+  grep -E 'CHITHRAM_SMOKE|chithram_torrent|UnsatisfiedLink' "$out/logcat.txt" | tail -20 || true
+  echo "::error::the bundled torrent library did not answer /health 200"
   exit 1
 fi
 grep -E ' flutter ' "$out/logcat.txt" | tail -20 || true

@@ -22,6 +22,7 @@ env:
 jobs:
   version:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     outputs:
       version: ${{ steps.v.outputs.version }}
       build: ${{ steps.v.outputs.build }}
@@ -41,6 +42,7 @@ jobs:
   android:
     needs: version
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     defaults:
       run:
         working-directory: app
@@ -55,6 +57,20 @@ jobs:
           channel: stable
           flutter-version: ${{ env.FLUTTER_VERSION }}
           cache: true
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+        with:
+          toolchain: stable
+          targets: aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
+        with:
+          workspaces: native/torrent
+      - name: Torrent library (cargo-ndk, 3 ABIs)
+        working-directory: native/torrent
+        run: |
+          cargo install cargo-ndk --locked
+          cargo ndk -P 24 -t arm64-v8a -t armeabi-v7a -t x86_64 \
+            -o ../../packages/torrent/android/src/main/jniLibs build --release --locked --lib
+          ls -l ../../packages/torrent/android/src/main/jniLibs/*/
       - name: Signing key
         env:
           KEYSTORE_BASE64: ${{ secrets.CHITHRAM_KEYSTORE_BASE64 }}
@@ -78,6 +94,9 @@ jobs:
             cp build/app/outputs/flutter-apk/app-$abi-release.apk ../dist/Chithram-${{ needs.version.outputs.version }}-android-$abi.apk
           done
           ls -la ../dist
+          for abi in arm64-v8a armeabi-v7a x86_64; do
+            unzip -l ../dist/Chithram-${{ needs.version.outputs.version }}-android-$abi.apk | grep "lib/$abi/libchithram_torrent.so"
+          done
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: android
@@ -86,6 +105,7 @@ jobs:
   windows:
     needs: version
     runs-on: windows-latest
+    timeout-minutes: 60
     defaults:
       run:
         shell: bash
@@ -97,6 +117,17 @@ jobs:
           channel: stable
           flutter-version: ${{ env.FLUTTER_VERSION }}
           cache: true
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+        with:
+          toolchain: stable
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
+        with:
+          workspaces: native/torrent
+      - name: Torrent library
+        run: |
+          cargo build --release --locked --lib --manifest-path ../native/torrent/Cargo.toml
+          mkdir -p ../packages/torrent/prebuilt/windows-x64
+          cp ../native/torrent/target/release/chithram_torrent.dll ../packages/torrent/prebuilt/windows-x64/
       - name: Build
         run: |
           flutter build windows --release \
@@ -135,7 +166,9 @@ jobs:
           $dir = Join-Path $env:LOCALAPPDATA 'Programs\Chithram'
           Get-ChildItem $dir | Format-Table Name, Length
           # Up for 20 s with libmpv loaded means main() got past MediaKit.
-          $app = Start-Process (Join-Path $dir 'chithram.exe') -PassThru
+          if (-not (Test-Path (Join-Path $dir 'chithram_torrent.dll'))) { throw 'chithram_torrent.dll was not installed' }
+          $smokeFile = Join-Path $env:RUNNER_TEMP 'torrent-smoke.txt'
+          $app = Start-Process (Join-Path $dir 'chithram.exe') -ArgumentList "--smoke=$smokeFile" -PassThru
           Start-Sleep -Seconds 20
           if ($app.HasExited) { throw "Chithram exited with $($app.ExitCode) within 20 s" }
           $modules = (Get-Process -Id $app.Id).Modules.ModuleName
@@ -148,12 +181,15 @@ jobs:
             $shot.Save((Join-Path $env:RUNNER_TEMP 'smoke\windows.png'))
           } catch { Write-Warning "no screenshot: $_" }
           Stop-Process -Id $app.Id -Force
+          $torrent = if (Test-Path $smokeFile) { (Get-Content $smokeFile -Raw).Trim() } else { 'no smoke result' }
+          Write-Output $torrent
+          if ($torrent -ne 'CHITHRAM_SMOKE torrent health=200') { throw "bundled torrent library did not answer /health 200: $torrent" }
           if ($modules -notcontains 'libmpv-2.dll') { throw "Chithram is running but libmpv-2.dll isn't loaded" }
           Start-Sleep -Seconds 2
           Start-Process (Join-Path $dir 'unins000.exe') -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART' -Wait
           for ($i = 0; $i -lt 30 -and (Test-Path (Join-Path $dir 'chithram.exe')); $i++) { Start-Sleep -Seconds 1 }
           if (Test-Path (Join-Path $dir 'chithram.exe')) { throw "chithram.exe is still there after uninstalling" }
-          'Installed, ran for 20 s with libmpv loaded, uninstalled'
+          'Installed, ran for 20 s with libmpv loaded and torrent /health 200, uninstalled'
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: windows
@@ -169,6 +205,7 @@ jobs:
     needs: version
     # The oldest supported Ubuntu, so the build runs on older distros too.
     runs-on: ubuntu-22.04
+    timeout-minutes: 60
     defaults:
       run:
         working-directory: app
@@ -183,6 +220,17 @@ jobs:
           channel: stable
           flutter-version: ${{ env.FLUTTER_VERSION }}
           cache: true
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+        with:
+          toolchain: stable
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
+        with:
+          workspaces: native/torrent
+      - name: Torrent library
+        run: |
+          cargo build --release --locked --lib --manifest-path ../native/torrent/Cargo.toml
+          mkdir -p ../packages/torrent/prebuilt/linux-x64
+          cp ../native/torrent/target/release/libchithram_torrent.so ../packages/torrent/prebuilt/linux-x64/
       - name: Build
         run: |
           flutter build linux --release \
@@ -202,6 +250,7 @@ jobs:
               echo "$f: libmpv.so.1 -> libmpv.so.2"
             fi
           done
+          test -f "chithram-$version-linux-x64/lib/libchithram_torrent.so"
           ! readelf -d "chithram-$version-linux-x64/chithram" "chithram-$version-linux-x64"/lib/*.so | grep 'libmpv\.so\.1'
           cat > "chithram-$version-linux-x64/README.txt" <<'EOF'
           Chithram for Linux. Needs mpv's library (libmpv.so.2) and GTK 3:
@@ -283,6 +332,7 @@ jobs:
     name: Android app starts (emulator)
     needs: android
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
@@ -314,6 +364,7 @@ jobs:
     name: Linux app starts on ${{ matrix.image }}
     needs: linux
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     container: ${{ matrix.image }}
     strategy:
       fail-fast: false
@@ -348,6 +399,9 @@ jobs:
             set -e
             cat "$log"
             if [[ $code != 124 ]]; then echo "::error::$* exited with $code"; return 1; fi
+            if ! grep -q 'CHITHRAM_SMOKE torrent health=200' "$log"; then
+              echo "::error::$* did not report the bundled torrent library answering /health 200"; return 1
+            fi
             if grep -qE 'Unhandled Exception|Cannot find libmpv|error while loading shared libraries|symbol lookup error|undefined symbol|cannot open shared object' "$log"; then
               echo "::error::$* failed to start"; return 1
             fi
@@ -358,7 +412,7 @@ jobs:
           appimage=$(ls dist/*.AppImage 2>/dev/null | head -n1 || true)
           if [[ -n $appimage ]]; then
             chmod +x "$appimage"
-            if ! smoke appimage.log env APPIMAGE_EXTRACT_AND_RUN=1 "$appimage"; then
+            if ! smoke appimage.log env APPIMAGE_EXTRACT_AND_RUN=1 "$appimage" --smoke; then
               failed=1
               # What the bundled libmpv can't find here.
               (cd "$RUNNER_TEMP" && "$GITHUB_WORKSPACE/$appimage" --appimage-extract >/dev/null 2>&1 \
@@ -375,13 +429,14 @@ jobs:
             pacman -S --noconfirm --needed mpv >/dev/null
           fi
           tar xzf dist/*.tar.gz
-          smoke tarball.log "$(ls -d chithram-*-linux-x64)/chithram" || failed=1
+          smoke tarball.log "$(ls -d chithram-*-linux-x64)/chithram" --smoke || failed=1
           exit $failed
 
   publish:
     if: startsWith(github.ref, 'refs/tags/v')
     needs: [version, android, android-smoke, windows, linux, linux-smoke]
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: write
     steps:

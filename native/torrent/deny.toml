@@ -1,0 +1,41 @@
+[graph]
+all-features = false
+
+[advisories]
+version = 2
+# Unmaintained/yanked crates deep in librqbit's tree are reported, not fatal.
+unmaintained = "workspace"
+yanked = "warn"
+# RUSTSEC-2026-0293: ringbuf 0.4.8 (via librqbit-utp) double free when an element's Drop panics.
+# The ring buffers hold plain bytes/packets whose Drop cannot panic; revisit when librqbit bumps ringbuf.
+ignore = [
+  { id = "RUSTSEC-2026-0293", reason = "ringbuf holds plain data; no panicking Drop; transitive via librqbit-utp" },
+]
+
+[licenses]
+version = 2
+allow = [
+  "Apache-2.0",
+  "Apache-2.0 WITH LLVM-exception",
+  "MIT",
+  "MIT-0",
+  "BSD-2-Clause",
+  "BSD-3-Clause",
+  "ISC",
+  "Unicode-3.0",
+  "Zlib",
+  "CC0-1.0",
+  "MPL-2.0",
+  "CDLA-Permissive-2.0",
+  "BSL-1.0",
+]
+confidence-threshold = 0.8
+
+[bans]
+multiple-versions = "allow"
+wildcards = "allow"
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]

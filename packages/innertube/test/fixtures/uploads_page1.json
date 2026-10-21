@@ -1,0 +1,107 @@
+{
+ "contents": {
+  "twoColumnBrowseResultsRenderer": {
+   "tabs": [
+    {
+     "tabRenderer": {
+      "content": {
+       "sectionListRenderer": {
+        "contents": [
+         {
+          "itemSectionRenderer": {
+           "contents": [
+            {
+             "playlistVideoListRenderer": {
+              "contents": [
+               {
+                "playlistVideoRenderer": {
+                 "videoId": "bbbbbbbbbb1",
+                 "title": {
+                  "runs": [
+                   {
+                    "text": "Upload 1"
+                   }
+                  ]
+                 },
+                 "lengthSeconds": "200",
+                 "shortBylineText": {
+                  "runs": [
+                   {
+                    "text": "Chan One",
+                    "navigationEndpoint": {
+                     "browseEndpoint": {
+                      "browseId": "UCaaaaaaaaaaaaaaaaaaaaaa"
+                     }
+                    }
+                   }
+                  ]
+                 },
+                 "thumbnail": {
+                  "thumbnails": [
+                   {
+                    "url": "https://i.ytimg.com/vi/bbbbbbbbbb1/mq.jpg",
+                    "width": 320,
+                    "height": 180
+                   }
+                  ]
+                 }
+                }
+               },
+               {
+                "playlistVideoRenderer": {
+                 "videoId": "bbbbbbbbbb2",
+                 "title": {
+                  "runs": [
+                   {
+                    "text": "Upload 2"
+                   }
+                  ]
+                 },
+                 "lengthSeconds": "65",
+                 "shortBylineText": {
+                  "runs": [
+                   {
+                    "text": "Chan One",
+                    "navigationEndpoint": {
+                     "browseEndpoint": {
+                      "browseId": "UCaaaaaaaaaaaaaaaaaaaaaa"
+                     }
+                    }
+                   }
+                  ]
+                 },
+                 "thumbnail": {
+                  "thumbnails": [
+                   {
+                    "url": "https://i.ytimg.com/vi/bbbbbbbbbb2/mq.jpg",
+                    "width": 320,
+                    "height": 180
+                   }
+                  ]
+                 }
+                }
+               },
+               {
+                "continuationItemRenderer": {
+                 "continuationEndpoint": {
+                  "continuationCommand": {
+                   "token": "UP_TOKEN"
+                  }
+                 }
+                }
+               }
+              ]
+             }
+            }
+           ]
+          }
+         }
+        ]
+       }
+      }
+     }
+    }
+   ]
+  }
+ }
+}

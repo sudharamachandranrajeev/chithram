@@ -52,8 +52,9 @@ void livetvE2e() {
       }
       expect(find.text('E2E HLS'), findsOneWidget);
 
-      await t.tap(find.text('E2E HLS'));
-      await t.pump();
+      // A snack bar may sit over the row, so select it with the D-pad.
+      await dpadTo(t, find.text('E2E HLS'));
+      await press(t, LogicalKeyboardKey.select);
       await waitForPlayback(t);
 
       // Down zaps to the next channel.

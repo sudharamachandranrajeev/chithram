@@ -1,0 +1,16 @@
+name: localsend_rx
+description: "LocalSend v2 receiver (pure Dart): HTTPS server, multicast discovery, text and .torrent intake."
+version: 0.0.1
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.13.5
+
+dependencies:
+  # RSA key and self-signed X.509 certificate for the HTTPS server.
+  basic_utils: 5.8.2
+
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.25.0

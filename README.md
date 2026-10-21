@@ -7,7 +7,7 @@ from IPTV playlists, and torrent streaming, with short start delays and no ads.
 **Status: Phase 0.** This is a runnable scaffold: the navigation rail, a Home
 page with a hero billboard and rails of placeholder tiles, and the CI and
 release pipeline. There are no features yet. See [docs/decisions.md](docs/decisions.md)
-for the roadmap and [docs/research.md](docs/research.md) for the research behind it.
+for decisions, [docs/roadmap.md](docs/roadmap.md) for the plan and [docs/research.md](docs/research.md) for the research behind it.
 
 ## Platforms
 
@@ -17,8 +17,10 @@ for the roadmap and [docs/research.md](docs/research.md) for the research behind
 
 ## Content-neutral
 
-Chithram ships **no** indexers, playlists, channel lists, plugins or addon URLs.
-Users add their own sources. Chithram does not circumvent DRM and does not
+Chithram ships **no** indexers, plugins or addon URLs, and no channel lists.
+Users add their own sources. The one exception is an opt-in first-run
+suggestion of two public IPTV catalogues (iptv-org and Free-TV): nothing loads
+until you choose one. Chithram does not circumvent DRM and does not
 play DRM-protected services.
 
 ## Layout
@@ -28,6 +30,7 @@ play DRM-protected services.
 | `app/` | The Flutter app (`dev.chithram.chithram`) |
 | `packages/innertube/` | YouTube InnerTube client (pure Dart; placeholder) |
 | `packages/iptv/` | M3U / Xtream / XMLTV parsers (placeholder) |
+| `packages/localsend_rx/` | LocalSend receiver (skeleton) |
 | `packages/chithram_player/` | Player engine interface (placeholder) |
 | `native/torrent/` | Rust torrent engine over librqbit (placeholder) |
 | `docs/` | Research and decisions |

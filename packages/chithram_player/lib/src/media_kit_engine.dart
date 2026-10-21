@@ -88,6 +88,9 @@ class MediaKitPlayerEngine implements PlayerEngine {
   Widget get view => Video(controller: _controller, controls: NoVideoControls);
 
   @override
+  Future<PlaybackCaps> capabilities() async => const PlaybackCaps();
+
+  @override
   Future<void> dispose() async {
     await _audioWait?.cancel();
     await _player.dispose();

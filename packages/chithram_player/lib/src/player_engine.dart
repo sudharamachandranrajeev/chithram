@@ -27,6 +27,21 @@ class MediaSpec {
       'MediaSpec(video: $videoUrl, audio: $audioUrl, live: $isLive, start: $startPosition)';
 }
 
+/// What the device can decode and show, for picking a YouTube format.
+/// Engines report a conservative default until they query the hardware.
+class PlaybackCaps {
+  const PlaybackCaps({
+    this.videoCodecs = const ['vp9', 'h264'],
+    this.maxHeight = 1080,
+    this.hdr = false,
+  });
+
+  /// Hardware-decodable codecs, best first: 'av1', 'vp9', 'h265', 'h264'.
+  final List<String> videoCodecs;
+  final int maxHeight;
+  final bool hdr;
+}
+
 /// One player instance. Media3 on Android, media_kit (libmpv) on desktop.
 ///
 /// Streams are broadcast. [position] ticks about 4 times a second while
@@ -43,6 +58,9 @@ abstract interface class PlayerEngine {
   Future<void> play();
   Future<void> pause();
   Future<void> seek(Duration position);
+
+  /// Decoder and display capabilities.
+  Future<PlaybackCaps> capabilities();
 
   Stream<Duration> get position;
   Stream<Duration> get duration;

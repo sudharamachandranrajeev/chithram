@@ -2,10 +2,12 @@ name: Spike - YouTube
 
 on:
   push:
-    branches: [spike/youtube]
     paths:
       - 'packages/innertube/**'
       - '.github/workflows/spike-youtube.yml'
+  schedule:
+    # Mondays 06:30 UTC: catches YouTube-side changes.
+    - cron: "30 6 * * 1"
   pull_request:
     paths:
       - 'packages/innertube/**'
@@ -59,5 +61,6 @@ jobs:
         if: always()
         with:
           name: youtube-live-panel
+          retention-days: 2
           path: packages/innertube/panel_out
           if-no-files-found: ignore

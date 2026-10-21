@@ -1,5 +1,6 @@
 //! CI helper: seeds one random file over loopback so the emulator can leech it via `adb reverse`.
 //! `seeder --size-mb 50 --port 16881 --dir /tmp/seed --out magnet.txt`
+//! `seeder --file movie.mkv ...` seeds that real file instead of random data.
 
 use std::io::Write;
 use std::net::Ipv4Addr;
@@ -21,19 +22,25 @@ async fn main() -> anyhow::Result<()> {
     let dir = std::path::PathBuf::from(arg("--dir", "seed"));
     let out = arg("--out", "magnet.txt");
     std::fs::create_dir_all(&dir)?;
-    let mut f = std::fs::File::create(dir.join("sample.mkv"))?;
-    let mut x: u64 = 0x1234_5678_9ABC_DEF1;
-    let mut buf = vec![0u8; 1 << 20];
-    for _ in 0..mb {
-        for c in buf.chunks_mut(8) {
-            x ^= x << 13;
-            x ^= x >> 7;
-            x ^= x << 17;
-            c.copy_from_slice(&x.to_le_bytes()[..c.len()]);
+    let file = arg("--file", "");
+    if file.is_empty() {
+        let mut f = std::fs::File::create(dir.join("sample.mkv"))?;
+        let mut x: u64 = 0x1234_5678_9ABC_DEF1;
+        let mut buf = vec![0u8; 1 << 20];
+        for _ in 0..mb {
+            for c in buf.chunks_mut(8) {
+                x ^= x << 13;
+                x ^= x >> 7;
+                x ^= x << 17;
+                c.copy_from_slice(&x.to_le_bytes()[..c.len()]);
+            }
+            f.write_all(&buf)?;
         }
-        f.write_all(&buf)?;
+        drop(f);
+    } else {
+        let src = std::path::Path::new(&file);
+        std::fs::copy(src, dir.join(src.file_name().ok_or_else(|| anyhow::anyhow!("--file has no file name"))?))?;
     }
-    drop(f);
     let t = create_torrent(
         &dir,
         CreateTorrentOptions { piece_length: Some(1 << 20), ..Default::default() },

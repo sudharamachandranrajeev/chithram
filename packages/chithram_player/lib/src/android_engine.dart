@@ -111,6 +111,9 @@ class AndroidPlayerEngine implements PlayerEngine {
       );
 
   @override
+  Future<PlaybackCaps> capabilities() async => const PlaybackCaps();
+
+  @override
   Future<void> dispose() async {
     if (_disposed) return;
     _disposed = true;

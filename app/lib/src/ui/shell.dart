@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../features/livetv/livetv_page.dart';
+import '../features/torrents/torrents_page.dart';
+import '../features/youtube/youtube_page.dart';
 import '../theme.dart';
 import 'dims.dart';
 import 'focus_card.dart';
 import 'home_page.dart';
-import 'placeholder_page.dart';
 import 'search_page.dart';
 import 'sections.dart';
 import 'settings_page.dart';
@@ -93,8 +95,12 @@ class _ShellState extends State<Shell> {
         return SearchPage(focus: focus);
       case Section.settings:
         return SettingsPage(focus: focus);
-      default:
-        return PlaceholderPage(section: section, focus: focus);
+      case Section.liveTv:
+        return LiveTvPage(focus: focus);
+      case Section.torrents:
+        return TorrentsPage(focus: focus);
+      case Section.youtube:
+        return YouTubePage(focus: focus);
     }
   }
 

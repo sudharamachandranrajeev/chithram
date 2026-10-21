@@ -1,0 +1,92 @@
+# Interop: our LocalSend receiver against the upstream command-line app. The
+# upstream app (Apache-2.0) is built from source at a pinned revision, only
+# here, only for this test. It is never part of a release. A weekly run uses
+# the newest upstream tag, so protocol drift shows up without blocking a PR.
+name: LocalSend interop
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/localsend_rx/**'
+      - 'app/lib/src/features/receive/**'
+      - 'pubspec.yaml'
+      - '.github/workflows/localsend.yml'
+  pull_request:
+    paths:
+      - 'packages/localsend_rx/**'
+      - 'app/lib/src/features/receive/**'
+      - 'pubspec.yaml'
+      - '.github/workflows/localsend.yml'
+  schedule:
+    - cron: '23 5 * * 1'
+  workflow_dispatch:
+    inputs:
+      upstream_ref:
+        description: 'Upstream tag or commit to build (default: the pinned revision)'
+        required: false
+
+concurrency:
+  group: localsend-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  FLUTTER_VERSION: 3.47.7
+  # v1.18.2
+  PINNED_UPSTREAM: af0416be50770a97760f7070684bc667b759a15c
+
+jobs:
+  interop:
+    name: Receive from the upstream command-line app
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Pick the upstream revision
+        id: rev
+        env:
+          GH_TOKEN: ${{ github.token }}
+          INPUT_REF: ${{ github.event.inputs.upstream_ref }}
+        run: |
+          if [ -n "$INPUT_REF" ]; then
+            ref="$INPUT_REF"
+          elif [ "${{ github.event_name }}" = "schedule" ]; then
+            ref=$(gh api repos/localsend/localsend/tags --jq '.[0].name')
+          else
+            ref="$PINNED_UPSTREAM"
+          fi
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+          echo "Upstream revision: $ref" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          repository: localsend/localsend
+          ref: ${{ steps.rev.outputs.ref }}
+          path: upstream
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+        with:
+          toolchain: stable
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
+        with:
+          workspaces: upstream
+          key: ${{ steps.rev.outputs.ref }}
+      - name: Build the upstream command-line app (test only)
+        # The upstream repository pins its own toolchain in rust-toolchain.toml;
+        # rustup installs it on first use.
+        working-directory: upstream
+        run: cargo build --release --locked -p localsend-cli
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      - run: flutter pub get
+      - name: Analyze and test the receiver
+        working-directory: packages/localsend_rx
+        run: |
+          dart analyze
+          dart test
+      - name: Interop
+        run: packages/localsend_rx/tool/interop.sh upstream/target/release/localsend-cli

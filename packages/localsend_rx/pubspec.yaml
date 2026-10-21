@@ -10,6 +10,8 @@ environment:
 dependencies:
   # RSA key and self-signed X.509 certificate for the HTTPS server.
   basic_utils: 5.8.2
+  # SHA-256 for the certificate fingerprint and file checksums.
+  crypto: ^3.0.6
 
 dev_dependencies:
   lints: ^6.0.0

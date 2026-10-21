@@ -87,6 +87,7 @@ class AcceptanceSuite {
     this.limits,
     this.log,
     this.expectIsolatedUid = false,
+    this.spawnContained = false,
   });
 
   final SessionStarter start;
@@ -99,6 +100,11 @@ class AcceptanceSuite {
 
   /// Android: the plugin must run as an isolated uid (99000-99999).
   final bool expectIsolatedUid;
+
+  /// Android with the audit hook off: the OS lets an isolated uid fork/exec, but the
+  /// child is the same uid with no network and no app data (the socket and secret
+  /// checks prove that). Such spawns are reported, not counted as escapes.
+  final bool spawnContained;
 
   static const androidChecks = ['isolated-uid'];
 
@@ -180,10 +186,12 @@ class AcceptanceSuite {
 
   CheckResult _contained(String name, SearchOutcome o, {List<String> extraEscapes = const []}) {
     final names = _names(o);
-    final escaped = names.where((n) => n.startsWith('ESCAPED')).toList();
+    final escapedAll = names.where((n) => n.startsWith('ESCAPED')).toList();
+    final spawns = spawnContained && name == 'subprocess' ? escapedAll : <String>[];
+    final escaped = escapedAll.where((n) => !spawns.contains(n)).toList();
     final blocked = names.where((n) => n.startsWith('BLOCKED')).length;
     final problems = [...escaped, ...extraEscapes];
-    final detail = '${o.summary} blocked=$blocked escaped=$problems layers="${_layers(o)}"';
+    final detail = '${o.summary} blocked=$blocked escaped=$problems spawnAllowedButContained=$spawns layers="${_layers(o)}"';
     // Done or killed are both fine; what matters is that nothing escaped.
     final ran = o.status != SearchStatus.error || o.results.isNotEmpty;
     return CheckResult(name, problems.isEmpty && ran, ran ? detail : '$detail err=${o.reason} stderr=${o.stderrHead}');

@@ -81,6 +81,7 @@ class _NovaSpikePageState extends State<NovaSpikePage> {
           tmpDir: Directory.systemTemp.path,
           log: _say,
           expectIsolatedUid: Platform.isAndroid,
+          spawnContained: Platform.isAndroid && !audit,
         );
         final rs = await suite.run();
         for (final r in rs) {

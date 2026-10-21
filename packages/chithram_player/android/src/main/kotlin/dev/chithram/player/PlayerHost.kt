@@ -1,0 +1,212 @@
+@file:OptIn(UnstableApi::class)
+
+package dev.chithram.player
+
+import android.content.Context
+import android.os.Handler
+import android.os.Looper
+import android.os.SystemClock
+import android.util.Log
+import android.view.SurfaceView
+import androidx.annotation.OptIn
+import androidx.media3.common.C
+import androidx.media3.common.MediaItem
+import androidx.media3.common.PlaybackException
+import androidx.media3.common.Player
+import androidx.media3.common.Tracks
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.DefaultDataSource
+import androidx.media3.datasource.DefaultHttpDataSource
+import androidx.media3.exoplayer.DefaultLoadControl
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import androidx.media3.exoplayer.source.MediaSource
+import androidx.media3.exoplayer.source.MergingMediaSource
+import io.flutter.plugin.common.BinaryMessenger
+import io.flutter.plugin.common.EventChannel
+
+/**
+ * One ExoPlayer plus its Flutter event stream. Everything runs on the main thread.
+ * The log lines starting with CHITHRAM_ are what CI asserts on.
+ */
+class PlayerHost(
+    private val context: Context,
+    val id: Int,
+    messenger: BinaryMessenger,
+) : EventChannel.StreamHandler {
+
+    private val main = Handler(Looper.getMainLooper())
+    private val events = EventChannel(messenger, "chithram_player/events/$id")
+    private var sink: EventChannel.EventSink? = null
+    private var released = false
+
+    // Small buffers for a fast start: begin after 0.5 s buffered, resume after 1.5 s.
+    private val loadControl = DefaultLoadControl.Builder()
+        .setBufferDurationsMs(5_000, 30_000, 500, 1_500)
+        .build()
+
+    private val player: ExoPlayer = ExoPlayer.Builder(context)
+        .setLoadControl(loadControl)
+        .build()
+
+    private var openStartMs = 0L
+    private var firstFrameLogged = false
+    private var durationLogged = false
+    private var pendingSeekTarget = -1L
+
+    private val ticker = object : Runnable {
+        override fun run() {
+            if (released) return
+            tick()
+            main.postDelayed(this, 250)
+        }
+    }
+
+    init {
+        events.setStreamHandler(this)
+        player.addListener(object : Player.Listener {
+            override fun onRenderedFirstFrame() {
+                if (firstFrameLogged) return
+                firstFrameLogged = true
+                Log.i(TAG, "CHITHRAM_FIRST_FRAME ${SystemClock.elapsedRealtime() - openStartMs}")
+            }
+
+            override fun onPlaybackStateChanged(state: Int) {
+                Log.i(TAG, "CHITHRAM_STATE ${stateName(state)}")
+                maybeLogDuration()
+            }
+
+            override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
+                Log.i(TAG, "CHITHRAM_PLAY_WHEN_READY $playWhenReady")
+            }
+
+            override fun onTimelineChanged(timeline: androidx.media3.common.Timeline, reason: Int) {
+                maybeLogDuration()
+            }
+
+            override fun onTracksChanged(tracks: Tracks) {
+                val v = tracks.groups.count { it.type == C.TRACK_TYPE_VIDEO && it.isSelected }
+                val a = tracks.groups.count { it.type == C.TRACK_TYPE_AUDIO && it.isSelected }
+                Log.i(TAG, "CHITHRAM_TRACKS video=$v audio=$a")
+            }
+
+            override fun onPositionDiscontinuity(
+                oldPosition: Player.PositionInfo,
+                newPosition: Player.PositionInfo,
+                reason: Int,
+            ) {
+                if (reason == Player.DISCONTINUITY_REASON_SEEK) {
+                    pendingSeekTarget = newPosition.positionMs
+                    Log.i(TAG, "CHITHRAM_SEEK_START to=${newPosition.positionMs}")
+                }
+            }
+
+            override fun onPlayerError(error: PlaybackException) {
+                Log.e(TAG, "CHITHRAM_ERROR ${error.errorCodeName}: ${error.message}", error)
+                sink?.success(mapOf("t" to "error", "message" to "${error.errorCodeName}: ${error.message}"))
+            }
+        })
+        main.post(ticker)
+    }
+
+    private fun stateName(s: Int) = when (s) {
+        Player.STATE_IDLE -> "idle"
+        Player.STATE_BUFFERING -> "buffering"
+        Player.STATE_READY -> "ready"
+        Player.STATE_ENDED -> "ended"
+        else -> "?"
+    }
+
+    private fun maybeLogDuration() {
+        if (durationLogged || player.playbackState == Player.STATE_IDLE) return
+        val d = player.duration
+        if (d != C.TIME_UNSET && !player.isCurrentMediaItemLive) {
+            durationLogged = true
+            Log.i(TAG, "CHITHRAM_DURATION $d")
+        }
+    }
+
+    private fun tick() {
+        // A seek counts as complete once playing resumes at or after its target.
+        if (pendingSeekTarget >= 0 && player.playbackState == Player.STATE_READY && player.isPlaying &&
+            player.currentPosition >= pendingSeekTarget
+        ) {
+            Log.i(TAG, "CHITHRAM_SEEK_DONE target=$pendingSeekTarget pos=${player.currentPosition}")
+            pendingSeekTarget = -1
+        }
+        sink?.success(
+            mapOf(
+                "t" to "state",
+                "pos" to player.currentPosition,
+                "dur" to (if (player.duration == C.TIME_UNSET) 0L else player.duration),
+                "buffering" to (player.playbackState == Player.STATE_BUFFERING),
+                "playing" to player.playWhenReady,
+            ),
+        )
+    }
+
+    fun open(videoUrl: String, audioUrl: String?, headers: Map<String, String>, isLive: Boolean, startMs: Long) {
+        openStartMs = SystemClock.elapsedRealtime()
+        firstFrameLogged = false
+        durationLogged = false
+        pendingSeekTarget = -1
+
+        val http = DefaultHttpDataSource.Factory()
+            .setAllowCrossProtocolRedirects(true)
+            .setDefaultRequestProperties(headers)
+        headers.entries.firstOrNull { it.key.equals("User-Agent", ignoreCase = true) }
+            ?.let { http.setUserAgent(it.value) }
+        val factory = DefaultMediaSourceFactory(DefaultDataSource.Factory(context, http))
+
+        fun source(url: String): MediaSource {
+            val item = MediaItem.Builder().setUri(url)
+            if (isLive) {
+                item.setLiveConfiguration(
+                    MediaItem.LiveConfiguration.Builder()
+                        .setTargetOffsetMs(6_000)
+                        .setMinPlaybackSpeed(0.97f)
+                        .setMaxPlaybackSpeed(1.03f)
+                        .build(),
+                )
+            }
+            return factory.createMediaSource(item.build())
+        }
+
+        // Separate video and audio (YouTube DASH): MergingMediaSource plays both together.
+        val media = if (audioUrl.isNullOrEmpty()) source(videoUrl)
+        else MergingMediaSource(source(videoUrl), source(audioUrl))
+
+        player.setMediaSource(media, startMs)
+        player.prepare()
+        player.playWhenReady = true
+        Log.i(TAG, "CHITHRAM_OPEN video=$videoUrl audio=$audioUrl live=$isLive")
+    }
+
+    fun play() { player.playWhenReady = true }
+    fun pause() { player.playWhenReady = false }
+    fun seek(ms: Long) { player.seekTo(ms) }
+
+    fun attach(view: SurfaceView) {
+        if (!released) player.setVideoSurfaceView(view)
+    }
+
+    fun detach(view: SurfaceView) {
+        if (!released) player.clearVideoSurfaceView(view)
+    }
+
+    fun release() {
+        if (released) return
+        released = true
+        main.removeCallbacks(ticker)
+        events.setStreamHandler(null)
+        sink = null
+        player.release()
+    }
+
+    override fun onListen(arguments: Any?, events: EventChannel.EventSink?) { sink = events }
+    override fun onCancel(arguments: Any?) { sink = null }
+
+    companion object {
+        private const val TAG = "ChithramPlayer"
+    }
+}

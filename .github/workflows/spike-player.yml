@@ -8,6 +8,7 @@ on:
     paths:
       - 'packages/chithram_player/**'
       - 'app/lib/src/spikes/player_page.dart'
+      - 'app/integration_test/**'
       - '.github/workflows/spike-player.yml'
   workflow_dispatch:
 
@@ -37,8 +38,6 @@ jobs:
           channel: stable
           flutter-version: ${{ env.FLUTTER_VERSION }}
           cache: true
-      - name: Add the plugin to the app (CI only)
-        run: bash packages/chithram_player/tool/patch_app.sh
       - name: Build the debug APK
         working-directory: app
         run: flutter build apk --debug --target-platform android-x64
@@ -101,8 +100,6 @@ jobs:
           channel: stable
           flutter-version: ${{ env.FLUTTER_VERSION }}
           cache: true
-      - name: Add the plugin and the test to the app (CI only)
-        run: bash packages/chithram_player/tool/patch_app.sh
       - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
       - run: bash packages/chithram_player/tool/make_fixtures.sh fixtures
       - name: Serve the fixtures

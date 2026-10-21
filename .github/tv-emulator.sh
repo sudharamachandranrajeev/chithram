@@ -17,25 +17,49 @@ DEVICE=${DEVICE:-tv_1080p}
 NAME=${NAME:-tv}
 PKG=dev.chithram.chithram
 mkdir -p "$out"
+phase() { # timestamped phase marker, also in the job summary
+  local line; line="$(date -u +%H:%M:%S) $*"
+  echo "::notice::$line"
+  echo "- $line ($NAME)" >>"${GITHUB_STEP_SUMMARY:-/dev/null}"
+}
 root=$(git rev-parse --show-toplevel)
 sdk=${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}
 export PATH="$sdk/cmdline-tools/latest/bin:$sdk/emulator:$sdk/platform-tools:$PATH"
 
+# --- build first: the emulator is the slow, flaky part, so the APKs are ready
+# (and Gradle is warm) before it boots ------------------------------------------
+cd "$root/app"
+phase "build debug test APK"
+flutter build apk --debug --target-platform android-x64 --target=integration_test/app_test.dart
+cp build/app/outputs/flutter-apk/app-debug.apk "$out/test-debug.apk"
+phase "build release APK"
+flutter build apk --release --target-platform android-x64
+cp build/app/outputs/flutter-apk/app-release.apk "$out/app-release.apk"
+cd "$root"
+
 # --- boot -------------------------------------------------------------------
+phase "install system image and create AVD"
+export ANDROID_AVD_HOME="$HOME/.android/avd"
+mkdir -p "$ANDROID_AVD_HOME"
 set +o pipefail
 yes | sdkmanager --licenses >/dev/null 2>&1
 set -o pipefail
 sdkmanager --install "emulator" "platform-tools" "$IMAGE" >/dev/null
 echo no | avdmanager create avd --force -n ci -k "$IMAGE" -d "$DEVICE"
+emulator -list-avds | grep -qx ci || { echo "::error::AVD ci was not created"; exit 1; }
 ls -l /dev/kvm
+phase "boot emulator"
 nohup emulator -avd ci -no-window -no-audio -no-boot-anim -no-snapshot -accel on \
   -gpu swiftshader_indirect -memory 3072 -no-metrics >"$out/emulator.log" 2>&1 &
-adb wait-for-device
-for _ in $(seq 1 120); do
+emu=$!
+adb start-server
+for _ in $(seq 1 180); do
+  kill -0 $emu 2>/dev/null || { tail -20 "$out/emulator.log"; echo "::error::emulator exited"; exit 1; }
   [[ $(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r') == 1 ]] && break
   sleep 5
 done
-[[ $(adb shell getprop sys.boot_completed | tr -d '\r') == 1 ]] || { echo "::error::emulator did not boot"; exit 1; }
+[[ $(adb shell getprop sys.boot_completed | tr -d '\r') == 1 ]] || { echo "::error::emulator did not boot in 15 min"; exit 1; }
+phase "emulator booted"
 sleep 10
 for s in window_animation_scale transition_animation_scale animator_duration_scale; do
   adb shell settings put global "$s" 0
@@ -45,20 +69,22 @@ adb shell wm density || true
 adb logcat -c
 
 # --- 1. integration tests through flutter drive ------------------------------
+phase "flutter drive"
 cd "$root/app"
 status=0
-SCREENSHOT_DIR="$out/screenshots" flutter drive \
+SCREENSHOT_DIR="$out/screenshots" timeout 1200 flutter drive \
   --driver=integration_test/driver.dart --target=integration_test/app_test.dart \
+  --use-application-binary="$out/test-debug.apk" \
   -d emulator-5554 2>&1 | tee "$out/drive.log" || status=$?
 adb logcat -d >"$out/logcat.txt" || true
 if [[ $status -ne 0 ]]; then
   echo "::error::integration tests failed on $NAME"
 fi
 
-# --- 2. release build: cold start, real adb D-pad keys, uiautomator ----------
-flutter build apk --release --target-platform android-x64
+# --- 2. release APK: cold start, real adb D-pad keys, uiautomator ----------
+phase "cold start, adb keys"
 adb uninstall $PKG >/dev/null 2>&1 || true
-adb install -r build/app/outputs/flutter-apk/app-release.apk
+adb install -r "$out/app-release.apk"
 
 times=()
 for i in 1 2 3 4 5; do
@@ -108,4 +134,6 @@ if (( ${median:-99999} >= 3000 )); then
   echo "::error::cold start median ${median} ms is not under 3000 ms (emulator-only)"
   status=1
 fi
+phase "done (status $status)"
+rm -f "$out"/*.apk
 exit $status

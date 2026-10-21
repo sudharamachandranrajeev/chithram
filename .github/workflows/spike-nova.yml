@@ -33,6 +33,7 @@ jobs:
   desktop:
     name: ${{ matrix.os }} python ${{ matrix.py }}
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -144,6 +145,7 @@ jobs:
   android:
     name: Android TV emulator (Chaquopy, isolatedProcess)
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - name: Free disk space
         run: |
@@ -190,6 +192,7 @@ jobs:
   apk-size:
     name: APK size vs main
     runs-on: ubuntu-latest
+    timeout-minutes: 40
     steps:
       - name: Free disk space
         run: |

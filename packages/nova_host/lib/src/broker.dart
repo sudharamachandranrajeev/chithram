@@ -336,6 +336,7 @@ class _Conn {
   late StreamSubscription<RawSocketEvent> _sub;
   final Queue<Uint8List> _chunks = Queue();
   Completer<void>? _wake;
+  Completer<void>? _writeWake;
   bool _closed = false;
 
   static Future<_Conn> connect(InternetAddress ip, int port) async {
@@ -347,14 +348,25 @@ class _Conn {
   void _onEvent(RawSocketEvent e) {
     // Also drain on readClosed: data can still be pending when it arrives (seen on Windows).
     if (e == RawSocketEvent.read || e == RawSocketEvent.readClosed) {
-      var d = _raw.read();
-      while (d != null && d.isNotEmpty) {
-        _chunks.add(d);
-        d = _raw.read();
+      // Read exactly what is available: a second read() on an empty socket throws
+      // "Read failed" on some peers (seen with a Dart ServerSocket proxy).
+      try {
+        final n = _raw.available();
+        if (n > 0) {
+          final d = _raw.read(n);
+          if (d != null && d.isNotEmpty) _chunks.add(d);
+        }
+      } on SocketException {
+        _closed = true;
       }
     }
     if (e == RawSocketEvent.readClosed || e == RawSocketEvent.closed) {
       _closed = true;
+    }
+    if (e == RawSocketEvent.write) {
+      final ww = _writeWake;
+      _writeWake = null;
+      if (ww != null && !ww.isCompleted) ww.complete();
     }
     final w = _wake;
     _wake = null;
@@ -392,8 +404,10 @@ class _Conn {
       final n = _raw.write(data, off, data.length - off);
       off += n;
       if (n == 0) {
+        // Not writable right now: wait for a real write event.
+        final w = _writeWake = Completer<void>();
         _raw.writeEventsEnabled = true;
-        await Future<void>.delayed(const Duration(milliseconds: 5));
+        await w.future.timeout(const Duration(seconds: 2), onTimeout: () {});
       }
     }
   }

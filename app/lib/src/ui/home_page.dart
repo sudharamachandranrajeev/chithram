@@ -51,7 +51,7 @@ class _Hero extends StatelessWidget {
     final d = Dims.of(context);
     final height = (MediaQuery.sizeOf(context).height * 0.42).clamp(220.0, 460.0);
     return Container(
-      height: height,
+      constraints: BoxConstraints(minHeight: height),
       margin: EdgeInsets.fromLTRB(d.phone ? 8 : 16, 16, d.phone ? 8 : 16, 0),
       padding: EdgeInsets.all(d.phone ? 18 : 28),
       decoration: BoxDecoration(
@@ -67,6 +67,7 @@ class _Hero extends StatelessWidget {
         ),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.end,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -127,7 +128,12 @@ class ActionLabel extends StatelessWidget {
             Icon(icon, color: color, size: d.t(24)),
             const SizedBox(width: 6),
           ],
-          Text(text, style: TextStyle(color: color, fontSize: d.t(16), fontWeight: FontWeight.w600)),
+          Flexible(
+            child: Text(text,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: color, fontSize: d.t(16), fontWeight: FontWeight.w600)),
+          ),
         ],
       ),
     );

@@ -173,7 +173,7 @@ class _ShellState extends State<Shell> {
       duration: const Duration(milliseconds: 200),
       curve: Curves.easeOut,
       width: _railHasFocus ? d.railOpen : d.railClosed,
-      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 8),
+      padding: EdgeInsets.symmetric(vertical: d.tv ? 8 : 24, horizontal: 8),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -301,8 +301,8 @@ class _RailItemState extends State<_RailItem> {
   Widget _railItem(Color color, bool active) {
     final d = widget.dims;
     return Container(
-      height: d.u(52),
-      margin: const EdgeInsets.symmetric(vertical: 4),
+      height: d.tv ? 56 : 52,
+      margin: EdgeInsets.symmetric(vertical: d.tv ? 2 : 4),
       padding: EdgeInsets.symmetric(horizontal: d.tv ? 26 : 16),
       decoration: BoxDecoration(
         color: _focused ? ChithramColors.accent : Colors.transparent,

@@ -19,9 +19,10 @@ class SettingsPage extends StatelessWidget {
     final d = Dims.of(context);
     return Padding(
       padding: EdgeInsets.all(d.phone ? 16 : 32),
-      child: Column(
+      child: SingleChildScrollView(
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Text('Settings', style: TextStyle(fontSize: d.t(32), fontWeight: FontWeight.w700)),
           const SizedBox(height: 8),
@@ -45,6 +46,7 @@ class SettingsPage extends StatelessWidget {
             ),
           ),
         ],
+      ),
       ),
     );
   }

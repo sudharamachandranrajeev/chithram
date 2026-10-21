@@ -53,7 +53,7 @@ class _SearchPageState extends State<SearchPage> {
       skipTraversal: true,
       onKeyEvent: _onKey,
       child: LayoutBuilder(builder: (context, box) {
-        final cols = ((box.maxWidth - pad * 2 + gap) / (key + 5 + gap)).floor().clamp(4, 12);
+        final cols = ((box.maxWidth - pad * 2) / (key + 5 + gap)).floor().clamp(6, 12);
         final rows = <List<String>>[
           for (var i = 0; i < _chars.length; i += cols)
             [for (var j = i; j < i + cols && j < _chars.length; j++) _chars[j]],

@@ -24,9 +24,10 @@ class PlaceholderPage extends StatelessWidget {
     final d = Dims.of(context);
     return Padding(
       padding: EdgeInsets.all(d.phone ? 16 : 32),
-      child: Column(
+      child: SingleChildScrollView(
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Icon(section.icon, size: d.u(48), color: ChithramColors.accent),
           const SizedBox(height: 16),
@@ -45,6 +46,7 @@ class PlaceholderPage extends StatelessWidget {
             ),
           ),
         ],
+      ),
       ),
     );
   }

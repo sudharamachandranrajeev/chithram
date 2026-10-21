@@ -56,6 +56,29 @@ void main() {
     });
   });
 
+  testWidgets('TV 960x540 (small TV): no overflow anywhere', (t) async {
+    await pumpAt(t, const Size(960, 540));
+    for (var i = 0; i < 6; i++) {
+      if (i > 0) await press(t, LogicalKeyboardKey.arrowDown);
+      await press(t, LogicalKeyboardKey.arrowRight);
+      await press(t, LogicalKeyboardKey.arrowDown);
+      await press(t, LogicalKeyboardKey.arrowDown);
+      await press(t, LogicalKeyboardKey.arrowLeft);
+      await press(t, LogicalKeyboardKey.arrowLeft);
+    }
+    await press(t, LogicalKeyboardKey.arrowUp);
+    await press(t, LogicalKeyboardKey.arrowUp);
+    await press(t, LogicalKeyboardKey.arrowUp);
+    await press(t, LogicalKeyboardKey.arrowUp);
+    await press(t, LogicalKeyboardKey.arrowUp);
+    await press(t, LogicalKeyboardKey.arrowRight);
+    await press(t, LogicalKeyboardKey.select);
+    expect(find.byType(DetailsPage), findsOneWidget);
+    await press(t, LogicalKeyboardKey.arrowDown);
+    await press(t, LogicalKeyboardKey.arrowDown);
+    expectFocusInApp();
+  });
+
   group('TV (1920x1080)', () {
     testWidgets('5% overscan padding', (t) async {
       await pumpAt(t, const Size(1920, 1080));

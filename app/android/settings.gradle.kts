@@ -36,7 +36,7 @@ gradle.lifecycle.beforeProject {
             val android = extensions.getByName("android")
             val packaging = android.javaClass.getMethod("getPackaging").invoke(android)
             val jni = packaging.javaClass.getMethod("getJniLibs").invoke(packaging)
-            jni.javaClass.getMethod("setUseLegacyPackaging", Boolean::class.javaPrimitiveType).invoke(jni, true)
+            jni.javaClass.methods.first { it.name == "setUseLegacyPackaging" }.invoke(jni, true)
         }
     }
 }

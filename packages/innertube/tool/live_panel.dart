@@ -11,13 +11,16 @@ import 'package:http/http.dart' as http;
 import 'package:innertube/innertube.dart';
 
 class Entry {
-  const Entry(this.kind, this.label, {this.id, this.query, this.shorts = false, this.live = false});
+  const Entry(this.kind, this.label, {this.id, this.query, this.shorts = false, this.live = false, this.skip = 0});
   final String kind;
   final String label;
   final String? id;
   final String? query;
   final bool shorts;
   final bool live;
+
+  /// Shorts only: how many matching hits to pass over, so two entries get two different videos.
+  final int skip;
 }
 
 // Static ids are well-known official / Blender / Google-adjacent uploads;
@@ -26,8 +29,9 @@ class Entry {
 const panel = [
   Entry('4K', 'Costa Rica 4K', id: 'LXb3EKWsInQ'),
   Entry('4K', 'Big Buck Bunny 4K 60fps', id: 'aqz-KE-bpKQ'),
-  Entry('live', 'Lofi Girl radio', id: 'jfKfPfyJRdk', live: true),
-  Entry('live', 'Synthwave radio', id: '4xDzrJKXOOY', live: true),
+  // Live ids rot (streams get replaced), so pick from the live-filtered search.
+  Entry('live', 'Live: lofi radio', query: 'lofi hip hop radio', live: true),
+  Entry('live', 'Live: synthwave radio', query: 'synthwave radio 24/7', live: true),
   Entry('music', 'Rick Astley - Never Gonna Give You Up', id: 'dQw4w9WgXcQ'),
   Entry('music', 'Despacito', id: 'kJQP7kiw5Fk'),
   Entry('music', 'Shape of You', id: 'JGwWNGJdvx8'),
@@ -43,7 +47,7 @@ const panel = [
   Entry('Tamil', 'Arabic Kuthu', query: 'Arabic Kuthu Halamithi Habibo video song'),
   Entry('Tamil', 'Vaathi Coming', query: 'Vaathi Coming Master video song'),
   Entry('Shorts', 'a Short (search)', query: '#shorts', shorts: true),
-  Entry('Shorts', 'a Short (search 2)', query: 'shorts funny', shorts: true),
+  Entry('Shorts', 'a Short (search 2)', query: 'shorts funny', shorts: true, skip: 1),
 ];
 
 class Row {
@@ -78,14 +82,29 @@ class Row {
       };
 }
 
-Future<String?> findId(InnertubeBrowse browse, Entry e) async {
-  final page = await browse.search(e.query!);
+/// Candidate ids for a search entry, best first. Live entries use the live
+/// filter, Shorts the under-4-minute filter keeping <= 60 s.
+Future<List<String>> findIds(InnertubeBrowse browse, Entry e) async {
+  final page = await browse.search(
+    e.query!,
+    params: e.live ? SearchFilter.live : (e.shorts ? SearchFilter.underFourMinutes : SearchFilter.videos),
+  );
+  final ids = <String>[];
+  var skip = e.skip;
   for (final v in page.items) {
     final d = v.duration;
-    if (d == null) continue;
-    if (e.shorts ? d.inSeconds <= 60 : d.inSeconds >= 120 && d.inSeconds <= 600) return v.videoId;
+    if (e.live) {
+      if (v.isLive || d == null) ids.add(v.videoId);
+    } else if (e.shorts) {
+      if (d != null && d.inSeconds <= 60) {
+        if (skip-- > 0) continue;
+        ids.add(v.videoId);
+      }
+    } else if (d != null && d.inSeconds >= 120 && d.inSeconds <= 600) {
+      ids.add(v.videoId);
+    }
   }
-  return null;
+  return ids;
 }
 
 Future<void> main(List<String> args) async {
@@ -101,12 +120,33 @@ Future<void> main(List<String> args) async {
     rows.add(row);
     try {
       var id = entry.id;
-      if (id == null) {
-        id = await findId(browse, entry);
-        if (id == null) throw 'no search hit for "${entry.query}"';
+      late final VideoStreams streams;
+      if (id != null) {
+        row.id = id;
+        streams = await resolver.resolve(id);
+      } else {
+        final ids = await findIds(browse, entry);
+        if (ids.isEmpty) throw 'no search hit for "${entry.query}"';
+        Object? last;
+        VideoStreams? found;
+        // Live: first candidate that really resolves as live with an HLS manifest.
+        for (final candidate in ids.take(entry.live ? 6 : 1)) {
+          try {
+            final s = await resolver.resolve(candidate);
+            if (entry.live && (!s.isLive || s.hlsManifestUrl == null)) {
+              last = '$candidate is not live';
+              continue;
+            }
+            row.id = candidate;
+            found = s;
+            break;
+          } catch (error) {
+            last = error;
+          }
+        }
+        if (found == null) throw 'no resolvable hit for "${entry.query}": $last';
+        streams = found;
       }
-      row.id = id;
-      final streams = await resolver.resolve(id);
       row.title = streams.title;
       row.tier = streams.tier.name;
       row.attempts = [for (final a in streams.attempts) '${a.tier.name}:${a.ok ? 'ok' : a.error}'];

@@ -83,7 +83,7 @@ jobs:
             if grep -q 'sdk: flutter' "$d/pubspec.yaml"; then
               (cd "$d" && flutter analyze --no-fatal-infos)
             else
-              (cd "$d" && dart analyze --no-fatal-infos)
+              (cd "$d" && dart analyze)
             fi
             echo "::endgroup::"
           done

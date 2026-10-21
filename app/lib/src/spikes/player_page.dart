@@ -20,7 +20,6 @@ class PlayerSpikePage extends StatefulWidget {
 class _PlayerSpikePageState extends State<PlayerSpikePage> {
   final _video = TextEditingController(text: const String.fromEnvironment('VIDEO_URL'));
   final _audio = TextEditingController(text: const String.fromEnvironment('AUDIO_URL'));
-  final _focus = FocusNode(debugLabel: 'player-keys');
   final _subs = <StreamSubscription<Object?>>[];
 
   PlayerEngine? _engine;
@@ -34,6 +33,7 @@ class _PlayerSpikePageState extends State<PlayerSpikePage> {
   @override
   void initState() {
     super.initState();
+    HardwareKeyboard.instance.addHandler(_onKey);
     unawaited(_init());
   }
 
@@ -102,36 +102,39 @@ class _PlayerSpikePageState extends State<PlayerSpikePage> {
     await _engine?.seek(target < Duration.zero ? Duration.zero : target);
   }
 
-  KeyEventResult _onKey(FocusNode node, KeyEvent event) {
-    if (event is! KeyDownEvent) return KeyEventResult.ignored;
+  // A global handler, not a Focus widget: it works whatever has focus (the URL
+  // fields, the platform view), which matters with a D-pad.
+  bool _onKey(KeyEvent event) {
+    if (event is! KeyDownEvent) return false;
     final key = event.logicalKey;
+    debugPrint('CHITHRAM_PAGE key ${key.keyLabel} ${key.debugName}');
     if (key == LogicalKeyboardKey.select ||
         key == LogicalKeyboardKey.enter ||
         key == LogicalKeyboardKey.numpadEnter ||
         key == LogicalKeyboardKey.mediaPlayPause) {
       unawaited(_toggle());
-      return KeyEventResult.handled;
+      return true;
     }
     if (key == LogicalKeyboardKey.arrowRight) {
       unawaited(_seekBy(const Duration(seconds: 10)));
-      return KeyEventResult.handled;
+      return true;
     }
     if (key == LogicalKeyboardKey.arrowLeft) {
       unawaited(_seekBy(const Duration(seconds: -10)));
-      return KeyEventResult.handled;
+      return true;
     }
-    return KeyEventResult.ignored;
+    return false;
   }
 
   @override
   void dispose() {
+    HardwareKeyboard.instance.removeHandler(_onKey);
     for (final s in _subs) {
       unawaited(s.cancel());
     }
     unawaited(_engine?.dispose());
     _video.dispose();
     _audio.dispose();
-    _focus.dispose();
     super.dispose();
   }
 
@@ -143,11 +146,7 @@ class _PlayerSpikePageState extends State<PlayerSpikePage> {
     final engine = _engine;
     return Scaffold(
       backgroundColor: Colors.black,
-      body: Focus(
-        focusNode: _focus,
-        autofocus: true,
-        onKeyEvent: _onKey,
-        child: Column(
+      body: Column(
           children: [
             Expanded(
               child: engine == null
@@ -180,7 +179,6 @@ class _PlayerSpikePageState extends State<PlayerSpikePage> {
               ),
             ),
           ],
-        ),
       ),
     );
   }

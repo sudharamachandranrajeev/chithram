@@ -50,6 +50,14 @@ launch() { # name, video, audio
   adb shell am start -W -n "$pkg/.MainActivity" "${args[@]}" >/dev/null
 }
 
+# ---- Warm-up: the very first open pays for codec and class loading on a cold
+# emulator. Report it, but assert on the second (warm) open.
+log "== warm-up: video.mp4 + audio.m4a"
+launch warmup http://127.0.0.1:8000/video.mp4 http://127.0.0.1:8000/audio.m4a
+ff=$(wait_for 'CHITHRAM_FIRST_FRAME' 60) || ff=""
+[[ -n $ff ]] && log "INFO cold first frame $(num "$ff") ms (emulator-only, not asserted)"
+sleep 2
+
 # ---- Case A: progressive video + separate audio, merged (YouTube DASH shape).
 log "== merged: video.mp4 + audio.m4a"
 launch merged http://127.0.0.1:8000/video.mp4 http://127.0.0.1:8000/audio.m4a
@@ -97,6 +105,7 @@ fi
 sleep 1
 adb exec-out screencap -p >"$out/merged-after-seek.png" || true
 plog >"$out/player-merged.log"
+adb logcat -d | grep -E "CHITHRAM_PAGE|flutter" | tail -15 | tee -a "$summary" || true
 adb logcat -d >"$out/logcat-merged.txt" || true
 
 # ---- Case B: HLS ladder.

@@ -37,7 +37,7 @@ EXT_KEEP = {
     "array", "binascii", "_bisect", "_blake2", "_bz2", "cmath", "_csv", "_decimal", "_elementtree",
     "fcntl", "_heapq", "_hmac", "_json", "_lzma", "math", "_md5", "mmap", "_multibytecodec", "_pickle",
     "_posixsubprocess", "pyexpat", "_queue", "_random", "resource", "select", "_sha1", "_sha2",
-    "_sha3", "_socket", "_statistics", "unicodedata", "zlib", "_zoneinfo",
+    "_sha3", "_socket", "_statistics", "_struct", "termios", "unicodedata", "zlib", "_zoneinfo",
 }
 DROP_DIRS = {
     "test", "tests", "idlelib", "tkinter", "turtledemo", "ensurepip", "pydoc_data", "lib2to3",

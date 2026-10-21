@@ -1,0 +1,196 @@
+{
+ "playabilityStatus": {
+  "status": "OK"
+ },
+ "streamingData": {
+  "expiresInSeconds": "21540",
+  "formats": [
+   {
+    "itag": 18,
+    "url": "https://rr1---sn-fixture.googlevideo.com/videoplayback?expire=1790000000&itag=18&c=VISIONOS&sig=REDACTED",
+    "mimeType": "video/mp4; codecs=\"avc1.42001E, mp4a.40.2\"",
+    "bitrate": 500000,
+    "width": 640,
+    "height": 360,
+    "fps": 30,
+    "contentLength": "9000000"
+   },
+   {
+    "itag": 22,
+    "url": "https://rr1---sn-fixture.googlevideo.com/videoplayback?expire=1790000000&itag=22&c=VISIONOS&sig=REDACTED",
+    "mimeType": "video/mp4; codecs=\"avc1.64001F, mp4a.40.2\"",
+    "bitrate": 1500000,
+    "width": 1280,
+    "height": 720,
+    "fps": 30
+   }
+  ],
+  "adaptiveFormats": [
+   {
+    "itag": 137,
+    "url": "https://rr1---sn-fixture.googlevideo.com/videoplayback?expire=1790000000&itag=137&c=VISIONOS&sig=REDACTED",
+    "mimeType": "video/mp4; codecs=\"avc1.640028\"",
+    "bitrate": 4000000,
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "contentLength": "50000000",
+    "qualityLabel": "1080p"
+   },
+   {
+    "itag": 248,
+    "url": "https://rr1---sn-fixture.googlevideo.com/videoplayback?expire=1790000000&itag=248&c=VISIONOS&sig=REDACTED",
+    "mimeType": "video/webm; codecs=\"vp09.00.40.08\"",
+    "bitrate": 2500000,
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "contentLength": "31000000",
+    "qualityLabel": "1080p"
+   },
+   {
+    "itag": 399,
+    "url": "https://rr1---sn-fixture.googlevideo.com/videoplayback?expire=1790000000&itag=399&c=VISIONOS&sig=REDACTED",
+    "mimeType": "video/mp4; codecs=\"av01.0.08M.08\"",
+    "bitrate": 1800000,
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "contentLength": "22000000",
+    "qualityLabel": "1080p"
+   },
+   {
+    "itag": 271,
+    "url": "https://rr1---sn-fixture.googlevideo.com/videoplayback?expire=1790000000&itag=271&c=VISIONOS&sig=REDACTED",
+    "mimeType": "video/webm; codecs=\"vp09.00.50.08\"",
+    "bitrate": 6000000,
+    "width": 2560,
+    "height": 1440,
+    "fps": 30,
+    "contentLength": "70000000",
+    "qualityLabel": "1440p"
+   },
+   {
+    "itag": 313,
+    "url": "https://rr1---sn-fixture.googlevideo.com/videoplayback?expire=1790000000&itag=313&c=VISIONOS&sig=REDACTED",
+    "mimeType": "video/webm; codecs=\"vp09.00.50.08\"",
+    "bitrate": 12000000,
+    "width": 3840,
+    "height": 2160,
+    "fps": 30,
+    "contentLength": "140000000",
+    "qualityLabel": "2160p"
+   },
+   {
+    "itag": 315,
+    "url": "https://rr1---sn-fixture.googlevideo.com/videoplayback?expire=1790000000&itag=315&c=VISIONOS&sig=REDACTED",
+    "mimeType": "video/webm; codecs=\"vp09.02.51.10\"",
+    "bitrate": 20000000,
+    "width": 3840,
+    "height": 2160,
+    "fps": 60,
+    "contentLength": "200000000",
+    "qualityLabel": "2160p",
+    "colorInfo": {
+     "primaries": "COLOR_PRIMARIES_BT2020",
+     "transferCharacteristics": "COLOR_TRANSFER_CHARACTERISTICS_SMPTEST2084"
+    }
+   },
+   {
+    "itag": 160,
+    "url": "https://rr1---sn-fixture.googlevideo.com/videoplayback?expire=1790000000&itag=160&c=VISIONOS&sig=REDACTED",
+    "mimeType": "video/mp4; codecs=\"avc1.4d400c\"",
+    "bitrate": 100000,
+    "width": 256,
+    "height": 144,
+    "fps": 30,
+    "contentLength": "2000000",
+    "qualityLabel": "144p"
+   },
+   {
+    "itag": 140,
+    "url": "https://rr1---sn-fixture.googlevideo.com/videoplayback?expire=1790000000&itag=140&c=VISIONOS&sig=REDACTED",
+    "mimeType": "audio/mp4; codecs=\"mp4a.40.2\"",
+    "bitrate": 140000,
+    "contentLength": "3400000",
+    "audioSampleRate": "48000",
+    "audioQuality": "AUDIO_QUALITY_MEDIUM"
+   },
+   {
+    "itag": 251,
+    "url": "https://rr1---sn-fixture.googlevideo.com/videoplayback?expire=1790000000&itag=251&c=VISIONOS&sig=REDACTED",
+    "mimeType": "audio/webm; codecs=\"opus\"",
+    "bitrate": 150000,
+    "contentLength": "3500000",
+    "audioSampleRate": "48000",
+    "audioQuality": "AUDIO_QUALITY_MEDIUM"
+   },
+   {
+    "itag": 250,
+    "url": "https://rr1---sn-fixture.googlevideo.com/videoplayback?expire=1790000000&itag=250&c=VISIONOS&sig=REDACTED",
+    "mimeType": "audio/webm; codecs=\"opus\"",
+    "bitrate": 70000,
+    "contentLength": "1800000",
+    "audioSampleRate": "48000",
+    "audioQuality": "AUDIO_QUALITY_MEDIUM"
+   },
+   {
+    "itag": 251,
+    "url": "https://rr1---sn-fixture.googlevideo.com/videoplayback?expire=1790000000&itag=251&c=VISIONOS&sig=REDACTED",
+    "mimeType": "audio/webm; codecs=\"opus\"",
+    "bitrate": 190000,
+    "contentLength": "4200000",
+    "audioSampleRate": "48000",
+    "audioQuality": "AUDIO_QUALITY_MEDIUM",
+    "isDrc": true
+   },
+   {
+    "itag": 251,
+    "url": "https://rr1---sn-fixture.googlevideo.com/videoplayback?expire=1790000000&itag=251&c=VISIONOS&sig=REDACTED",
+    "mimeType": "audio/webm; codecs=\"opus\"",
+    "bitrate": 300000,
+    "contentLength": "4200000",
+    "audioSampleRate": "48000",
+    "audioQuality": "AUDIO_QUALITY_MEDIUM",
+    "audioTrack": {
+     "displayName": "Hindi",
+     "id": "hi.4",
+     "audioIsDefault": false
+    }
+   },
+   {
+    "itag": 299,
+    "signatureCipher": "s=REDACTED&sp=sig&url=https%3A%2F%2Fexample.invalid",
+    "mimeType": "video/mp4; codecs=\"avc1.64002a\"",
+    "bitrate": 9000000,
+    "width": 1920,
+    "height": 1080,
+    "fps": 60
+   }
+  ]
+ },
+ "videoDetails": {
+  "videoId": "FIXTUREVOD1",
+  "title": "Fixture Video",
+  "lengthSeconds": "212",
+  "channelId": "UCfixture0000000000000000",
+  "author": "Fixture Channel",
+  "shortDescription": "A fixture.",
+  "viewCount": "12345",
+  "isLive": false,
+  "thumbnail": {
+   "thumbnails": [
+    {
+     "url": "https://i.ytimg.com/vi/FIXTUREVOD1/default.jpg",
+     "width": 120,
+     "height": 90
+    },
+    {
+     "url": "//i.ytimg.com/vi/FIXTUREVOD1/maxresdefault.jpg",
+     "width": 1280,
+     "height": 720
+    }
+   ]
+  }
+ }
+}

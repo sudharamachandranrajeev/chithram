@@ -34,3 +34,7 @@ native/**/target/
 **/*.rs.bk
 # Outputs
 /dist/
+
+# Torrent library built by CI (native/torrent)
+packages/torrent/prebuilt/
+packages/torrent/android/src/main/jniLibs/

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../theme.dart';
+import 'dims.dart';
 import 'focus_card.dart';
+import 'home_page.dart' show ActionLabel;
 import 'sections.dart';
 
 const _blurbs = {
@@ -19,17 +21,19 @@ class PlaceholderPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final d = Dims.of(context);
     return Padding(
-      padding: const EdgeInsets.all(32),
-      child: Column(
+      padding: EdgeInsets.all(d.phone ? 16 : 32),
+      child: SingleChildScrollView(
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(section.icon, size: 48, color: ChithramColors.accent),
+          Icon(section.icon, size: d.u(48), color: ChithramColors.accent),
           const SizedBox(height: 16),
-          Text(section.label, style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w700)),
+          Text(section.label, style: TextStyle(fontSize: d.t(32), fontWeight: FontWeight.w700)),
           const SizedBox(height: 8),
-          Text(_blurbs[section] ?? '', style: const TextStyle(color: ChithramColors.textDim)),
+          Text(_blurbs[section] ?? '', style: TextStyle(color: ChithramColors.textDim, fontSize: d.t(14))),
           const SizedBox(height: 28),
           Padding(
             padding: const EdgeInsets.all(8),
@@ -38,14 +42,11 @@ class PlaceholderPage extends StatelessWidget {
               section: focus,
               radius: 24,
               onActivate: () {},
-              child: Container(
-                color: ChithramColors.surfaceHigh,
-                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
-                child: const Text('Coming soon', style: TextStyle(fontWeight: FontWeight.w600)),
-              ),
+              child: const ActionLabel(text: 'Coming soon'),
             ),
           ),
         ],
+      ),
       ),
     );
   }

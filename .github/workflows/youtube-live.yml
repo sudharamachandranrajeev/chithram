@@ -1,0 +1,75 @@
+# Real-network YouTube check (non-blocking): search "big buck bunny" in the app
+# on Linux under Xvfb and play the first result to 5 s. GitHub runner IPs are
+# often answered with LOGIN_REQUIRED, so a failure here is information, not a
+# gate. The blocking YouTube test is the fixture one in e2e.yml.
+name: YouTube live
+
+on:
+  schedule:
+    # Mondays 06:45 UTC: catches YouTube-side changes.
+    - cron: "45 6 * * 1"
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'app/lib/src/features/youtube/**'
+      - 'app/integration_test/e2e_youtube*'
+      - 'packages/innertube/**'
+      - '.github/workflows/youtube-live.yml'
+
+concurrency:
+  group: youtube-live-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  live:
+    name: Real search and playback (non-blocking)
+    runs-on: ubuntu-22.04
+    timeout-minutes: 40
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Build tools, Xvfb and Mesa
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libmpv-dev mpv xvfb libgl1-mesa-dri libegl1 libgles2 >/dev/null
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+        with:
+          toolchain: stable
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
+        with:
+          workspaces: native/torrent
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          channel: stable
+          flutter-version: 3.47.7
+          cache: true
+      - name: Torrent library (linux)
+        run: |
+          cargo build --release --locked --lib --manifest-path native/torrent/Cargo.toml
+          mkdir -p packages/torrent/prebuilt/linux-x64
+          cp native/torrent/target/release/libchithram_torrent.so packages/torrent/prebuilt/linux-x64/
+      - run: flutter pub get
+      - name: Search and play
+        working-directory: app
+        env:
+          CHITHRAM_MPV_AO: 'null'
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        run: |
+          set -o pipefail
+          xvfb-run -a -s '-screen 0 1280x720x24' timeout 600 \
+            flutter test integration_test/e2e_youtube_live_test.dart -d linux 2>&1 | tee ../youtube-live.log
+      - name: Result to the step summary
+        if: always()
+        run: |
+          { echo '### YouTube live (non-blocking)'; echo '```'; grep -E 'CHITHRAM_E2E|All tests passed|Some tests failed|LOGIN_REQUIRED|would not play' youtube-live.log 2>/dev/null | tail -20 || echo 'no log'; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        continue-on-error: true
+        with:
+          name: youtube-live
+          retention-days: 2
+          path: youtube-live.log
+          if-no-files-found: ignore

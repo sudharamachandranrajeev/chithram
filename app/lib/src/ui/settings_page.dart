@@ -7,6 +7,7 @@ import '../theme.dart';
 import 'dims.dart';
 import 'focus_card.dart';
 import 'home_page.dart' show ActionLabel;
+import 'interface_settings.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key, required this.focus});
@@ -33,6 +34,7 @@ class SettingsPage extends StatelessWidget {
           // The first section takes the page's entry node.
           TorrentSettings(entry: focus),
           const ReceiveSettings(),
+          const InterfaceSettings(),
           const AboutSettings(),
         ],
       ),

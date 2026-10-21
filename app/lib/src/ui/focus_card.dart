@@ -70,6 +70,7 @@ class FocusCard extends StatefulWidget {
 class _FocusCardState extends State<FocusCard> {
   FocusNode? _own;
   bool _focused = false;
+  bool _hovered = false;
 
   FocusNode get _node => widget.focusNode ?? (_own ??= FocusNode(debugLabel: 'focus card'));
 
@@ -114,10 +115,12 @@ class _FocusCardState extends State<FocusCard> {
           return null;
         }),
       },
-      // Mouse hover moves focus (desktop); touch just taps.
+      // Mouse hover highlights the tile but leaves focus where it is (the
+      // arrows keep working from there); a click focuses and activates.
       child: MouseRegion(
-        onEnter: (_) {
-          if (!_node.hasFocus) _node.requestFocus();
+        onEnter: (_) => setState(() => _hovered = true),
+        onExit: (_) {
+          if (mounted) setState(() => _hovered = false);
         },
         child: GestureDetector(
         onTap: () {
@@ -125,7 +128,7 @@ class _FocusCardState extends State<FocusCard> {
           widget.onActivate?.call();
         },
         child: AnimatedScale(
-          scale: _focused ? 1.08 : 1.0,
+          scale: _focused ? 1.08 : (_hovered ? 1.04 : 1.0),
           duration: const Duration(milliseconds: 150),
           curve: Curves.easeOut,
           child: AnimatedContainer(
@@ -133,7 +136,9 @@ class _FocusCardState extends State<FocusCard> {
             decoration: BoxDecoration(
               borderRadius: radius,
               border: Border.all(
-                color: _focused ? ChithramColors.accent : Colors.transparent,
+                color: _focused
+                    ? ChithramColors.accent
+                    : (_hovered ? ChithramColors.accent.withValues(alpha: 0.6) : Colors.transparent),
                 width: 2.5,
               ),
               boxShadow: _focused

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/services.dart';
+import '../../ui/dims.dart';
 import '../../ui/focus_card.dart';
 import '../../ui/home_page.dart' show ActionLabel;
 import '../../ui/text_entry.dart';
@@ -77,7 +78,9 @@ class _ReceiveSettingsState extends State<ReceiveSettings> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _card('Send from phone', () => openReceive(context), node: widget.entry?.entry, section: widget.entry),
+        // A phone is the sender; the button is for the big screen.
+        if (!Dims.of(context).phone)
+          _card('Send from phone', () => openReceive(context), node: widget.entry?.entry, section: widget.entry),
         _card('Name phones see: ${services.receive.alias}', _rename),
         _card('Receive PIN: ${prefs.getString(ReceivePrefs.pin) == null ? 'off' : 'on'}', _setPin),
         _card(

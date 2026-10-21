@@ -135,6 +135,11 @@ class _TextEntryDialogState extends State<_TextEntryDialog> {
                   key: Keys.textEntryField,
                   controller: _controller,
                   autofocus: true,
+                  textInputAction: switch (widget.kind) {
+                    TextEntryKind.search => TextInputAction.search,
+                    TextEntryKind.pin => TextInputAction.done,
+                    _ => TextInputAction.go,
+                  },
                   obscureText: widget.kind == TextEntryKind.pin,
                   keyboardType: switch (widget.kind) {
                     TextEntryKind.pin => TextInputType.number,
@@ -145,7 +150,7 @@ class _TextEntryDialogState extends State<_TextEntryDialog> {
                   onSubmitted: (v) => Navigator.of(context).pop(v.trim()),
                 ),
               ),
-              if (showKeys && _link) ...[
+              if (showKeys && _link && !d.phone) ...[
                 const SizedBox(height: 16),
                 UrlKeyboard(focus: _keys, onChar: _type, onBackspace: _backspace, onClear: _controller.clear),
               ],
@@ -156,7 +161,8 @@ class _TextEntryDialogState extends State<_TextEntryDialog> {
                 runSpacing: 4,
                 children: [
                   TextButton(key: Keys.textEntryPaste, onPressed: _paste, child: const Text('Paste')),
-                  if (_link)
+                  // A phone has the system keyboard; this one is for TVs and desktops.
+                  if (_link && !d.phone)
                     TextButton(
                       key: Keys.textEntryKeyboard,
                       onPressed: () => setState(() => _showKeys = !showKeys),

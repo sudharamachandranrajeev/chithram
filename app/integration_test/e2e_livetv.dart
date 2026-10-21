@@ -21,7 +21,11 @@ void livetvE2e() {
       await t.pumpAndSettle();
 
       await t.tap(find.byKey(const ValueKey('nav-liveTv')));
-      await t.pumpAndSettle();
+      // The page loads its sources on real I/O ticks.
+      for (var i = 0; i < 40 && find.byKey(LiveTvKeys.addPlaylist).evaluate().isEmpty; i++) {
+        await t.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+        await t.pump(const Duration(milliseconds: 100));
+      }
       // Nothing was downloaded just by opening the section.
       expect(await iptv.sources(), isEmpty);
 

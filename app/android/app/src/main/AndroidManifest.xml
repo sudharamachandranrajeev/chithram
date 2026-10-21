@@ -2,6 +2,8 @@
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
+    <!-- LocalSend discovery (multicast), held only while the Receive screen is open. -->
+    <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE"/>
 
     <!-- One APK for phones and Android TV. Leanback is optional and no touchscreen
          is required, so TV boxes (D-pad only) can install it and phones still can. -->

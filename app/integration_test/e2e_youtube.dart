@@ -10,6 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'support.dart';
 
+// Enter, not Select: the Linux test key map has no Select.
 /// Types [text] on the on-screen keyboard with the D-pad, searches, and opens
 /// the [result] tile. Starts on the rail.
 Future<void> searchAndOpen(WidgetTester t, String text, Finder result) async {
@@ -17,11 +18,11 @@ Future<void> searchAndOpen(WidgetTester t, String text, Finder result) async {
   await press(t, LogicalKeyboardKey.arrowRight); // into the keyboard
   for (final c in text.split('')) {
     await dpadTo(t, find.byKey(ValueKey('key-${c == ' ' ? 'space' : c}')));
-    await press(t, LogicalKeyboardKey.select);
+    await press(t, LogicalKeyboardKey.enter);
   }
   expect(t.widget<Text>(find.byKey(const ValueKey('search-query'))).data, text);
   await dpadTo(t, find.byKey(const ValueKey('search-go')));
-  await press(t, LogicalKeyboardKey.select);
+  await press(t, LogicalKeyboardKey.enter);
 
   for (var i = 0; i < 80 && result.evaluate().isEmpty; i++) {
     await t.runAsync(
@@ -31,7 +32,7 @@ Future<void> searchAndOpen(WidgetTester t, String text, Finder result) async {
   }
   expect(result, findsWidgets, reason: 'the search result never appeared');
   await dpadTo(t, result);
-  await press(t, LogicalKeyboardKey.select);
+  await press(t, LogicalKeyboardKey.enter);
 }
 
 void youtubeE2e() {

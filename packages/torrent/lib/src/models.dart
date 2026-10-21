@@ -27,7 +27,7 @@ class TorrentInfo {
   const TorrentInfo({
     required this.id,
     required this.name,
-    required this.infoHash,
+    this.infoHash = '',
     required this.files,
   });
 
@@ -44,7 +44,8 @@ class TorrentInfo {
   final int id;
   final String? name;
 
-  /// 40 lower-case hex characters; the `bt:` item id is built from it.
+  /// 40 lower-case hex characters; the `bt:` item id is built from it. Empty
+  /// only for fakes in tests; the engine always reports it.
   final String infoHash;
   final List<TorrentFile> files;
 }

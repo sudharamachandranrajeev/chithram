@@ -48,6 +48,7 @@ class TorrentService extends ChangeNotifier {
   TorrentStats? _stats;
   Timer? _poll;
   bool _resolving = false;
+  bool _disposed = false;
 
   /// The torrent being watched or listed, if any.
   TorrentInfo? get active => _active;
@@ -60,6 +61,7 @@ class TorrentService extends ChangeNotifier {
 
   @override
   void dispose() {
+    _disposed = true;
     prefs.removeListener(_onPrefs);
     _poll?.cancel();
     super.dispose();
@@ -172,7 +174,11 @@ class TorrentService extends ChangeNotifier {
     _poll = null;
     _active = null;
     _stats = null;
-    notifyListeners();
+    // Called from widget dispose (the player route, the file list): listeners
+    // cannot be told while the tree is being torn down.
+    scheduleMicrotask(() {
+      if (!_disposed) notifyListeners();
+    });
     try {
       await engine.remove(info.id, deleteFiles: true);
     } catch (_) {

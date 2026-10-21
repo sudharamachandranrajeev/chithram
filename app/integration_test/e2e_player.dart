@@ -3,6 +3,7 @@ import 'dart:async';
 
 import 'package:chithram/src/player/play_request.dart';
 import 'package:chithram/src/ui/app.dart';
+import 'package:chithram/src/ui/keys.dart';
 import 'package:chithram/src/ui/shell.dart';
 import 'package:chithram_player/chithram_player.dart';
 import 'package:flutter/material.dart';
@@ -31,7 +32,7 @@ void playerE2e() {
       // ignore: avoid_print
       print('CHITHRAM_E2E player reached $position');
 
-      Navigator.of(t.element(find.byType(Shell))).pop();
+      Navigator.of(t.element(find.byKey(Keys.playerRoot))).pop();
       await t.pumpAndSettle();
       await t.runAsync(() => closed.future.timeout(const Duration(seconds: 10)));
       expectFocusInApp('after closing the player');

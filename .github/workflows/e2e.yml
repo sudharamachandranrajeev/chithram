@@ -53,6 +53,12 @@ jobs:
           channel: stable
           flutter-version: ${{ env.FLUTTER_VERSION }}
           cache: true
+      # The same library the release builds bundle; the torrent tests load it.
+      - name: Torrent library (linux)
+        run: |
+          cargo build --release --locked --lib --manifest-path native/torrent/Cargo.toml
+          mkdir -p packages/torrent/prebuilt/linux-x64
+          cp native/torrent/target/release/libchithram_torrent.so packages/torrent/prebuilt/linux-x64/
       - run: flutter pub get
       - name: Fixtures, servers and seeder
         run: bash .github/e2e.sh host-services "$RUNNER_TEMP/e2e"
@@ -62,6 +68,7 @@ jobs:
           CHITHRAM_MPV_AO: 'null'
           LIBGL_ALWAYS_SOFTWARE: '1'
         run: |
+          set -o pipefail
           mapfile -t defines <"$RUNNER_TEMP/e2e/e2e.env"
           xvfb-run -a -s '-screen 0 1280x720x24' timeout 900 \
             flutter test integration_test/e2e_all_test.dart -d linux "${defines[@]}" 2>&1 | tee ../linux-e2e.log

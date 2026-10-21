@@ -47,12 +47,12 @@ void playerE2e() {
       expect(watch.elapsed, lessThan(const Duration(seconds: 10)), reason: 'open to 2 s');
 
       // Center pauses and resumes.
-      await _key(t, LogicalKeyboardKey.select);
+      await _key(t, LogicalKeyboardKey.enter);
       await settle(t, const Duration(seconds: 1));
       final paused = playerPosition(t);
       await settle(t, const Duration(seconds: 2));
       expect(playerPosition(t), paused, reason: 'position moved while paused');
-      await _key(t, LogicalKeyboardKey.select);
+      await _key(t, LogicalKeyboardKey.enter);
       await waitForPlayback(t, atLeast: paused + const Duration(seconds: 1));
 
       // Right seeks ahead by 10 s.

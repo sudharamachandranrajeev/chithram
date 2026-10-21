@@ -45,10 +45,9 @@ Roadmap:
 - Dynamic sources: health checks prune dead streams/sources; catalogues + user-added plugin repos refresh in background at
   runtime so new channels/indexers appear without app updates.
 - Device priority: Android TV first (D-pad, 10-ft), then phone, desktop. TV box model not yet named — ask.
-- Design: Hotstar-style (left nav rail, hero billboard, rounded tiles), own accent colour, Poppins.
+- Design: streaming-service style (left nav rail, hero billboard, rounded tiles), own accent colour, Poppins.
 - Torrent: VPN/SOCKS5 required by default (guard can be turned off), seed only while watching, IP-exposure warning.
-- IPTV first-run one-tap: iptv-org, Free-TV/IPTV, FAST services via user-pasted URL. User mentioned "tcpbl/tcbpl" as
-  inspiration — unidentified, asked for link.
+- IPTV first-run one-tap: iptv-org, Free-TV/IPTV, FAST services via user-pasted URL.
 - Profiles: local profiles only (PIN + kids filter OK), no sync; export/import file.
 - YouTube: no login; local subscriptions (Takeout/NewPipe import), local feed/history/watch later.
 - rea: QA of own builds (ADB captures, logcat, Frida start-delay traces, APK secret audit) + public OTT web design study.

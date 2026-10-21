@@ -1,6 +1,6 @@
 # Chithram research brief (2026-10-20)
 
-Goal (user's words): all-in-one video entertainment system "Chithram"; OTT-inspired design (Netflix/Prime/Hotstar);
+Goal (user's words): all-in-one video entertainment system "Chithram"; design inspired by commercial streaming services;
 plays YouTube, torrent files, IPTV repos, live TV repos; ad-free, short start delay; secure, reliable, efficient;
 GitHub repo; Windows app, Android app (phone + TV), Linux program. "Research reverse engineering with rea."
 "Use Opus for decision making, Sonnet for build." Interview user before building.
@@ -84,5 +84,5 @@ Legit uses for Chithram:
    interoperability RE is lawful in many jurisdictions but don't copy code/assets.
 3. QA of OUR OWN builds: ADB install on a real Android TV box, screen capture of D-pad focus, logcat crash triage,
    Frida tracing of ExoPlayer start latency; inspect our APK/AppImage for leaked secrets/sizes.
-Out of bounds: reversing Netflix/Prime/Hotstar apps or Widevine to extract DRM-protected streams or bypass ads in
+Out of bounds: reversing commercial streaming apps or their DRM to extract DRM-protected streams or bypass ads in
 paid OTT services (DMCA §1201 / IT Act; also not ethical). Chithram does not touch DRM content.

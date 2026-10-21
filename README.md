@@ -1,7 +1,7 @@
 # Chithram
 
 *Chithram* (Malayalam for "picture") is a bring-your-own-sources video app with
-a Hotstar-style, D-pad-first interface: YouTube without an account, live TV
+a streaming-style, D-pad-first interface: YouTube without an account, live TV
 from IPTV playlists, and torrent streaming, with short start delays and no ads.
 
 **Status: Phase 0.** This is a runnable scaffold: the navigation rail, a Home

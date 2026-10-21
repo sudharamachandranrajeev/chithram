@@ -10,7 +10,7 @@ apk=$(ls dist/*x86_64.apk | head -n1)
 adb install -r "$apk"
 adb logcat -c
 # --smoke makes main() start the bundled torrent engine and check its /health.
-adb shell am start -W -n dev.chithram.chithram/.MainActivity --esa dart_entrypoint_args --smoke
+adb shell am start -W -n dev.chithram.chithram/.MainActivity --esal dart_entrypoint_args --smoke
 sleep 20
 adb exec-out screencap -p >"$out/android.png" || true
 adb logcat -d >"$out/logcat.txt" || true

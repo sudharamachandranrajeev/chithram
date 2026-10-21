@@ -57,6 +57,9 @@ class TorrentEngine {
   Future<void> remove(int id, {bool deleteFiles = false}) =>
       Isolate.run(() => TorrentBindings.open().remove(id, deleteFiles));
 
+  /// Stops whatever engine is running in this process (state is process-global).
+  static Future<void> stopRunning() => Isolate.run(() => TorrentBindings.open().stop());
+
   /// Stops the server and session. The engine can be started again afterwards.
   Future<void> stop() => Isolate.run(() => TorrentBindings.open().stop());
 }

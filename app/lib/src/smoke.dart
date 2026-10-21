@@ -25,7 +25,16 @@ Future<void> runSmoke(String file) async {
   TorrentEngine? engine;
   try {
     final dir = await Directory.systemTemp.createTemp('chithram_smoke');
-    engine = await TorrentEngine.start(dir: dir.path, socks5: 'socks5://127.0.0.1:9');
+    Future<TorrentEngine> start() => TorrentEngine.start(dir: dir.path, socks5: 'socks5://127.0.0.1:9');
+    try {
+      engine = await start();
+    } on TorrentException catch (e) {
+      // The engine is process-global; a second main() (Android can run the
+      // entrypoint again) finds it started. Restart it and check that one.
+      debugPrint('CHITHRAM_SMOKE restarting: $e');
+      await TorrentEngine.stopRunning();
+      engine = await start();
+    }
     final client = HttpClient();
     final res = await (await client.getUrl(Uri.parse(engine.healthUrl))).close();
     await res.drain<void>();

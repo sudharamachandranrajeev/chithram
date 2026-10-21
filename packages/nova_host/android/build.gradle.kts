@@ -52,14 +52,3 @@ tasks.matching { it.name == "preBuild" }.configureEach {
     dependsOn(prepareCpythonAndroid)
 }
 
-// The isolated process reads the stdlib zip and the extension modules straight from
-// the native library directory, so the app must install its native libs extracted
-// (AGP otherwise maps them from the APK and leaves the directory empty). The manifest
-// attribute is overridden by AGP, so set the packaging option on the app module.
-rootProject.findProject(":app")?.let { app ->
-    app.pluginManager.withPlugin("com.android.application") {
-        app.extensions.configure<com.android.build.api.dsl.ApplicationExtension>("android") {
-            packaging.jniLibs.useLegacyPackaging = true
-        }
-    }
-}

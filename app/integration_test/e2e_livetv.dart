@@ -53,6 +53,7 @@ void livetvE2e() {
       expect(find.text('E2E HLS'), findsOneWidget);
 
       // A snack bar may sit over the row, so select it with the D-pad.
+      await press(t, LogicalKeyboardKey.arrowRight); // from the rail into the section
       await dpadTo(t, find.text('E2E HLS'));
       await press(t, LogicalKeyboardKey.select);
       await waitForPlayback(t);

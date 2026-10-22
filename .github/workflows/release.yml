@@ -217,7 +217,7 @@ jobs:
       - name: Build tools
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libmpv-dev file patchelf >/dev/null
+          sudo apt-get install -y -qq clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libmpv-dev libsecret-1-dev file patchelf >/dev/null
       - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
         with:
           channel: stable
@@ -256,8 +256,8 @@ jobs:
           test -f "chithram-$version-linux-x64/lib/libchithram_torrent.so"
           ! readelf -d "chithram-$version-linux-x64/chithram" "chithram-$version-linux-x64"/lib/*.so | grep 'libmpv\.so\.1'
           cat > "chithram-$version-linux-x64/README.txt" <<'EOF'
-          Chithram for Linux. Needs mpv's library (libmpv.so.2) and GTK 3:
-            Arch: pacman -S mpv   Debian 12+ / Ubuntu 24.04+: apt install libmpv2   Fedora: dnf install mpv-libs
+          Chithram for Linux. Needs mpv's library (libmpv.so.2), GTK 3 and libsecret:
+            Arch: pacman -S mpv libsecret   Debian 12+ / Ubuntu 24.04+: apt install libmpv2 libsecret-1-0   Fedora: dnf install mpv-libs libsecret
           On an older system, use the AppImage, which carries its own.
           Run ./chithram from this folder.
           EOF
@@ -427,11 +427,11 @@ jobs:
             echo "::warning::no AppImage in this build"
           fi
           if command -v apt-get >/dev/null; then
-            DEBIAN_FRONTEND=noninteractive apt-get install -y -qq libmpv2 >/dev/null
+            DEBIAN_FRONTEND=noninteractive apt-get install -y -qq libmpv2 libsecret-1-0 >/dev/null
           elif command -v dnf >/dev/null; then
-            dnf install -y -q mpv-libs
+            dnf install -y -q mpv-libs libsecret
           else
-            pacman -S --noconfirm --needed mpv >/dev/null
+            pacman -S --noconfirm --needed mpv libsecret >/dev/null
           fi
           tar xzf dist/*.tar.gz
           smoke tarball.log "$(ls -d chithram-*-linux-x64)/chithram" --smoke || failed=1

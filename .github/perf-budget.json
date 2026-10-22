@@ -1,0 +1,8 @@
+{
+  "mode": "report",
+  "_comment": "perf.sh compares perf.json with these limits. mode=report prints misses as warnings; mode=enforce fails the job (set by the 0.3.0 R2 PR).",
+  "coldstart_fully_drawn_ms_median": 2000,
+  "jank_frames_build_over_32ms": 0,
+  "pss_mb": 300,
+  "requests_before_first_frame": 0
+}

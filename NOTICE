@@ -1,0 +1,17 @@
+Chithram
+Copyright (c) 2026 Chithram contributors. Licensed under the MIT License (see LICENSE).
+
+Third-party material that is not under the MIT License:
+
+TMDB logo (app/assets/attribution/tmdb_logo.png)
+  The TMDB logo is a trademark of TMDB. It is included only to give the
+  attribution TMDB's API terms of use require, and it is not covered by this
+  project's MIT License: use of the logo is governed by TMDB's own terms
+  (https://www.themoviedb.org/api-terms-of-use and https://www.themoviedb.org/about/logos-attribution).
+  Do not reuse it, or the TMDB name, in another project or to suggest an endorsement.
+
+  This product uses the TMDB API but is not endorsed or certified by TMDB.
+  Chithram talks to TMDB only with the user's own API key.
+
+Poppins font (app/assets/fonts)
+  SIL Open Font License 1.1, see app/assets/fonts/OFL.txt.

@@ -2,6 +2,19 @@
 
 Release notes are taken from the section of the version being tagged.
 
+## 0.3.0 (in progress)
+
+### Added
+- Foundations for Media Home: a local database (HTTP cache, plugins, Torznab, provider health), secret storage for
+  API keys, skeletons of the TMDB, release-name and Torznab packages, and the home, catalogue and Find interfaces with
+  fakes. Settings gains Metadata, Search plugins, Torznab and Image cache sections (placeholders until their work lands).
+- "Find sources for ..." on the Search page, a first listing of provider results.
+- Text sent from a phone can fill the open text field (used for API keys and long tokens).
+- A performance run on the TV emulator (`perf.yml`, report mode).
+
+### Changed
+- The TV, phone and shared UI code now live in `ui/tv`, `ui/phone` and `ui/common`.
+
 ## 0.2.0 (in progress)
 
 ### Added

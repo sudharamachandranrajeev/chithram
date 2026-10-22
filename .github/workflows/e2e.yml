@@ -12,6 +12,7 @@ on:
       - 'packages/**'
       - 'native/torrent/**'
       - '.github/e2e*'
+      - '.github/fixtures/**'
       - '.github/phone-shots.sh'
       - '.github/workflows/e2e.yml'
   pull_request:
@@ -20,6 +21,7 @@ on:
       - 'packages/**'
       - 'native/torrent/**'
       - '.github/e2e*'
+      - '.github/fixtures/**'
       - '.github/phone-shots.sh'
       - '.github/workflows/e2e.yml'
   workflow_dispatch:
@@ -44,7 +46,7 @@ jobs:
       - name: Build tools, Xvfb, Mesa and ffmpeg
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libmpv-dev mpv xvfb libgl1-mesa-dri libegl1 libgles2 ffmpeg >/dev/null
+          sudo apt-get install -y -qq clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libmpv-dev libsecret-1-dev mpv xvfb libgl1-mesa-dri libegl1 libgles2 ffmpeg >/dev/null
       - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
         with:
           toolchain: stable
@@ -165,6 +167,7 @@ jobs:
             !e2e-out/fixtures/**/*.m4a
             !e2e-out/fixtures/**/*.ts
             !e2e-out/fixtures/seed
+            !e2e-out/fixtures/t
           if-no-files-found: ignore
 
   phone-e2e:
@@ -254,6 +257,7 @@ jobs:
             !phone-out/fixtures/**/*.m4a
             !phone-out/fixtures/**/*.ts
             !phone-out/fixtures/seed
+            !phone-out/fixtures/t
           if-no-files-found: ignore
       # For phone-shots.sh on a real phone: gh run download <run> -n phone-debug-apk
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

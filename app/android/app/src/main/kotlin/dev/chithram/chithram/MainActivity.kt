@@ -17,14 +17,7 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-        // Integration tests build the app directly, so they ask.
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "dev.chithram/app")
-            .setMethodCallHandler { call, result ->
-                when (call.method) {
-                    "formFactor" -> result.success(FormFactor.detect(this))
-                    else -> result.notImplemented()
-                }
-            }
+        AppChannel.register(this, flutterEngine)
         // Receiving LocalSend discovery packets needs the multicast lock; the
         // Receive screen holds it only while it is open.
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "dev.chithram/net")

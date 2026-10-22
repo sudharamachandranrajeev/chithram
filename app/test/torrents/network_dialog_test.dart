@@ -1,7 +1,7 @@
 import 'package:chithram/src/core/prefs.dart';
 import 'package:chithram/src/features/torrents/network_dialog.dart';
 import 'package:chithram/src/features/torrents/torrent_logic.dart';
-import 'package:chithram/src/ui/keys.dart';
+import 'package:chithram/src/ui/common/keys.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 

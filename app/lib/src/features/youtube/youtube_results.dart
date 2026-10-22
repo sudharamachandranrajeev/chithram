@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:innertube/innertube.dart' hide Page;
 
 import '../../theme.dart';
-import '../../ui/dims.dart';
-import '../../ui/focus_card.dart';
+import '../../ui/common/dims.dart';
+import '../../ui/tv/focus_card.dart';
 
 /// A lazily built grid of video tiles (a sliver, so it lives inside the
 /// page's scroll view). Asks for the next page near the end.

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'ui/form_factor.dart';
+import 'ui/common/form_factor.dart';
 
 /// Chithram's look, defined once. Dark, with a saffron-gold accent.
 class ChithramColors {

@@ -3,9 +3,9 @@ import 'dart:async';
 
 import 'package:chithram/src/player/play_request.dart';
 import 'package:chithram/src/player/player_keys.dart';
-import 'package:chithram/src/ui/app.dart';
-import 'package:chithram/src/ui/keys.dart';
-import 'package:chithram/src/ui/shell.dart';
+import 'package:chithram/src/ui/common/app.dart';
+import 'package:chithram/src/ui/common/keys.dart';
+import 'package:chithram/src/ui/common/shell.dart';
 import 'package:chithram_player/chithram_player.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';

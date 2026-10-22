@@ -7,8 +7,8 @@ import 'package:torrent/torrent.dart';
 import '../../core/services.dart';
 import '../../player/play_request.dart';
 import '../../theme.dart';
-import '../../ui/dims.dart';
-import '../../ui/focus_card.dart';
+import '../../ui/common/dims.dart';
+import '../../ui/tv/focus_card.dart';
 import 'torrent_logic.dart';
 
 /// Widget keys for the file list, for tests.

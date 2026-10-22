@@ -9,11 +9,11 @@ import '../core/redact.dart';
 import '../core/resume_store.dart';
 import '../core/services.dart';
 import '../theme.dart';
-import '../ui/dims.dart';
-import '../ui/focus_card.dart';
-import '../ui/form_factor.dart';
-import '../ui/home_page.dart' show ActionLabel;
-import '../ui/keys.dart';
+import '../ui/common/dims.dart';
+import '../ui/tv/focus_card.dart';
+import '../ui/common/form_factor.dart';
+import '../ui/tv/home_page.dart' show ActionLabel;
+import '../ui/common/keys.dart';
 import 'play_request.dart';
 import 'player_keys.dart';
 

@@ -1,4 +1,4 @@
-import 'package:chithram/src/ui/app.dart';
+import 'package:chithram/src/ui/common/app.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';

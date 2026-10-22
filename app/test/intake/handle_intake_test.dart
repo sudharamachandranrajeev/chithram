@@ -8,7 +8,7 @@ import 'package:chithram/src/features/torrents/torrent_service.dart';
 import 'package:chithram/src/intake/fetch.dart';
 import 'package:chithram/src/intake/intake.dart';
 import 'package:chithram/src/intake/summary.dart';
-import 'package:chithram/src/ui/keys.dart';
+import 'package:chithram/src/ui/common/keys.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:iptv/iptv.dart';

@@ -9,7 +9,7 @@ import 'package:localsend_rx/localsend_rx.dart';
 import '../../core/paths.dart';
 import '../../core/prefs.dart';
 import '../../intake/intake.dart';
-import '../../ui/dims.dart';
+import '../../ui/common/dims.dart';
 import 'receive_prompt.dart';
 
 enum ReceiveStatus { stopped, starting, listening, error }
@@ -76,6 +76,18 @@ class ReceiveService {
 
   /// Texts the user already chose an action for in the prompt.
   final _confirmed = <String>{};
+
+  /// Open text fields that take accepted phone text (newest last).
+  final _sinks = <void Function(String)>[];
+
+  /// While a field with `acceptFromPhone` is open, accepted LocalSend text goes
+  /// into it instead of the intake path (keys and long tokens). The offer
+  /// prompt is still shown first. Returns the remover; call it when the field
+  /// closes.
+  VoidCallback routeTextTo(void Function(String text) sink) {
+    _sinks.add(sink);
+    return () => _sinks.remove(sink);
+  }
 
   ValueListenable<ReceiveState> get state => _state;
 
@@ -206,7 +218,15 @@ class ReceiveService {
     return true;
   }
 
+  @visibleForTesting
+  void debugIncoming(LsIncoming item) => _onIncoming(item);
+
   void _onIncoming(LsIncoming item) {
+    if (item is TextIncoming && _sinks.isNotEmpty) {
+      _confirmed.remove(item.text);
+      _sinks.last(item.text);
+      return;
+    }
     final context = navigatorKey.currentContext;
     if (context == null || !context.mounted) return;
     switch (item) {

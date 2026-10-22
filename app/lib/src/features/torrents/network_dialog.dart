@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../ui/text_entry.dart';
+import '../../ui/common/text_entry.dart';
 import 'torrent_logic.dart';
 
 /// Widget keys for the network-choice dialog, for tests.

@@ -1,5 +1,5 @@
-import 'package:chithram/src/ui/keys.dart';
-import 'package:chithram/src/ui/text_entry.dart';
+import 'package:chithram/src/ui/common/keys.dart';
+import 'package:chithram/src/ui/common/text_entry.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';

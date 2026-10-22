@@ -3,10 +3,10 @@
 // shell renders, tapping a text field raises the soft keyboard, a YouTube
 // search by tapping plays to 2 s, and Back from the player returns to
 // portrait on the same tab.
-import 'package:chithram/src/ui/app.dart';
-import 'package:chithram/src/ui/form_factor.dart';
-import 'package:chithram/src/ui/keys.dart';
-import 'package:chithram/src/ui/phone_shell.dart';
+import 'package:chithram/src/ui/common/app.dart';
+import 'package:chithram/src/ui/common/form_factor.dart';
+import 'package:chithram/src/ui/common/keys.dart';
+import 'package:chithram/src/ui/phone/phone_shell.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';

@@ -1,5 +1,5 @@
-import 'package:chithram/src/ui/keys.dart';
-import 'package:chithram/src/ui/sections.dart';
+import 'package:chithram/src/ui/common/keys.dart';
+import 'package:chithram/src/ui/common/sections.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -96,3 +96,9 @@ Future<void> settle(WidgetTester t, Duration d) async {
 /// The player's current position text.
 Duration playerPosition(WidgetTester t) =>
     parsePosition(t.widget<Text>(find.byKey(Keys.playerPosition)).data!);
+
+// Fixture endpoints of the e2e and perf runs (.github/e2e.sh writes the
+// defines; empty when the suite runs without the fixture server).
+const e2eTmdbBase = String.fromEnvironment('E2E_TMDB_BASE');
+const e2eTorznab = String.fromEnvironment('E2E_TORZNAB');
+const e2ePluginRepo = String.fromEnvironment('E2E_PLUGIN_REPO');

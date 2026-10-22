@@ -1,0 +1,15 @@
+name: torznab
+description: "Torznab (indexer API) client: capabilities and search. Pure Dart."
+version: 0.0.1
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.13.5
+
+dependencies:
+  xml: ">=6.5.0 <8.0.0"
+
+dev_dependencies:
+  test: any
+  lints: any

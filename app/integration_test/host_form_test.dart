@@ -1,11 +1,11 @@
 // Plain widget tests (no device): the shell each form factor gets, at the
 // window sizes that used to be guessed wrong. CI copies this and support.dart
 // into test/_host/ next to host_test.dart and runs `flutter test test/_host`.
-import 'package:chithram/src/ui/app.dart';
-import 'package:chithram/src/ui/details_page.dart';
-import 'package:chithram/src/ui/dims.dart';
-import 'package:chithram/src/ui/phone_shell.dart';
-import 'package:chithram/src/ui/tv_shell.dart';
+import 'package:chithram/src/ui/common/app.dart';
+import 'package:chithram/src/ui/common/details_page.dart';
+import 'package:chithram/src/ui/common/dims.dart';
+import 'package:chithram/src/ui/phone/phone_shell.dart';
+import 'package:chithram/src/ui/tv/tv_shell.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';

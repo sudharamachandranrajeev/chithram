@@ -1,7 +1,7 @@
 // Plain widget tests (no device): focus rules at TV size and layout at phone size.
 // CI copies this and support.dart into test/_host/ and runs `flutter test test/_host`.
-import 'package:chithram/src/ui/app.dart';
-import 'package:chithram/src/ui/details_page.dart';
+import 'package:chithram/src/ui/common/app.dart';
+import 'package:chithram/src/ui/common/details_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';

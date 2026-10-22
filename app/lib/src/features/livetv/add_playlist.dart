@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:iptv/iptv.dart';
 
-import '../../ui/text_entry.dart';
+import '../../ui/common/text_entry.dart';
 import 'iptv_service.dart';
 import 'suggestions.dart';
 

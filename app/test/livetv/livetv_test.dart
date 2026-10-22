@@ -6,7 +6,7 @@ import 'package:chithram/src/features/livetv/add_playlist.dart';
 import 'package:chithram/src/features/livetv/iptv_service.dart';
 import 'package:chithram/src/features/livetv/livetv_page.dart';
 import 'package:chithram/src/features/livetv/suggestions.dart';
-import 'package:chithram/src/ui/focus_card.dart';
+import 'package:chithram/src/ui/tv/focus_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';

@@ -109,8 +109,6 @@ android() {
   for s in window_animation_scale transition_animation_scale animator_duration_scale; do
     adb shell settings put global "$s" 0
   done
-  adb reverse tcp:8000 tcp:8000
-  adb reverse tcp:16881 tcp:16881
   adb logcat -c
 
   # The player must hold the screen on while it plays: sample the window flags
@@ -132,6 +130,11 @@ android() {
   # The VM service sometimes never connects on a fresh emulator: retry once.
   for attempt in 1 2; do
     phase "flutter drive attempt $attempt"
+    # adbd can drop offline mid-attempt, which clears the reverse forwards:
+    # wait for the device and set them up again before every attempt.
+    adb wait-for-device
+    adb reverse tcp:8000 tcp:8000
+    adb reverse tcp:16881 tcp:16881
     adb shell am force-stop $PKG || true
     adb shell input keyevent KEYCODE_HOME || true
     status=0

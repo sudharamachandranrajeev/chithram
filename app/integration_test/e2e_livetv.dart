@@ -55,9 +55,10 @@ void livetvE2e() {
       // A snack bar may sit over the row, so select it with the D-pad.
       await press(t, LogicalKeyboardKey.arrowRight); // from the rail into the section
       final row = find.ancestor(of: find.text('E2E HLS'), matching: find.byType(FocusCard));
-      for (var i = 0; i < 15 && FocusManager.instance.primaryFocus!.rect != t.getRect(row); i++) {
+      for (var i = 0; i < 15 && (row.evaluate().isEmpty || FocusManager.instance.primaryFocus!.rect != t.getRect(row)); i++) {
         await press(t, LogicalKeyboardKey.arrowDown);
       }
+      expect(row, findsOneWidget);
       expect(FocusManager.instance.primaryFocus!.rect, t.getRect(row), reason: 'D-pad never reached the channel');
       await press(t, LogicalKeyboardKey.enter);
       await waitForPlayback(t);

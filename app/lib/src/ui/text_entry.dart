@@ -27,12 +27,24 @@ Future<String?> askText(
 }) {
   return showDialog<String>(
     context: c,
-    builder: (_) => _TextEntryDialog(opener: c, title: title, hint: hint, initial: initial, kind: kind),
+    builder: (_) => _TextEntryDialog(
+      opener: c,
+      title: title,
+      hint: hint,
+      initial: initial,
+      kind: kind,
+    ),
   );
 }
 
 class _TextEntryDialog extends StatefulWidget {
-  const _TextEntryDialog({required this.opener, required this.title, this.hint, this.initial, required this.kind});
+  const _TextEntryDialog({
+    required this.opener,
+    required this.title,
+    this.hint,
+    this.initial,
+    required this.kind,
+  });
 
   final BuildContext opener;
   final String title;
@@ -49,7 +61,8 @@ class _TextEntryDialogState extends State<_TextEntryDialog> {
   final _keys = SectionFocus();
   bool? _showKeys;
 
-  bool get _link => widget.kind == TextEntryKind.url || widget.kind == TextEntryKind.magnet;
+  bool get _link =>
+      widget.kind == TextEntryKind.url || widget.kind == TextEntryKind.magnet;
 
   @override
   void dispose() {
@@ -80,7 +93,9 @@ class _TextEntryDialogState extends State<_TextEntryDialog> {
     final text = _controller.text;
     if (text.isEmpty) return;
     final end = sel.isValid ? sel.end : text.length;
-    final start = sel.isValid && !sel.isCollapsed ? sel.start : (end - 1).clamp(0, end);
+    final start = sel.isValid && !sel.isCollapsed
+        ? sel.start
+        : (end - 1).clamp(0, end);
     if (end == 0) return;
     _controller.value = TextEditingValue(
       text: text.replaceRange(start, end, ''),
@@ -108,7 +123,9 @@ class _TextEntryDialogState extends State<_TextEntryDialog> {
     }
     final current = FocusManager.instance.primaryFocus;
     if (current == null) return KeyEventResult.ignored;
-    return moveFocus(current, direction) ? KeyEventResult.handled : KeyEventResult.ignored;
+    return moveFocus(current, direction)
+        ? KeyEventResult.handled
+        : KeyEventResult.ignored;
   }
 
   @override
@@ -119,48 +136,72 @@ class _TextEntryDialogState extends State<_TextEntryDialog> {
     return Dialog(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 680),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(widget.title, style: Theme.of(context).textTheme.titleLarge),
-              const SizedBox(height: 16),
-              Focus(
-                canRequestFocus: false,
-                skipTraversal: true,
-                onKeyEvent: _leaveField,
-                child: TextField(
-                  key: Keys.textEntryField,
-                  controller: _controller,
-                  autofocus: true,
-                  textInputAction: switch (widget.kind) {
-                    TextEntryKind.search => TextInputAction.search,
-                    TextEntryKind.pin => TextInputAction.done,
-                    _ => TextInputAction.go,
-                  },
-                  obscureText: widget.kind == TextEntryKind.pin,
-                  keyboardType: switch (widget.kind) {
-                    TextEntryKind.pin => TextInputType.number,
-                    TextEntryKind.search => TextInputType.text,
-                    _ => TextInputType.url,
-                  },
-                  decoration: InputDecoration(hintText: widget.hint),
-                  onSubmitted: (v) => Navigator.of(context).pop(v.trim()),
+        // The field and keyboard scroll; the buttons stay pinned below them so
+        // OK is on screen even when the keyboard is taller than a 540 dp TV.
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.title,
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: 16),
+                    Focus(
+                      canRequestFocus: false,
+                      skipTraversal: true,
+                      onKeyEvent: _leaveField,
+                      child: TextField(
+                        key: Keys.textEntryField,
+                        controller: _controller,
+                        autofocus: true,
+                        textInputAction: switch (widget.kind) {
+                          TextEntryKind.search => TextInputAction.search,
+                          TextEntryKind.pin => TextInputAction.done,
+                          _ => TextInputAction.go,
+                        },
+                        obscureText: widget.kind == TextEntryKind.pin,
+                        keyboardType: switch (widget.kind) {
+                          TextEntryKind.pin => TextInputType.number,
+                          TextEntryKind.search => TextInputType.text,
+                          _ => TextInputType.url,
+                        },
+                        decoration: InputDecoration(hintText: widget.hint),
+                        onSubmitted: (v) => Navigator.of(context).pop(v.trim()),
+                      ),
+                    ),
+                    if (showKeys && _link && !d.phone) ...[
+                      const SizedBox(height: 16),
+                      UrlKeyboard(
+                        focus: _keys,
+                        onChar: _type,
+                        onBackspace: _backspace,
+                        onClear: _controller.clear,
+                      ),
+                    ],
+                  ],
                 ),
               ),
-              if (showKeys && _link && !d.phone) ...[
-                const SizedBox(height: 16),
-                UrlKeyboard(focus: _keys, onChar: _type, onBackspace: _backspace, onClear: _controller.clear),
-              ],
-              const SizedBox(height: 16),
-              Wrap(
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+              child: Wrap(
                 alignment: WrapAlignment.end,
                 spacing: 8,
                 runSpacing: 4,
                 children: [
-                  TextButton(key: Keys.textEntryPaste, onPressed: _paste, child: const Text('Paste')),
+                  TextButton(
+                    key: Keys.textEntryPaste,
+                    onPressed: _paste,
+                    child: const Text('Paste'),
+                  ),
                   // A phone has the system keyboard; this one is for TVs and desktops.
                   if (_link && !d.phone)
                     TextButton(
@@ -169,17 +210,25 @@ class _TextEntryDialogState extends State<_TextEntryDialog> {
                       child: Text(showKeys ? 'Hide keyboard' : 'Keyboard'),
                     ),
                   if (_link)
-                    TextButton(key: Keys.textEntrySend, onPressed: _sendFromPhone, child: const Text('Send from phone')),
-                  TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
+                    TextButton(
+                      key: Keys.textEntrySend,
+                      onPressed: _sendFromPhone,
+                      child: const Text('Send from phone'),
+                    ),
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('Cancel'),
+                  ),
                   FilledButton(
                     key: Keys.textEntryOk,
-                    onPressed: () => Navigator.of(context).pop(_controller.text.trim()),
+                    onPressed: () =>
+                        Navigator.of(context).pop(_controller.text.trim()),
                     child: const Text('OK'),
                   ),
                 ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

@@ -70,6 +70,9 @@ print(*struct.unpack(">II", d[16:24]))
 ' "$1"
 }
 
+# Wait (up to 60 s) for the bottom bar to be on screen.
+for _ in $(seq 1 30); do find_tab Home >/dev/null 2>&1 && break; sleep 2; done
+
 fail=0
 for tab in "Home:home" "Search:search" "Live TV:livetv" "YouTube:youtube" "Torrents:torrents"; do
   label=${tab%%:*}; slug=${tab##*:}

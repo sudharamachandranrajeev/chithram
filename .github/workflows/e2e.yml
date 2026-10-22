@@ -228,6 +228,8 @@ jobs:
           AVD_LCD: 1264x2780@480
           AVD_KEYBOARD: 'no'
           PHONE_SHOTS: '1'
+          # One player open, so only the cold one (codec loading) is measured.
+          FIRST_FRAME_MAX_MS: '12000'
         run: bash .github/e2e.sh android phone-out
       - name: Results to the step summary
         if: always()

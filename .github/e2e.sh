@@ -12,7 +12,7 @@
 # Env for android: IMAGE (default system-images;android-36;android-tv;x86_64),
 # DEVICE (tv_1080p), E2E_TARGET (default e2e_all_test.dart), E2E_FORM (tv; the
 # form factor the suite expects), AVD_LCD (e.g. 1264x2780@480: screen size and
-# density), AVD_KEYBOARD (hw.keyboard, no = soft keyboard shows), PHONE_SHOTS=1
+# density), FIRST_FRAME_MAX_MS (player first-frame limit, default 2500), AVD_KEYBOARD (hw.keyboard, no = soft keyboard shows), PHONE_SHOTS=1
 # (after the suite: build a debug APK for arm64 + x86_64, run phone-shots.sh on
 # the emulator, keep the APK in <out-dir>/apk). Needs Flutter, the Android SDK,
 # cargo-ndk and /dev/kvm.
@@ -183,8 +183,10 @@ android() {
     # The first open pays for codec loading; the fastest one is the warm figure.
     first=$(grep -oE 'CHITHRAM_FIRST_FRAME [0-9]+' "$out/logcat.txt" | grep -oE '[0-9]+$' | sort -n | head -1 || true)
     echo "fastest first frame (emulator only): ${first:-none} ms"
-    if [[ -z $first || $first -ge 2500 ]]; then
-      echo "::error::first frame ${first:-missing} ms, expected under 2500"; status=1
+    # A suite that opens the player once (the phone one) only sees the cold open.
+    local max=${FIRST_FRAME_MAX_MS:-2500}
+    if [[ -z $first || $first -ge $max ]]; then
+      echo "::error::first frame ${first:-missing} ms, expected under $max"; status=1
     fi
   fi
   if [[ $status -ne 0 ]]; then echo "::error::e2e suite failed"; fi

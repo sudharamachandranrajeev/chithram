@@ -2,6 +2,24 @@
 
 Release notes are taken from the section of the version being tagged.
 
+## 0.2.1 (in progress)
+
+### Added
+- Phone views for YouTube, Search, Live TV, Torrents, Receive and Settings, kept apart from the TV
+  design (`features/*/phone/`, `ui/phone/`). They share the same controllers and services.
+  - YouTube and Search: a search bar at the top that uses the system keyboard, full-width 16:9 result
+    cards, vertical result sections, pull down to search again.
+  - Live TV: a source list (pull down to refresh every source), group chips that stay pinned while the
+    channel list scrolls, tap a channel to play.
+  - Torrents: a text field for a magnet link (type or paste), the network choice, and the file list.
+  - Receive and Settings: Material 3 list tiles. Receive is reached from Settings on a phone.
+- Phone widget tests at 360x640, 421x927, 927x421 and 800x1280 (tap targets, labels, no overflow), and
+  phone end-to-end steps for a typed YouTube search, a pasted magnet and Live TV playback.
+
+### Fixed
+- A phone no longer shows the TV on-screen keyboard or the "Send from phone" buttons: it types with the
+  system keyboard everywhere. The text entry dialog drops "Send from phone" on a phone.
+
 ## 0.2.0 (in progress)
 
 ### Added

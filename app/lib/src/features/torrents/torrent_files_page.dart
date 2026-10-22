@@ -9,6 +9,7 @@ import '../../player/play_request.dart';
 import '../../theme.dart';
 import '../../ui/dims.dart';
 import '../../ui/focus_card.dart';
+import 'phone/phone_torrent_files.dart';
 import 'torrent_logic.dart';
 
 /// Widget keys for the file list, for tests.
@@ -63,6 +64,7 @@ class _TorrentFilesPageState extends State<TorrentFilesPage> {
   @override
   Widget build(BuildContext context) {
     final d = Dims.of(context);
+    if (d.phone) return PhoneTorrentFiles(info: widget.info, service: _service, onPlay: _play);
     return CallbackShortcuts(
       bindings: {
         const SingleActivator(LogicalKeyboardKey.escape): () => Navigator.of(context).maybePop(),

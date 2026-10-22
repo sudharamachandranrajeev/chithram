@@ -9,6 +9,7 @@ import 'src/core/services.dart';
 import 'src/intake/intake.dart';
 import 'src/smoke.dart';
 import 'src/ui/app.dart';
+import 'src/ui/form_factor.dart';
 import 'src/ui/search_page.dart';
 
 Future<void> main(List<String> args) async {
@@ -21,9 +22,22 @@ Future<void> main(List<String> args) async {
       debugPrint('libmpv could not be loaded: $error');
     }
   }
+  // Decided once, from the device (never the window size).
+  final form = resolveFormFactor(
+    platform: defaultTargetPlatform,
+    define: formFactorDefine,
+    arg: formFactorArg(args),
+  );
+  if (form != null) {
+    final view = PlatformDispatcher.instance.views.first;
+    OrientationPolicy.apply(
+      form,
+      shortestSideDp: view.physicalSize.shortestSide / view.devicePixelRatio,
+    );
+  }
   // "Search for this text" in the intake prompt.
   IntakeHooks.search = openSearch;
-  runApp(ChithramApp(services: await AppServices.open()));
+  runApp(ChithramApp(services: await AppServices.open(), formFactor: form));
   final smoke = smokeTarget(args);
   if (smoke != null) unawaited(runSmoke(smoke));
 }

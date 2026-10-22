@@ -3,6 +3,7 @@
 // Android TV emulator: `.github/e2e.sh android <out-dir>`.
 import 'package:integration_test/integration_test.dart';
 
+import 'e2e_form.dart';
 import 'e2e_livetv.dart';
 import 'e2e_player.dart';
 import 'e2e_receive.dart';
@@ -11,6 +12,7 @@ import 'e2e_youtube.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  formE2e();
   playerE2e();
   youtubeE2e();
   livetvE2e();

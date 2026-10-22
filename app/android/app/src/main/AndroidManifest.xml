@@ -11,6 +11,7 @@
     <uses-feature android:name="android.hardware.touchscreen" android:required="false"/>
 
     <application
+        android:enableOnBackInvokedCallback="true"
         android:label="Chithram"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"

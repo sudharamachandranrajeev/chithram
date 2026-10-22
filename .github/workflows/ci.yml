@@ -104,3 +104,12 @@ jobs:
             fi
             echo "::endgroup::"
           done
+      # flutter test treats anything under integration_test/ as a device test,
+      # so the host-run tests (focus, layout, form factors) are copied next to
+      # the normal ones first.
+      - name: Host widget tests (phone, TV and desktop shells)
+        working-directory: app
+        run: |
+          mkdir test/_host
+          cp integration_test/host_test.dart integration_test/host_form_test.dart integration_test/support.dart test/_host/
+          flutter test test/_host

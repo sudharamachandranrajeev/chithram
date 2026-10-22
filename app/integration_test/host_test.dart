@@ -28,17 +28,12 @@ void main() {
       await t.tap(find.byKey(const ValueKey('nav-search')));
       await t.pumpAndSettle();
       expect(find.textContaining('Unified search'), findsOneWidget);
-      for (final c in 'sin'.split('')) {
-        await t.tap(find.byKey(ValueKey('key-$c')));
-        await t.pumpAndSettle();
-      }
-      expect(_query(t), 'sin');
-      await t.tap(find.byKey(const ValueKey('key-backspace')));
+      // A phone types into a real TextField (the system keyboard), not the
+      // on-screen keys.
+      expect(find.byKey(const ValueKey('key-s')), findsNothing);
+      await t.enterText(find.byKey(const ValueKey('search-field')), 'sin');
       await t.pumpAndSettle();
-      expect(_query(t), 'si');
-      await t.tap(find.byKey(const ValueKey('key-clear')));
-      await t.pumpAndSettle();
-      expect(_query(t), '');
+      expect(t.widget<TextField>(find.byKey(const ValueKey('search-field'))).controller!.text, 'sin');
     });
 
     testWidgets('tile opens details, back returns', (t) async {

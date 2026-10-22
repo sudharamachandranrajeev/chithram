@@ -9,8 +9,22 @@ import io.flutter.plugin.common.MethodChannel
 class MainActivity : FlutterActivity() {
     private var multicastLock: WifiManager.MulticastLock? = null
 
+    // The form factor reaches Dart before the first frame as an entrypoint
+    // argument, after whatever the launcher passed (the release smoke test's
+    // --smoke).
+    override fun getDartEntrypointArgs(): List<String>? =
+        (super.getDartEntrypointArgs() ?: emptyList()) + "--form-factor=${FormFactor.detect(this)}"
+
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        // Integration tests build the app directly, so they ask.
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "dev.chithram/app")
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "formFactor" -> result.success(FormFactor.detect(this))
+                    else -> result.notImplemented()
+                }
+            }
         // Receiving LocalSend discovery packets needs the multicast lock; the
         // Receive screen holds it only while it is open.
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "dev.chithram/net")

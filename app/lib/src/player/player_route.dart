@@ -11,6 +11,7 @@ import '../core/services.dart';
 import '../theme.dart';
 import '../ui/dims.dart';
 import '../ui/focus_card.dart';
+import '../ui/form_factor.dart';
 import '../ui/home_page.dart' show ActionLabel;
 import '../ui/keys.dart';
 import 'play_request.dart';
@@ -348,8 +349,8 @@ class _PlayerRouteState extends State<PlayerRoute> {
       await _closeRequest(_request);
     }());
     if (_restoreChrome) {
-      unawaited(SystemChrome.setPreferredOrientations(const <DeviceOrientation>[]));
-      unawaited(SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge));
+      // Back to the launch policy: portrait on a phone, free on a tablet.
+      OrientationPolicy.restore();
     }
     _promptFocus.dispose();
     _errorFocus.dispose();

@@ -1,4 +1,4 @@
-import 'package:chithram/src/ui/app.dart';
+import 'package:chithram/src/ui/focus_card.dart';
 import 'package:chithram/src/ui/home_page.dart';
 import 'dart:io';
 
@@ -25,7 +25,8 @@ void main() {
     addTearDown(tester.view.reset);
 
     await tester.runAsync(_loadPoppins);
-    await tester.pumpWidget(const ChithramApp());
+    // The TV Home page at a phone's width (no form scope: the size decides).
+    await tester.pumpWidget(MaterialApp(home: Scaffold(body: HomePage(focus: SectionFocus()))));
     await tester.pumpAndSettle();
 
     final home = tester.getRect(find.byType(HomePage));

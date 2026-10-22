@@ -10,7 +10,12 @@
 # torrent seeder example). <dir>/e2e.env holds the dart-defines.
 #
 # Env for android: IMAGE (default system-images;android-36;android-tv;x86_64),
-# DEVICE (tv_1080p). Needs Flutter, the Android SDK, cargo-ndk and /dev/kvm.
+# DEVICE (tv_1080p), E2E_TARGET (default e2e_all_test.dart), E2E_FORM (tv; the
+# form factor the suite expects), AVD_LCD (e.g. 1264x2780@480: screen size and
+# density), FIRST_FRAME_MAX_MS (player first-frame limit, default 2500), AVD_KEYBOARD (hw.keyboard, no = soft keyboard shows), PHONE_SHOTS=1
+# (after the suite: build a debug APK for arm64 + x86_64, run phone-shots.sh on
+# the emulator, keep the APK in <out-dir>/apk). Needs Flutter, the Android SDK,
+# cargo-ndk and /dev/kvm.
 set -euo pipefail
 
 root=$(git rev-parse --show-toplevel)
@@ -62,16 +67,34 @@ M3U
   cat "$dir/seeder.log"
 }
 
+# Screen size and soft keyboard of the AVD (AVD_LCD=WxH@dpi, AVD_KEYBOARD=no|yes).
+configure_avd() {
+  local ini=$1
+  set_ini() { sed -i "/^$1=/d" "$ini"; echo "$1=$2" >>"$ini"; }
+  if [[ -n ${AVD_LCD:-} ]]; then
+    local w=${AVD_LCD%%x*} rest=${AVD_LCD#*x}
+    local h=${rest%%@*} dpi=${rest#*@}
+    # A device skin overrides the LCD size.
+    sed -i '/^skin\./d' "$ini"
+    set_ini hw.lcd.width "$w"; set_ini hw.lcd.height "$h"; set_ini hw.lcd.density "$dpi"
+    set_ini showDeviceFrame no
+  fi
+  [[ -z ${AVD_KEYBOARD:-} ]] || set_ini hw.keyboard "$AVD_KEYBOARD"
+  grep -E '^(hw\.lcd|hw\.keyboard|skin)' "$ini" || true
+}
+
 android() {
   local out; out=$(realpath -m "$1")
   local IMAGE=${IMAGE:-system-images;android-36;android-tv;x86_64}
   local DEVICE=${DEVICE:-tv_1080p}
+  local TARGET=${E2E_TARGET:-e2e_all_test.dart}
   mkdir -p "$out"
   local sdk=${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}
   export PATH="$sdk/cmdline-tools/latest/bin:$sdk/emulator:$sdk/platform-tools:$PATH"
 
   host_services "$out/fixtures"
   mapfile -t defines <"$out/fixtures/e2e.env"
+  defines+=("--dart-define=E2E_FORM=${E2E_FORM:-tv}")
 
   # Build first: the emulator is the slow, flaky part.
   phase "torrent library (x86_64)"
@@ -79,7 +102,7 @@ android() {
     -o ../../packages/torrent/android/src/main/jniLibs build --release --locked --lib)
   phase "build the e2e APK"
   (cd "$root/app" && flutter build apk --debug --target-platform android-x64 \
-    --target=integration_test/e2e_all_test.dart "${defines[@]}")
+    --target=integration_test/$TARGET "${defines[@]}")
   cp "$root/app/build/app/outputs/flutter-apk/app-debug.apk" "$out/e2e-debug.apk"
   # The torrent build tree is large; the TV image needs the room.
   rm -rf "$root/native/torrent/target/release/deps" "$root/native/torrent/target/release/build" || true
@@ -93,6 +116,7 @@ android() {
   sdkmanager --install "emulator" "platform-tools" "$IMAGE" >/dev/null
   echo no | avdmanager create avd --force -n ci -k "$IMAGE" -d "$DEVICE"
   emulator -list-avds | grep -qx ci || { echo "::error::AVD ci was not created"; exit 1; }
+  configure_avd "$ANDROID_AVD_HOME/ci.avd/config.ini"
   phase "boot emulator"
   nohup emulator -avd ci -no-window -no-audio -no-boot-anim -no-snapshot -accel on \
     -gpu swiftshader_indirect -memory 3072 -no-metrics >"$out/emulator.log" 2>&1 &
@@ -139,7 +163,7 @@ android() {
     adb shell input keyevent KEYCODE_HOME || true
     status=0
     SCREENSHOT_DIR="$out/screenshots" timeout 900 flutter drive \
-      --driver=integration_test/driver.dart --target=integration_test/e2e_all_test.dart \
+      --driver=integration_test/driver.dart --target=integration_test/$TARGET \
       --use-application-binary="$out/e2e-debug.apk" "${defines[@]}" \
       -d emulator-5554 2>&1 | tee "$out/drive-$attempt.log" || status=$?
     cp "$out/drive-$attempt.log" "$out/drive.log"
@@ -159,14 +183,32 @@ android() {
     # The first open pays for codec loading; the fastest one is the warm figure.
     first=$(grep -oE 'CHITHRAM_FIRST_FRAME [0-9]+' "$out/logcat.txt" | grep -oE '[0-9]+$' | sort -n | head -1 || true)
     echo "fastest first frame (emulator only): ${first:-none} ms"
-    if [[ -z $first || $first -ge 2500 ]]; then
-      echo "::error::first frame ${first:-missing} ms, expected under 2500"; status=1
+    # A suite that opens the player once (the phone one) only sees the cold open.
+    local max=${FIRST_FRAME_MAX_MS:-2500}
+    if [[ -z $first || $first -ge $max ]]; then
+      echo "::error::first frame ${first:-missing} ms, expected under $max"; status=1
     fi
   fi
   if [[ $status -ne 0 ]]; then echo "::error::e2e suite failed"; fi
+  if [[ ${PHONE_SHOTS:-} == 1 ]]; then phone_shots "$out" || status=$?; fi
   phase "done (status $status)"
   rm -f "$out"/*.apk
   return $status
+}
+
+# The app itself (not the test target), for arm64 phones and the emulator: kept
+# as <out>/apk/chithram-debug.apk, and driven by phone-shots.sh on the emulator.
+phone_shots() {
+  local out=$1
+  phase "debug APK (arm64 + x86_64)"
+  (cd "$root/native/torrent" && cargo ndk -P 24 -t arm64-v8a -t x86_64 \
+    -o ../../packages/torrent/android/src/main/jniLibs build --release --locked --lib)
+  (cd "$root/app" && flutter build apk --debug --target-platform android-arm64,android-x64)
+  mkdir -p "$out/apk"
+  cp "$root/app/build/app/outputs/flutter-apk/app-debug.apk" "$out/apk/chithram-debug.apk"
+  phase "phone-shots on the emulator"
+  bash "$root/.github/phone-shots.sh" "$out/shots" "$out/apk/chithram-debug.apk" || {
+    echo "::error::phone-shots failed"; return 1; }
 }
 
 case ${1:-} in

@@ -6,8 +6,10 @@ import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';
 
 import 'src/core/services.dart';
+import 'src/intake/intake.dart';
 import 'src/smoke.dart';
 import 'src/ui/app.dart';
+import 'src/ui/search_page.dart';
 
 Future<void> main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,6 +21,8 @@ Future<void> main(List<String> args) async {
       debugPrint('libmpv could not be loaded: $error');
     }
   }
+  // "Search for this text" in the intake prompt.
+  IntakeHooks.search = openSearch;
   runApp(ChithramApp(services: await AppServices.open()));
   final smoke = smokeTarget(args);
   if (smoke != null) unawaited(runSmoke(smoke));

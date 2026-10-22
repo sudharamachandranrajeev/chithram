@@ -16,18 +16,27 @@ import 'focus_rail.dart';
 import 'keyboard.dart';
 import 'text_entry.dart';
 
-/// Search with an on-screen D-pad keyboard (a TextField is avoided on TV:
-/// flutter/flutter#147772). On desktop, typing on a hardware keyboard also
-/// works: letters, digits and Backspace.
+/// Search with an on-screen D-pad keyboard on TV and desktop (a TextField is
+/// avoided on TV: flutter/flutter#147772). On desktop, typing on a hardware
+/// keyboard also works: letters, digits and Backspace. A phone uses a real
+/// TextField, so the system keyboard appears.
 ///
 /// Pressing Search looks up YouTube videos and, on the global page, matching
 /// Live TV channels. Nothing is searched while typing. [youtubeOnly] gives the
 /// YouTube section: same keyboard and results, without the channel rail.
 class SearchPage extends StatefulWidget {
-  const SearchPage({super.key, required this.focus, this.youtubeOnly = false});
+  const SearchPage({
+    super.key,
+    required this.focus,
+    this.youtubeOnly = false,
+    this.initialQuery,
+  });
 
   final SectionFocus focus;
   final bool youtubeOnly;
+
+  /// Typed in and searched at once (text that arrived through intake).
+  final String? initialQuery;
 
   @override
   State<SearchPage> createState() => _SearchPageState();
@@ -35,18 +44,29 @@ class SearchPage extends StatefulWidget {
 
 class _SearchPageState extends State<SearchPage> {
   String _query = '';
+  late final _field = TextEditingController(text: widget.initialQuery);
   YouTubeSearchController? _results;
   List<StoredChannel> _channels = const [];
 
   @override
+  void initState() {
+    super.initState();
+    _query = widget.initialQuery ?? '';
+  }
+
+  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _results ??= YouTubeSearchController(AppServices.of(context).youtube)
-      ..addListener(_changed);
+    if (_results == null) {
+      _results = YouTubeSearchController(AppServices.of(context).youtube)
+        ..addListener(_changed);
+      if (_query.trim().isNotEmpty) Future.microtask(_search);
+    }
   }
 
   @override
   void dispose() {
+    _field.dispose();
     _results?.dispose();
     super.dispose();
   }
@@ -96,6 +116,7 @@ class _SearchPageState extends State<SearchPage> {
   void _clear() => setState(() => _query = '');
 
   KeyEventResult _onKey(FocusNode node, KeyEvent event) {
+    if (Dims.of(context).phone) return KeyEventResult.ignored;
     if (event is KeyUpEvent) return KeyEventResult.ignored;
     if (event.logicalKey == LogicalKeyboardKey.backspace) {
       _backspace();
@@ -161,36 +182,58 @@ class _SearchPageState extends State<SearchPage> {
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(color: ChithramColors.surfaceHigh),
                     ),
-                    child: Stack(
-                      children: [
-                        if (_query.isEmpty)
-                          Text(
-                            'Type a title',
-                            style: TextStyle(
-                              color: ChithramColors.textDim,
-                              fontSize: d.t(18),
+                    child: d.phone
+                        ? TextField(
+                            key: const ValueKey('search-field'),
+                            controller: _field,
+                            autofocus: true,
+                            textInputAction: TextInputAction.search,
+                            keyboardType: TextInputType.text,
+                            style: TextStyle(fontSize: d.t(18)),
+                            decoration: InputDecoration.collapsed(
+                              hintText: 'Type a title',
+                              hintStyle: TextStyle(
+                                color: ChithramColors.textDim,
+                                fontSize: d.t(18),
+                              ),
                             ),
+                            onChanged: (v) => _query = v,
+                            onSubmitted: (v) {
+                              _query = v;
+                              _search();
+                            },
+                          )
+                        : Stack(
+                            children: [
+                              if (_query.isEmpty)
+                                Text(
+                                  'Type a title',
+                                  style: TextStyle(
+                                    color: ChithramColors.textDim,
+                                    fontSize: d.t(18),
+                                  ),
+                                ),
+                              Text(
+                                _query,
+                                key: const ValueKey('search-query'),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: d.t(18),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
                           ),
-                        Text(
-                          _query,
-                          key: const ValueKey('search-query'),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: d.t(18),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
                   ),
                   const SizedBox(height: 14),
-                  OnScreenKeyboard(
-                    focus: widget.focus,
-                    onChar: _add,
-                    onBackspace: _backspace,
-                    onClear: _clear,
-                  ),
+                  if (!d.phone)
+                    OnScreenKeyboard(
+                      focus: widget.focus,
+                      onChar: _add,
+                      onBackspace: _backspace,
+                      onClear: _clear,
+                    ),
                   const SizedBox(height: 6),
                   Wrap(
                     spacing: 12,
@@ -306,6 +349,43 @@ class _ActionCard extends StatelessWidget {
               style: TextStyle(fontSize: d.t(16), fontWeight: FontWeight.w600),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Opens search with [text] already typed in and searched (the "Search for
+/// this text" action of the intake path).
+Future<void> openSearch(BuildContext context, String text) {
+  return Navigator.of(context)
+      .push(MaterialPageRoute<void>(builder: (_) => _SearchRoute(text: text)));
+}
+
+class _SearchRoute extends StatefulWidget {
+  const _SearchRoute({required this.text});
+
+  final String text;
+
+  @override
+  State<_SearchRoute> createState() => _SearchRouteState();
+}
+
+class _SearchRouteState extends State<_SearchRoute> {
+  final _focus = SectionFocus();
+
+  @override
+  void dispose() {
+    _focus.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SafeArea(
+        child: Overscan(
+          child: SearchPage(focus: _focus, initialQuery: widget.text),
         ),
       ),
     );

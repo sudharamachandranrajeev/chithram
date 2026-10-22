@@ -60,7 +60,7 @@ void livetvE2e() {
         await press(t, LogicalKeyboardKey.arrowDown);
       }
       expect(FocusManager.instance.primaryFocus!.rect, t.getRect(row), reason: 'D-pad never reached the channel');
-      await press(t, LogicalKeyboardKey.select);
+      await press(t, LogicalKeyboardKey.enter);
       await waitForPlayback(t);
 
       // Down zaps to the next channel.

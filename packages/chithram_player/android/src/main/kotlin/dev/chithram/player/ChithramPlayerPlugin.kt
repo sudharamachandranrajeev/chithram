@@ -48,6 +48,7 @@ class ChithramPlayerPlugin : FlutterPlugin, ActivityAware, MethodChannel.MethodC
                     hosts[id] = PlayerHost(context, id, messenger)
                     result.success(id)
                 }
+                "capabilities" -> result.success(Capabilities.query(activity ?: context))
                 "launchArgs" -> {
                     val extras = activity?.intent?.extras
                     val out = HashMap<String, String>()

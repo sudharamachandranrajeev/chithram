@@ -51,6 +51,8 @@ class _Hero extends StatelessWidget {
     final d = Dims.of(context);
     final height = (MediaQuery.sizeOf(context).height * 0.42).clamp(220.0, 460.0);
     return Container(
+      // Fill the width: without it the card shrinks to its widest child.
+      width: double.infinity,
       constraints: BoxConstraints(minHeight: height),
       margin: EdgeInsets.fromLTRB(d.phone ? 8 : 16, 16, d.phone ? 8 : 16, 0),
       padding: EdgeInsets.all(d.phone ? 18 : 28),

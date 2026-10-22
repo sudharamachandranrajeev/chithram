@@ -112,7 +112,9 @@ jobs:
         env:
           CHITHRAM_MPV_AO: 'null'
           LIBGL_ALWAYS_SOFTWARE: '1'
-        run: xvfb-run -a -s '-screen 0 1280x720x24' timeout 300 flutter test integration_test/player_desktop_test.dart -d linux 2>&1 | tee ../linux-test.log
+        run: |
+          set -o pipefail
+          xvfb-run -a -s '-screen 0 1280x720x24' timeout 300 flutter test integration_test/player_desktop_test.dart -d linux 2>&1 | tee ../linux-test.log
       - name: Results to the step summary
         if: always()
         run: |

@@ -10,6 +10,7 @@ import '../features/youtube/youtube_service.dart';
 import 'paths.dart';
 import 'prefs.dart';
 import 'resume_store.dart';
+import 'resume_store_json.dart';
 
 /// The app's services, built once in `main()` and read with
 /// [AppServices.of]. Plain objects (`ChangeNotifier` or `ValueListenable`
@@ -35,8 +36,7 @@ class AppServices {
       navigatorKey: navigatorKey,
       paths: paths,
       prefs: prefs,
-      // The JSON store replaces this with the player work package.
-      resume: MemoryResumeStore(),
+      resume: await JsonResumeStore.load(paths.supportFile('resume.json')),
       youtube: YouTubeService(),
       iptv: IptvService(store: JsonFileIptvStore(Directory('${paths.support.path}/iptv'))),
       torrents: TorrentService(paths: paths, prefs: prefs),

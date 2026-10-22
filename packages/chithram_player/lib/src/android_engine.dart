@@ -111,7 +111,20 @@ class AndroidPlayerEngine implements PlayerEngine {
       );
 
   @override
-  Future<PlaybackCaps> capabilities() async => const PlaybackCaps();
+  Future<PlaybackCaps> capabilities() async {
+    try {
+      final m = await _methods.invokeMapMethod<String, Object?>('capabilities');
+      if (m == null) return const PlaybackCaps();
+      return PlaybackCaps(
+        videoCodecs: (m['videoCodecs'] as List?)?.cast<String>() ?? const ['h264'],
+        maxHeight: (m['maxHeight'] as num?)?.toInt() ?? 1080,
+        hdr: m['hdr'] as bool? ?? false,
+      );
+    } catch (e) {
+      debugPrint('chithram_player: capabilities failed: $e');
+      return const PlaybackCaps();
+    }
+  }
 
   @override
   Future<void> dispose() async {

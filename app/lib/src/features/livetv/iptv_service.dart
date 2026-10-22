@@ -7,29 +7,75 @@ import 'package:iptv/iptv.dart';
 
 import '../../core/item_id.dart';
 import '../../player/play_request.dart';
-import '../../ui/text_entry.dart';
+import 'add_playlist.dart';
+import 'suggestions.dart';
 
-/// Live TV sources and channels, over the `iptv` package. Stub: the add flow
-/// is a single URL prompt; the Live TV work package replaces it.
-class IptvService {
+/// The sources and channels the Live TV page shows.
+class LiveTvSnapshot {
+  const LiveTvSnapshot(this.sources, this.channels);
+
+  final List<Source> sources;
+
+  /// Channels by source id.
+  final Map<String, List<StoredChannel>> channels;
+}
+
+/// Live TV sources and channels, over the `iptv` package. Nothing is fetched
+/// until a source is added (by the user, after a confirmation for the
+/// built-in suggestions) or refreshed.
+class IptvService extends ChangeNotifier {
   IptvService({required IptvStore store, IptvHttp? http})
       : _store = store,
         _registry = SourceRegistry(store, http ?? DartIoHttp());
 
   final IptvStore _store;
   final SourceRegistry _registry;
+  final _refreshing = <String>{};
+
+  /// Source ids being downloaded right now.
+  Set<String> get refreshing => Set.unmodifiable(_refreshing);
 
   Future<List<Source>> sources() => _registry.sources();
+
+  Future<LiveTvSnapshot> snapshot() async {
+    final sources = await _registry.sources();
+    return LiveTvSnapshot(sources, {
+      for (final s in sources) s.id: await _store.channels(s.id),
+    });
+  }
 
   Future<RefreshResult> addM3uUrl({required String name, required String url}) async {
     final id = 'm3u-${sha256.convert(utf8.encode(ItemId.normaliseUrl(url))).toString().substring(0, 12)}';
     await _registry.add(Source(id: id, kind: SourceKind.m3uUrl, name: name, location: url));
-    return _registry.refresh(id);
+    return refresh(id);
   }
 
-  Future<RefreshResult> refresh(String id) => _registry.refresh(id);
+  /// Adds one of the built-in suggestions and downloads it. Call only after
+  /// the user confirmed.
+  Future<RefreshResult> addSuggestion(
+    CatalogueSuggestion s, {
+    String? country,
+    String? language,
+  }) async {
+    await _registry.add(s.toSource(country: country, language: language));
+    return refresh(s.sourceId);
+  }
 
-  Future<void> remove(String id) => _registry.remove(id);
+  Future<RefreshResult> refresh(String id) async {
+    _refreshing.add(id);
+    notifyListeners();
+    try {
+      return await _registry.refresh(id);
+    } finally {
+      _refreshing.remove(id);
+      notifyListeners();
+    }
+  }
+
+  Future<void> remove(String id) async {
+    await _registry.remove(id);
+    notifyListeners();
+  }
 
   Future<List<StoredChannel>> channels(String sourceId) => _store.channels(sourceId);
 
@@ -47,6 +93,8 @@ class IptvService {
     return out;
   }
 
+  /// A request for `list[index]`. Up and Down step through [list]; callers
+  /// pass only the channels worth zapping to (no dead or missing ones).
   PlayRequest playRequest(List<StoredChannel> list, int index) {
     final c = list[index];
     return PlayRequest(
@@ -64,13 +112,9 @@ class IptvService {
     );
   }
 
-  /// Asks for a playlist URL and adds it. [url] prefills the prompt.
-  Future<void> openAddPlaylist(BuildContext c, {String? url}) async {
-    final entered = await askText(c, title: 'Playlist URL', hint: 'https://...', initial: url);
-    if (entered == null || entered.isEmpty) return;
-    final host = Uri.tryParse(entered)?.host ?? '';
-    await addM3uUrl(name: host.isEmpty ? 'Playlist' : host, url: entered);
-  }
+  /// Asks for a playlist URL and a name, then adds and downloads it. [url]
+  /// prefills the prompt.
+  Future<void> openAddPlaylist(BuildContext c, {String? url}) => addPlaylistFromUrl(c, this, url: url);
 }
 
 class _ChannelZap implements ZapList {

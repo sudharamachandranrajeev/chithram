@@ -240,7 +240,7 @@ impl Engine {
                 .collect()
         })?;
         self.enforce_quota(id).await;
-        Ok(json!({"id": id, "name": h.name(), "files": files}))
+        Ok(json!({"id": id, "name": h.name(), "info_hash": h.info_hash().as_string(), "files": files}))
     }
 
     /// Evict the oldest other torrents (files included) while total progress exceeds the quota.

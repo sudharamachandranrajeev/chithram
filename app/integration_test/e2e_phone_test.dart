@@ -46,25 +46,22 @@ void main() {
     expect(find.byType(NavigationBar), findsOneWidget);
     expect(_logicalSize(t).height, greaterThan(_logicalSize(t).width), reason: 'starts in portrait');
 
-    // Tapping a text field raises the soft keyboard (Search's "Open link"
-    // asks for a line of text; the search bar itself comes with the phone views).
-    await _tap(t, find.byKey(const ValueKey('nav-search')));
-    await _tap(t, find.text('Open link'));
-    final field = find.byKey(Keys.textEntryField);
+    // Tapping the search field raises the soft keyboard (the phone search page
+    // is a real TextField).
+    await _tap(t, find.byKey(const ValueKey('nav-youtube')));
+    final field = find.byKey(const ValueKey('search-field'));
     expect(field, findsOneWidget);
+    await _tap(t, field);
     final raised = await pumpUntil(t, () => MediaQuery.viewInsetsOf(t.element(field)).bottom > 0);
     // ignore: avoid_print
     print('CHITHRAM_E2E soft keyboard raised: $raised');
-    // Report only if the emulator never shows an IME (hw.keyboard); the owner
-    // phone covers it. Set E2E_REQUIRE_IME=true to make it fatal.
+    // Report only if the emulator never shows an IME; the owner phone covers it.
+    // Set E2E_REQUIRE_IME=true to make it fatal.
     if (const bool.fromEnvironment('E2E_REQUIRE_IME')) expect(raised, isTrue);
-    await _tap(t, find.text('Cancel'));
 
-    // YouTube by tapping the on-screen keys (fixture mode: one "Fixture" item).
-    await _tap(t, find.byKey(const ValueKey('nav-youtube')));
-    for (final c in 'fix'.split('')) {
-      await _tap(t, find.byKey(ValueKey('key-$c')));
-    }
+    // YouTube search by typing (fixture mode: one "Fixture" item).
+    await t.enterText(field, 'fix');
+    await t.pumpAndSettle();
     await _tap(t, find.byKey(const ValueKey('search-go')));
     final result = find.byKey(const ValueKey('yt-result-fixturevid1'));
     expect(await pumpUntil(t, () => result.evaluate().isNotEmpty, timeout: const Duration(seconds: 20)), isTrue,
@@ -75,11 +72,11 @@ void main() {
     final position = await waitForPlayback(t);
     // ignore: avoid_print
     print('CHITHRAM_E2E phone youtube reached $position');
-    // The player turns the phone sideways once WP-A lands; report until then.
-    final landscape = await pumpUntil(t, () => _logicalSize(t).width > _logicalSize(t).height,
-        timeout: const Duration(seconds: 5));
+    // The player turns the phone sideways.
+    final landscape = await pumpUntil(t, () => _logicalSize(t).width > _logicalSize(t).height);
     // ignore: avoid_print
     print('CHITHRAM_E2E player landscape: $landscape');
+    expect(landscape, isTrue, reason: 'the player must be landscape on a phone');
 
     Navigator.of(t.element(find.byKey(Keys.playerRoot))).pop();
     await t.pumpAndSettle();

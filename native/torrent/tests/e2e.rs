@@ -179,6 +179,7 @@ async fn seed_leech_stream() {
     println!("added: {added}");
     let id = added["id"].as_u64().unwrap();
     assert_eq!(added["files"][0]["length"].as_u64().unwrap(), size as u64);
+    assert_eq!(added["info_hash"].as_str().map(str::len), Some(40));
     assert_eq!(added["files"][0]["streamable"], true);
 
     let port = eng.port;

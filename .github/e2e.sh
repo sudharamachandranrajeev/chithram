@@ -133,9 +133,20 @@ android() {
   for s in window_animation_scale transition_animation_scale animator_duration_scale; do
     adb shell settings put global "$s" 0
   done
-  adb reverse tcp:8000 tcp:8000
-  adb reverse tcp:16881 tcp:16881
   adb logcat -c
+
+  # The player must hold the screen on while it plays: sample the window flags
+  # during the run (they are only set while a video is playing).
+  : >"$out/keep-screen-on.txt"
+  (
+    while true; do
+      adb shell dumpsys window windows 2>/dev/null | tr -d '\r' \
+        | awk '/Window #/ { w = ($0 ~ /dev\.chithram\.chithram/) } w && /KEEP_SCREEN_ON/ { f = 1 } END { exit !f }' \
+        && echo seen >>"$out/keep-screen-on.txt"
+      sleep 2
+    done
+  ) &
+  local sampler=$!
 
   phase "flutter drive"
   cd "$root/app"
@@ -143,6 +154,11 @@ android() {
   # The VM service sometimes never connects on a fresh emulator: retry once.
   for attempt in 1 2; do
     phase "flutter drive attempt $attempt"
+    # adbd can drop offline mid-attempt, which clears the reverse forwards:
+    # wait for the device and set them up again before every attempt.
+    adb wait-for-device
+    adb reverse tcp:8000 tcp:8000
+    adb reverse tcp:16881 tcp:16881
     adb shell am force-stop $PKG || true
     adb shell input keyevent KEYCODE_HOME || true
     status=0
@@ -154,7 +170,23 @@ android() {
     [[ $status -eq 0 ]] && break
     adb logcat -d >"$out/logcat-drive-$attempt.txt" || true
   done
+  kill $sampler 2>/dev/null || true
   adb logcat -d >"$out/logcat.txt" || true
+  if [[ $status -eq 0 ]]; then
+    # Player checks that only logcat and dumpsys can see.
+    if ! grep -q 'CHITHRAM_OPEN' "$out/logcat.txt"; then
+      echo "::error::no CHITHRAM_OPEN line in logcat"; status=1
+    elif grep -E 'CHITHRAM_OPEN.*[?@]' "$out/logcat.txt"; then
+      echo "::error::CHITHRAM_OPEN logged a URL with a query or credentials"; status=1
+    fi
+    grep -q seen "$out/keep-screen-on.txt" || { echo "::error::KEEP_SCREEN_ON never set during playback"; status=1; }
+    # The first open pays for codec loading; the fastest one is the warm figure.
+    first=$(grep -oE 'CHITHRAM_FIRST_FRAME [0-9]+' "$out/logcat.txt" | grep -oE '[0-9]+$' | sort -n | head -1 || true)
+    echo "fastest first frame (emulator only): ${first:-none} ms"
+    if [[ -z $first || $first -ge 2500 ]]; then
+      echo "::error::first frame ${first:-missing} ms, expected under 2500"; status=1
+    fi
+  fi
   if [[ $status -ne 0 ]]; then echo "::error::e2e suite failed"; fi
   if [[ ${PHONE_SHOTS:-} == 1 ]]; then phone_shots "$out" || status=$?; fi
   phase "done (status $status)"

@@ -3,6 +3,7 @@
 package dev.chithram.player
 
 import android.content.Context
+import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
@@ -53,6 +54,7 @@ class PlayerHost(
     private var firstFrameLogged = false
     private var durationLogged = false
     private var pendingSeekTarget = -1L
+    private var surfaceView: SurfaceView? = null
 
     private val ticker = object : Runnable {
         override fun run() {
@@ -73,11 +75,13 @@ class PlayerHost(
 
             override fun onPlaybackStateChanged(state: Int) {
                 Log.i(TAG, "CHITHRAM_STATE ${stateName(state)}")
+                updateKeepScreenOn()
                 maybeLogDuration()
             }
 
             override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
                 Log.i(TAG, "CHITHRAM_PLAY_WHEN_READY $playWhenReady")
+                updateKeepScreenOn()
             }
 
             override fun onTimelineChanged(timeline: androidx.media3.common.Timeline, reason: Int) {
@@ -179,7 +183,8 @@ class PlayerHost(
         player.setMediaSource(media, startMs)
         player.prepare()
         player.playWhenReady = true
-        Log.i(TAG, "CHITHRAM_OPEN video=$videoUrl audio=$audioUrl live=$isLive")
+        // Hosts only: playlist URLs can carry credentials, and logcat is readable.
+        Log.i(TAG, "CHITHRAM_OPEN video=${hostOf(videoUrl)} audio=${audioUrl?.let(::hostOf)} live=$isLive")
     }
 
     fun play() { player.playWhenReady = true }
@@ -187,12 +192,31 @@ class PlayerHost(
     fun seek(ms: Long) { player.seekTo(ms) }
 
     fun attach(view: SurfaceView) {
-        if (!released) player.setVideoSurfaceView(view)
+        if (released) return
+        surfaceView = view
+        updateKeepScreenOn()
+        player.setVideoSurfaceView(view)
     }
 
     fun detach(view: SurfaceView) {
+        if (surfaceView === view) surfaceView = null
         if (!released) player.clearVideoSurfaceView(view)
     }
+
+    // Keeps the TV screensaver off while the video plays or is about to.
+    private fun updateKeepScreenOn() {
+        val state = player.playbackState
+        surfaceView?.keepScreenOn = player.playWhenReady &&
+            (state == Player.STATE_READY || state == Player.STATE_BUFFERING)
+    }
+
+    private fun hostOf(url: String): String =
+        try {
+            val u = Uri.parse(url)
+            if (u.host.isNullOrEmpty()) "<invalid url>" else "${u.scheme}://${u.host}"
+        } catch (e: Exception) {
+            "<invalid url>"
+        }
 
     fun release() {
         if (released) return

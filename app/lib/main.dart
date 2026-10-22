@@ -6,9 +6,11 @@ import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';
 
 import 'src/core/services.dart';
+import 'src/intake/intake.dart';
 import 'src/smoke.dart';
 import 'src/ui/app.dart';
 import 'src/ui/form_factor.dart';
+import 'src/ui/search_page.dart';
 
 Future<void> main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -33,6 +35,8 @@ Future<void> main(List<String> args) async {
       shortestSideDp: view.physicalSize.shortestSide / view.devicePixelRatio,
     );
   }
+  // "Search for this text" in the intake prompt.
+  IntakeHooks.search = openSearch;
   runApp(ChithramApp(services: await AppServices.open(), formFactor: form));
   final smoke = smokeTarget(args);
   if (smoke != null) unawaited(runSmoke(smoke));

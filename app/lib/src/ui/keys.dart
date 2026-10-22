@@ -12,4 +12,6 @@ abstract final class Keys {
   static const textEntryField = ValueKey('text-entry-field');
   static const textEntryPaste = ValueKey('text-entry-paste');
   static const textEntryOk = ValueKey('text-entry-ok');
+  static const textEntryKeyboard = ValueKey('text-entry-keyboard');
+  static const textEntrySend = ValueKey('text-entry-send');
 }

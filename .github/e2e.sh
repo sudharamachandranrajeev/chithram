@@ -7,7 +7,13 @@
 # host-services makes the ffmpeg fixtures (make_fixtures.sh) plus a muxed
 # movie.mkv and a playlist.m3u (HLS master, movie.mkv, a dead URL), serves them
 # on 127.0.0.1:8000 (serve.py) and seeds movie.mkv on 127.0.0.1:16881 (the
-# torrent seeder example). <dir>/e2e.env holds the dart-defines.
+# torrent seeder example), plus synthetic TMDB posters and backdrops under
+# <dir>/t/p (fixtures/make_images.sh). <dir>/e2e.env holds the dart-defines:
+# E2E_BASE, E2E_MAGNET, E2E_PEER and, for the 0.3.0 suites, E2E_TMDB_BASE
+# (<base>/tmdb), E2E_TORZNAB (<base>/torznab/api) and E2E_PLUGIN_REPO
+# (<base>/plugins/plugins.json). The work packages add their API fixture files
+# under those paths; serve.py maps `?query` to `file@sorted-query`, answers ETags
+# and counts requests at /__hits.
 #
 # Env for android: IMAGE (default system-images;android-36;android-tv;x86_64),
 # DEVICE (tv_1080p), E2E_TARGET (default e2e_all_test.dart), E2E_FORM (tv; the
@@ -48,6 +54,9 @@ $BASE/movie.mkv
 $BASE/missing/dead.m3u8
 M3U
 
+  phase "poster and backdrop fixtures"
+  bash "$root/.github/fixtures/make_images.sh" "$dir" 40 >/dev/null
+
   phase "serve fixtures on :8000"
   setsid nohup python3 "$root/packages/chithram_player/tool/serve.py" "$dir" 8000 >"$dir/serve.log" 2>&1 &
   for _ in $(seq 1 20); do curl -sfI "$BASE/movie.mkv" >/dev/null && break; sleep 0.5; done
@@ -63,6 +72,9 @@ M3U
     echo "--dart-define=E2E_BASE=$BASE"
     echo "--dart-define=E2E_MAGNET=$(cat "$dir/magnet.txt")"
     echo "--dart-define=E2E_PEER=$PEER"
+    echo "--dart-define=E2E_TMDB_BASE=$BASE/tmdb"
+    echo "--dart-define=E2E_TORZNAB=$BASE/torznab/api"
+    echo "--dart-define=E2E_PLUGIN_REPO=$BASE/plugins/plugins.json"
   } >"$dir/e2e.env"
   cat "$dir/seeder.log"
 }

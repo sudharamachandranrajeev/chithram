@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../ui/focus_card.dart';
-import '../../ui/search_page.dart';
+import '../../ui/tv/focus_card.dart';
+import '../../ui/common/search_page.dart';
 
 /// YouTube section: the search keyboard and a grid of results.
 class YouTubePage extends StatelessWidget {

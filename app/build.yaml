@@ -1,0 +1,13 @@
+# Generated code is committed (lib/src/data/*.g.dart) and ci.yml checks it is
+# fresh. Only the database layer is generated.
+targets:
+  $default:
+    builders:
+      drift_dev:
+        generate_for:
+          include:
+            - lib/src/data/**
+      source_gen:combining_builder:
+        generate_for:
+          include:
+            - lib/src/data/**

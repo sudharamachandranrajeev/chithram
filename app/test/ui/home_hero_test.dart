@@ -1,5 +1,5 @@
-import 'package:chithram/src/ui/focus_card.dart';
-import 'package:chithram/src/ui/home_page.dart';
+import 'package:chithram/src/ui/tv/focus_card.dart';
+import 'package:chithram/src/ui/tv/home_page.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';

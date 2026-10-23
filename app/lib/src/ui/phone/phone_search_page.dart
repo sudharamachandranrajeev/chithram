@@ -8,7 +8,7 @@ import '../../features/youtube/youtube_search_controller.dart';
 import '../../intake/intake.dart';
 import '../../player/play_request.dart';
 import '../../theme.dart';
-import '../text_entry.dart';
+import '../common/text_entry.dart';
 import 'phone_widgets.dart';
 
 /// Search (and the YouTube tab, with [youtubeOnly]) on a phone: a search bar

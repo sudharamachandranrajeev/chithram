@@ -83,3 +83,43 @@ Full plan: [roadmap.md](roadmap.md). Decisions that bind every later version:
   analyzer error. Artifact retention is 2 days everywhere.
 - New dependencies: `path_provider`, `package_info_plus`, `crypto` (app); `basic_utils` (LocalSend certificate).
   `targetSdk` is pinned to 36.
+
+## 0.3.0 "Media Home" (architect decisions, 2026-10-21; owner answers 2026-10-21)
+
+Full plan in the project notes; what binds later versions:
+- Version order: 0.3.0 Media Home + Find, 0.4.0 Library + VPN guard v2, 0.5.0 Live TV proper, 0.6.0 Player, 0.7.0
+  Sources depth, 0.8.0 Household, 0.9.0 v1 candidate, 1.0.0.
+- drift lands in 0.3.0 with schema v1 only: `http_cache`, `plugin_repos`, `plugins`, `torznab_endpoints`,
+  `provider_runs`. Later versions add tables by migration (v2 Library, v3 IPTV and EPG with FTS5, v4 YouTube
+  subscriptions). Each version's prep PR adds its tables and registers empty DAOs; work packages only write queries in
+  their own DAO files and never run code generation. Generated `.g.dart` files, the schema dump (`app/drift_schemas`)
+  and the migration test helpers (`app/test/data/generated`) are committed; the `codegen` job in `ci.yml` checks them.
+- SecretStore (`flutter_secure_storage`) holds the TMDB key and Torznab API keys. On Linux without a keyring it falls
+  back to a `secrets.json` created with mode 0600 and Settings shows a notice. Off Linux a keyring failure is an error,
+  never a plaintext file.
+- Startup: before the first frame the app reads only `prefs.json` and `home_snapshot.json`. The database, SecretStore,
+  plugins, the torrent engine, LocalSend and every network request start after the first frame.
+- Metadata ids: `tmdb:movie:<id>`, `tmdb:tv:<id>`, `tmdb:tv:<id>/s<n>e<m>`. They are not playable; Play goes through Find.
+- Naming: "TMDB" appears only where its terms require attribution (Settings > Metadata, About, the Home setup card, the
+  details page footer). "qBittorrent-compatible" may be used as a compatibility statement only (owner, 2026-10-21);
+  otherwise public text says "search plugins (nova3 format)".
+- TMDB data rules: only the user's own key; `include_adult=false` until 0.8.0; the cache hard-expires after 180 days;
+  removing the key purges the cache, the snapshot and the image cache; repository fixtures are synthetic ("Fixture
+  Film 1"), never real TMDB content.
+- TMDB logo: `app/assets/attribution/tmdb_logo.png` is TMDB's trademark, not MIT. The owner approved committing it with
+  the NOTICE entry stating its separate terms. It is used only for attribution, less prominent than Chithram's own name.
+- Network etiquette for every background fetcher: token bucket, exponential backoff with +-20% jitter capped at 6 h,
+  `Retry-After` honoured, conditional requests when the server sends validators; nothing on the startup critical path.
+- Hero tags are scoped to their rail (`'<railId>/<itemId>'`).
+- Text from the phone: while a field opened with `askText(..., acceptFromPhone: true)` is up, accepted LocalSend text goes
+  into it (`ReceiveService.routeTextTo`) instead of the intake path.
+- UI folders: `ui/tv/` (D-pad widgets, TV shell and Home), `ui/phone/` (phone shell and widgets), `ui/common/` (shared
+  pages, form factor, dims, keys). Feature pages stay in `features/*`; phone views live in `features/*/phone/`.
+- Performance is the eighth test layer: `perf.yml` runs a release x86_64 APK on the TV emulator and reports cold start,
+  scroll frames, PSS and requests before the first frame against `.github/perf-budget.json` (report mode first).
+  `.github/perf-device.sh` is for the owner's phone and TV box. The CI emulator renders in software, so raster time is
+  report-only there.
+- The plugin Python runtime is bundled on every platform (Linux, Windows; Android already ships CPython for arm64-v8a
+  and x86_64). armeabi-v7a: python.org publishes no armv7 Android build; plugins stay off there with a clear reason
+  unless CI can build one.
+

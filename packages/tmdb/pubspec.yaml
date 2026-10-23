@@ -1,0 +1,15 @@
+name: tmdb
+description: "TMDB client for Chithram: image URLs and models (the HTTP client lands in 0.3.0 R1). Pure Dart."
+version: 0.0.1
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.13.5
+
+dependencies:
+  http: ^1.6.0
+
+dev_dependencies:
+  test: any
+  lints: any

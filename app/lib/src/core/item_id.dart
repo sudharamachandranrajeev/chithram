@@ -21,6 +21,16 @@ abstract final class ItemId {
   /// `src:<sourceId>`
   static String source(String sourceId) => 'src:$sourceId';
 
+  /// `tmdb:movie:<id>`. A metadata id, never playable: Play goes through Find.
+  static String tmdbMovie(int id) => 'tmdb:movie:$id';
+
+  /// `tmdb:tv:<id>`
+  static String tmdbShow(int id) => 'tmdb:tv:$id';
+
+  /// `tmdb:tv:<id>/s<n>e<m>`
+  static String tmdbEpisode(int show, int season, int episode) =>
+      'tmdb:tv:$show/s${season}e$episode';
+
   /// Lower-cased scheme and host, no fragment, no default port, `/` for an
   /// empty path. The query is kept.
   static String normaliseUrl(String url) {

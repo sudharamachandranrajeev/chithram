@@ -1,10 +1,10 @@
 // End-to-end: the device reports the form factor the job expects and the
 // matching shell renders. Run through e2e_all_test.dart on the TV emulator
 // (E2E_FORM=tv) and on Linux (E2E_FORM=desktop); skipped without E2E_FORM.
-import 'package:chithram/src/ui/app.dart';
-import 'package:chithram/src/ui/form_factor.dart';
-import 'package:chithram/src/ui/phone_shell.dart';
-import 'package:chithram/src/ui/tv_shell.dart';
+import 'package:chithram/src/ui/common/app.dart';
+import 'package:chithram/src/ui/common/form_factor.dart';
+import 'package:chithram/src/ui/phone/phone_shell.dart';
+import 'package:chithram/src/ui/tv/tv_shell.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 

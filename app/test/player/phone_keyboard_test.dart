@@ -1,9 +1,9 @@
 import 'package:chithram/src/core/services.dart';
-import 'package:chithram/src/ui/focus_card.dart';
-import 'package:chithram/src/ui/keyboard.dart';
-import 'package:chithram/src/ui/keys.dart';
-import 'package:chithram/src/ui/search_page.dart';
-import 'package:chithram/src/ui/text_entry.dart';
+import 'package:chithram/src/ui/tv/focus_card.dart';
+import 'package:chithram/src/ui/tv/keyboard.dart';
+import 'package:chithram/src/ui/common/keys.dart';
+import 'package:chithram/src/ui/common/search_page.dart';
+import 'package:chithram/src/ui/common/text_entry.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';

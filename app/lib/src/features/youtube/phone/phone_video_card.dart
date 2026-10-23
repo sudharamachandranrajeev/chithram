@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:innertube/innertube.dart' hide Page;
 
 import '../../../theme.dart';
-import '../../../ui/touch_card.dart';
+import '../../../ui/phone/touch_card.dart';
 import '../youtube_results.dart';
 
 /// A video result for a phone: a 16:9 thumbnail across the card, the title

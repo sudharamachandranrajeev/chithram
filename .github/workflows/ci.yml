@@ -53,6 +53,9 @@ jobs:
           cargo build --release --locked --lib --manifest-path native/torrent/Cargo.toml
           mkdir -p packages/torrent/prebuilt/linux-x64
           cp native/torrent/target/release/libchithram_torrent.so packages/torrent/prebuilt/linux-x64/
+      # flutter_secure_storage on Linux (the keyring); the Linux builds need it too.
+      - name: libsecret
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq libsecret-1-dev >/dev/null
       - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
         with:
           channel: stable
@@ -113,3 +116,41 @@ jobs:
           mkdir test/_host
           cp integration_test/host_test.dart integration_test/host_form_test.dart integration_test/support.dart test/_host/
           flutter test test/_host
+      - name: Fixture server tests (serve.py)
+        run: python3 -m unittest discover -s packages/chithram_player/tool -p 'test_*.py'
+
+  # The committed drift code (lib/src/data/*.g.dart), the schema dump and the
+  # migration test helpers must be what the generators produce now.
+  codegen:
+    name: Generated code is fresh (build_runner, drift schema)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          channel: stable
+          flutter-version: 3.47.7
+          cache: true
+      - run: flutter pub get
+      - name: Regenerate
+        working-directory: app
+        run: |
+          dart run build_runner build
+          dart run drift_dev schema dump lib/src/data/database.dart drift_schemas/
+          dart run drift_dev schema generate drift_schemas/ test/data/generated/
+      - name: Compare with what is committed
+        run: |
+          git status --short -- app/lib app/drift_schemas app/test/data
+          if [[ -n $(git status --porcelain -- app/lib app/drift_schemas app/test/data) ]]; then
+            git diff -- app/lib app/drift_schemas app/test/data > codegen.diff
+            echo "::error::generated code is stale: run build_runner, drift_dev schema dump and schema generate in app/ (see the codegen-diff artifact)"
+            exit 1
+          fi
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: failure()
+        with:
+          name: codegen-diff
+          retention-days: 2
+          path: codegen.diff
+          if-no-files-found: ignore

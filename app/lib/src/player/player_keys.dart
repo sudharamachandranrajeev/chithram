@@ -1,7 +1,7 @@
 import 'package:flutter/widgets.dart';
 
 /// Widget keys of the player route, for tests. `Keys.playerRoot`,
-/// `Keys.playerPosition` and `Keys.playerError` live in `ui/keys.dart`.
+/// `Keys.playerPosition` and `Keys.playerError` live in `ui/common/keys.dart`.
 abstract final class PlayerKeys {
   /// A `Text` with the duration as `m:ss`; absent until known.
   static const duration = ValueKey('player-duration');

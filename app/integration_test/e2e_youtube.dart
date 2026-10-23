@@ -2,8 +2,8 @@
 // search finds one "Fixture" item and resolve returns video.mp4 + audio.m4a).
 // Run through e2e_all_test.dart. The real-network check is
 // e2e_youtube_live_test.dart (non-blocking).
-import 'package:chithram/src/ui/app.dart';
-import 'package:chithram/src/ui/keys.dart';
+import 'package:chithram/src/ui/common/app.dart';
+import 'package:chithram/src/ui/common/keys.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';

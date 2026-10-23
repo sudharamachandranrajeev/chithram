@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/services.dart';
-import '../../../ui/text_entry.dart';
+import '../../../ui/common/text_entry.dart';
 import '../receive_page.dart';
 import '../receive_service.dart';
 

@@ -23,39 +23,48 @@ pasted. Links can be sent from a phone through LocalSend. Resume works.
 - Out of scope: database, history UI, favourites, playlists, programme guide, Xtream, secure storage, subtitles and track
   pickers, background audio, Android intents, plugins, addons, profiles, updater.
 
-## 0.3.0 Library
+## 0.3.0 Media Home + Find
 
-Favourites, watch later, playlists, history with continue watching, an Up Next queue with radio and next episode, all in
-one drift database shared by every source. Imports the 0.2.0 JSON. Real Home rails and search history. The spike pages
-and their workflows are removed.
+With their own TMDB key, a user opens to a populated Home from cache (Featured hero, film and TV rails, genres, language
+rails), browses details with cast, seasons, episodes and trailers, and presses Find sources. Find searches the search
+plugins (nova3 format), Torznab endpoints, YouTube and IPTV playlists they added, ranks and deduplicates the results,
+and plays the best one. Plugins and Torznab endpoints are managed in the app with health status.
 
-## 0.4.0 Live TV proper
+- Prep (`feat/home-core`): the drift database (HTTP cache, plugins, Torznab, provider health), SecretStore, the TMDB,
+  media_names and torznab package skeletons, the interfaces and fakes the work packages build against, the
+  performance harness, and the UI folders (`ui/tv`, `ui/phone`, `ui/common`).
+- Work packages: TMDB catalogue and Home data; image cache and Home engine; Home and details UI; plugins and Torznab;
+  Find sources.
+- Out of scope: Library features, accounts and profiles, adult content, Addons, person pages, OS background jobs,
+  automatic plugin updates. No built-in plugin, repository, Torznab endpoint or TMDB key.
 
-Secret storage; Xtream live sources; XMLTV programme guide with now/next and a guide grid; catch-up; sports rail;
-preloading neighbouring channels for fast zapping; channel number entry; health probes with hide-dead; source management.
+## 0.4.0 Library + VPN guard v2
 
-## 0.5.0 Player
+Favourites, watch later, playlists, history with Continue watching, an Up Next queue with radio and next episode, across
+every source including TMDB titles (`items.meta_id` links a played item to its `tmdb:` id). Search history. VPN guard v2
+and network hardening. The spike pages and their workflows are removed.
+
+## 0.5.0 Live TV proper
+
+Xtream live sources; XMLTV programme guide with now/next and a guide grid; catch-up; sports rail; preloading neighbouring
+channels for fast zapping; channel number entry; health probes with hide-dead; source management. IPTV moves into the
+database with full-text search.
+
+## 0.6.0 Player
 
 Audio, subtitle and quality selection remembered per series; external subtitles; speed; aspect and zoom; sleep timer;
 stats; keyboard shortcuts and gestures; skip intro and credits; opt-in community segment skipping for YouTube;
 background audio, picture-in-picture and a desktop mini player; frame-rate matching and HDR on Android TV.
 
-## 0.6.0 Sources depth
+## 0.7.0 Sources depth
 
 YouTube local subscriptions and feed, captions, chapters, search filters; torrent library features (open `.torrent`,
 season packs, subtitles inside the torrent); Android and desktop link intake; local media folders; Xtream VOD and series.
 
-## 0.7.0 Find
-
-Torznab client; plugin search over the sandboxed plugin host with signed repositories; unified results; VPN guard v2
-with a kill switch; an "Addons" client for user-supplied manifest URLs. Adult-flagged content stays hidden. No built-in
-indexer, plugin, repository or addon URL; no mirror hopping.
-
-## 0.8.0 Home
+## 0.8.0 Household
 
 Local profiles with PIN, kids profiles with allow-lists and a content gate, an age-gated adult category (off by default),
-metadata from an online movie database with the user's own key, an on-device image cache, on-device recommendations,
-full export and import, and polish. No sync, no accounts.
+on-device recommendations, the Addons client, full export and import, and polish. No sync, no accounts.
 
 ## 0.9.0 v1 candidate
 

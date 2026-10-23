@@ -2,10 +2,10 @@
 // with integration_test/driver.dart; see .github/tv-emulator.sh.
 import 'dart:math';
 
-import 'package:chithram/src/ui/app.dart';
-import 'package:chithram/src/ui/details_page.dart';
-import 'package:chithram/src/ui/dims.dart';
-import 'package:chithram/src/ui/sections.dart';
+import 'package:chithram/src/ui/common/app.dart';
+import 'package:chithram/src/ui/common/details_page.dart';
+import 'package:chithram/src/ui/common/dims.dart';
+import 'package:chithram/src/ui/common/sections.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -19,8 +19,8 @@ Future<void> pumpApp(WidgetTester t) async {
   await t.pumpAndSettle();
 }
 
-bool isPhone(WidgetTester t) =>
-    Dims.formFor(t.view.physicalSize / t.view.devicePixelRatio).name == 'phone';
+/// The form the running app resolved (FormScope), not the window size.
+bool isPhone(WidgetTester t) => Dims.of(t.element(find.byType(Scaffold).first)).phone;
 
 String _query() => (find.byKey(const ValueKey('search-query')).evaluate().single.widget as Text).data!;
 

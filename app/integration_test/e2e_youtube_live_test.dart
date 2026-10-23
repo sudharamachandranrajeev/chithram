@@ -2,8 +2,8 @@
 // first result for 5 s. Needs a network that YouTube serves (CI runners often
 // get LOGIN_REQUIRED). Run with no E2E_BASE:
 //   flutter test integration_test/e2e_youtube_live_test.dart -d linux
-import 'package:chithram/src/ui/app.dart';
-import 'package:chithram/src/ui/keys.dart';
+import 'package:chithram/src/ui/common/app.dart';
+import 'package:chithram/src/ui/common/keys.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';

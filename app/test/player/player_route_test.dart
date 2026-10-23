@@ -3,7 +3,7 @@ import 'package:chithram/src/core/services.dart';
 import 'package:chithram/src/player/play_request.dart';
 import 'package:chithram/src/player/player_keys.dart';
 import 'package:chithram/src/player/player_route.dart';
-import 'package:chithram/src/ui/keys.dart';
+import 'package:chithram/src/ui/common/keys.dart';
 import 'package:chithram_player/chithram_player.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';

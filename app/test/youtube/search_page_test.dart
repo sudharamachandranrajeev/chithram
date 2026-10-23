@@ -1,8 +1,8 @@
 import 'package:chithram/src/core/services.dart';
 import 'package:chithram/src/features/youtube/youtube_service.dart';
 import 'package:chithram/src/features/livetv/iptv_service.dart';
-import 'package:chithram/src/ui/focus_card.dart';
-import 'package:chithram/src/ui/search_page.dart';
+import 'package:chithram/src/ui/tv/focus_card.dart';
+import 'package:chithram/src/ui/common/search_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:innertube/innertube.dart' as yt;

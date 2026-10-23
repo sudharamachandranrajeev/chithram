@@ -1,7 +1,7 @@
 name: chithram
 description: "Chithram: a bring-your-own-sources media app for Android TV, phones and desktop"
 publish_to: 'none'
-version: 0.2.0+1
+version: 0.3.0+1
 resolution: workspace
 
 environment:
@@ -21,6 +21,12 @@ dependencies:
   package_info_plus: ^10.2.2
   crypto: ^3.0.6
 
+  # Local database (HTTP cache, plugin registry, provider health) and secrets
+  # (TMDB and Torznab keys). Opened after the first frame, never before.
+  drift: ^2.35.2
+  drift_flutter: ^0.3.1
+  flutter_secure_storage: ^11.2.0
+
   # Workspace packages. chithram_player must stay listed: Android plugin
   # registration follows the app's declared dependencies only.
   chithram_player:
@@ -33,6 +39,12 @@ dependencies:
     path: ../packages/localsend_rx
   torrent:
     path: ../packages/torrent
+  tmdb:
+    path: ../packages/tmdb
+  media_names:
+    path: ../packages/media_names
+  torznab:
+    path: ../packages/torznab
   # Debug-only spike page (see lib/src/spikes/).
   nova_host:
     path: ../packages/nova_host
@@ -44,9 +56,15 @@ dev_dependencies:
   integration_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  # Code generation for lib/src/data (committed; CI checks it is fresh).
+  drift_dev: ">=2.35.1 <2.36.0"
+  build_runner: ">=2.10.0 <2.16.0"
 
 flutter:
   uses-material-design: true
+  assets:
+    # TMDB logo (attribution; TMDB's trademark, see NOTICE).
+    - assets/attribution/
   # Poppins (SIL Open Font License, assets/fonts/OFL.txt).
   fonts:
     - family: Poppins

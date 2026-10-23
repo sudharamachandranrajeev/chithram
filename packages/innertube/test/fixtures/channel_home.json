@@ -1,0 +1,176 @@
+{
+ "contents": {
+  "twoColumnBrowseResultsRenderer": {
+   "tabs": [
+    {
+     "tabRenderer": {
+      "content": {
+       "richGridRenderer": {
+        "contents": [
+         {
+          "richSectionRenderer": {
+           "content": {
+            "richShelfRenderer": {
+             "title": {
+              "runs": [
+               {
+                "text": "Shelf A"
+               }
+              ]
+             },
+             "contents": [
+              {
+               "richItemRenderer": {
+                "content": {
+                 "lockupViewModel": {
+                  "contentId": "ddddddddd01",
+                  "contentType": "LOCKUP_CONTENT_TYPE_VIDEO",
+                  "contentImage": {
+                   "thumbnailViewModel": {
+                    "image": {
+                     "sources": [
+                      {
+                       "url": "https://i.ytimg.com/vi/ddddddddd01/hqdefault.jpg",
+                       "width": 336,
+                       "height": 188
+                      }
+                     ]
+                    },
+                    "overlays": [
+                     {
+                      "thumbnailBottomOverlayViewModel": {
+                       "badges": [
+                        {
+                         "thumbnailBadgeViewModel": {
+                          "text": "4:02",
+                          "badgeStyle": "THUMBNAIL_OVERLAY_BADGE_STYLE_DEFAULT"
+                         }
+                        }
+                       ]
+                      }
+                     }
+                    ]
+                   }
+                  },
+                  "metadata": {
+                   "lockupMetadataViewModel": {
+                    "title": {
+                     "content": "Topic Lockup"
+                    },
+                    "image": {
+                     "decoratedAvatarViewModel": {
+                      "rendererContext": {
+                       "commandContext": {
+                        "onTap": {
+                         "innertubeCommand": {
+                          "browseEndpoint": {
+                           "browseId": "UCdddddddddddddddddddddd"
+                          }
+                         }
+                        }
+                       }
+                      }
+                     }
+                    },
+                    "metadata": {
+                     "contentMetadataViewModel": {
+                      "metadataRows": [
+                       {
+                        "metadataParts": [
+                         {
+                          "text": {
+                           "content": "Chan D"
+                          }
+                         }
+                        ]
+                       },
+                       {
+                        "metadataParts": [
+                         {
+                          "text": {
+                           "content": "5K views"
+                          },
+                          "accessibilityLabel": "5 thousand views"
+                         },
+                         {
+                          "text": {
+                           "content": "2y ago"
+                          },
+                          "accessibilityLabel": "2 years ago"
+                         }
+                        ]
+                       }
+                      ]
+                     }
+                    }
+                   }
+                  }
+                 }
+                }
+               }
+              }
+             ]
+            }
+           }
+          }
+         },
+         {
+          "richSectionRenderer": {
+           "content": {
+            "richShelfRenderer": {
+             "title": {
+              "runs": [
+               {
+                "text": "Shelf B"
+               }
+              ]
+             },
+             "contents": [
+              {
+               "richItemRenderer": {
+                "content": {
+                 "videoRenderer": {
+                  "videoId": "ddddddddd02",
+                  "title": {
+                   "runs": [
+                    {
+                     "text": "Topic Video"
+                    }
+                   ]
+                  },
+                  "ownerText": {
+                   "runs": [
+                    {
+                     "text": "Chan D",
+                     "navigationEndpoint": {
+                      "browseEndpoint": {
+                       "browseId": "UCdddddddddddddddddddddd"
+                      }
+                     }
+                    }
+                   ]
+                  },
+                  "lengthText": {
+                   "simpleText": "1:05"
+                  },
+                  "viewCountText": {
+                   "simpleText": "12 views"
+                  }
+                 }
+                }
+               }
+              }
+             ]
+            }
+           }
+          }
+         }
+        ]
+       }
+      }
+     }
+    }
+   ]
+  }
+ }
+}

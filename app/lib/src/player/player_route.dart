@@ -283,13 +283,17 @@ class _PlayerRouteState extends State<PlayerRoute> {
         isLive: r.isLive,
         resolve: r.resolve,
         onClose: r.onClose,
+        onWatched: r.onWatched,
         status: r.status,
         zap: zap,
       );
 
-  // Once per request, e.g. stop a torrent.
+  // Once per request, e.g. stop a torrent. Reads the position before the
+  // first await: a zap resets it right after.
   Future<void> _closeRequest(PlayRequest r) async {
-    if (_closedRequests.add(r)) await r.onClose?.call();
+    if (!_closedRequests.add(r)) return;
+    if (_error == null) r.onWatched?.call(_position, r.isLive ? Duration.zero : _duration);
+    await r.onClose?.call();
   }
 
   Future<void> _toggle() async {

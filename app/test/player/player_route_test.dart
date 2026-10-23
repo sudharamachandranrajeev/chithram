@@ -110,6 +110,23 @@ void main() {
     await t.pumpWidget(const SizedBox());
   });
 
+  testWidgets('closing reports the last position once, for watch history', (t) async {
+    final watched = <(Duration, Duration)>[];
+    final request = PlayRequest(
+      itemId: 'yt:a',
+      title: 'A',
+      onWatched: (p, d) => watched.add((p, d)),
+      resolve: () async => const MediaSpec(videoUrl: 'http://x/a.mp4'),
+    );
+    final (engine, _) = await _open(t, request);
+    engine.durationC.add(const Duration(minutes: 5));
+    engine.positionC.add(const Duration(minutes: 2));
+    await t.pump();
+    await t.pumpWidget(const SizedBox());
+    await t.pump();
+    expect(watched, [(const Duration(minutes: 2), const Duration(minutes: 5))]);
+  });
+
   testWidgets('offers Resume over 30 s and starts there', (t) async {
     final store = MemoryResumeStore();
     await store.put('url:a', const Duration(seconds: 40), const Duration(minutes: 5));

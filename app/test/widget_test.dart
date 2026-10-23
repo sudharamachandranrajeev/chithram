@@ -1,3 +1,6 @@
+import 'package:chithram/src/core/services.dart';
+import 'package:chithram/src/features/youtube/youtube_fixture.dart';
+import 'package:chithram/src/features/youtube/youtube_service.dart';
 import 'package:chithram/src/ui/common/app.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -12,12 +15,14 @@ void main() {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
 
-    await tester.pumpWidget(const ChithramApp());
+    await tester.pumpWidget(ChithramApp(
+      services: AppServices.memory(youtube: YouTubeService(browse: FixtureBrowse(''))),
+    ));
     await tester.pumpAndSettle();
 
     // Home, with the rail focused and open.
-    expect(find.text('Hero billboard'), findsOneWidget);
-    expect(find.text('Continue watching'), findsOneWidget);
+    expect(find.text('Popular on YouTube'), findsOneWidget);
+    expect(find.text('Popular music'), findsOneWidget);
     expect(find.text('Live TV'), findsOneWidget);
     expect(_focusedCards(tester), 0);
 
@@ -25,7 +30,7 @@ void main() {
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     await tester.pumpAndSettle();
     expect(find.textContaining('Unified search'), findsOneWidget);
-    expect(find.text('Hero billboard'), findsNothing);
+    expect(find.text('Popular on YouTube'), findsNothing);
 
     // Right goes into the section and the tile grows.
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
@@ -38,7 +43,7 @@ void main() {
     expect(_focusedCards(tester), 0);
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
     await tester.pumpAndSettle();
-    expect(find.text('Hero billboard'), findsOneWidget);
+    expect(find.text('Popular on YouTube'), findsOneWidget);
 
     // Right focuses the hero's Play button; Down reaches a rail tile.
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);

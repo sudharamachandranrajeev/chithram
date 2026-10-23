@@ -1,54 +1,98 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:innertube/innertube.dart' hide Page;
 
+import '../../core/services.dart';
+import '../../features/youtube/feed/youtube_feed.dart';
+import '../../features/youtube/phone/phone_video_card.dart';
+import '../../features/youtube/youtube_results.dart';
 import '../../theme.dart';
-import '../common/details_page.dart';
-import 'touch_card.dart';
 
-/// Phone Home: a full-bleed swipeable hero and swipeable rails of placeholder
-/// tiles (the real content comes with the Media Home work).
-class PhoneHome extends StatelessWidget {
+/// Phone Home: a full-bleed swipeable billboard and swipeable rails of YouTube
+/// videos, popular now and, as Chithram learns, suggestions. Pull to refresh.
+class PhoneHome extends StatefulWidget {
   const PhoneHome({super.key});
 
   @override
+  State<PhoneHome> createState() => _PhoneHomeState();
+}
+
+class _PhoneHomeState extends State<PhoneHome> {
+  @override
+  void initState() {
+    super.initState();
+    // After the first frame: nothing on the startup path reads the network.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) unawaited(AppServices.of(context).feed.open());
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, box) => ListView(
-        key: const PageStorageKey<String>('phone-home-scroll'),
-        padding: const EdgeInsets.only(bottom: 24),
-        children: [
-          // About 56% of the room under the top bar, so the first rail peeks in.
-          _PhoneHero(height: math.max(box.maxHeight * 0.56, 280)),
-          _rail(context, 'Continue watching', 8, 30),
-          _rail(context, 'Trending on YouTube', 10, 210),
-          _rail(context, 'Live now', 9, 140),
-        ],
+    final feed = AppServices.of(context).feed;
+    return ValueListenableBuilder<FeedState>(
+      valueListenable: feed.state,
+      builder: (context, state, _) => LayoutBuilder(
+        builder: (context, box) => RefreshIndicator(
+          onRefresh: () => feed.refresh(force: true),
+          child: ListView(
+            key: const PageStorageKey<String>('phone-home-scroll'),
+            padding: const EdgeInsets.only(bottom: 24),
+            children: [
+              // About 56% of the room under the top bar, so the first rail peeks in.
+              _PhoneHero(
+                height: math.max(box.maxHeight * 0.56, 280),
+                state: state,
+                onRetry: () => feed.refresh(force: true),
+              ),
+              for (final rail in state.rails) _Rail(key: ValueKey('home-${rail.id}'), rail: rail),
+            ],
+          ),
+        ),
       ),
     );
   }
+}
 
-  Widget _rail(BuildContext context, String title, int count, double hue) {
+class _Rail extends StatelessWidget {
+  const _Rail({super.key, required this.rail});
+
+  final FeedRail rail;
+
+  static const _cardWidth = 260.0;
+
+  @override
+  Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
+    final scaler = MediaQuery.textScalerOf(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-          child: Text(title, style: text.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+          child: Text(
+            rail.title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: text.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+          ),
         ),
         SizedBox(
-          height: 216,
+          height: _cardWidth * 9 / 16 + PhoneVideoCard.textHeight(scaler),
           child: ListView.separated(
-            key: PageStorageKey<String>('phone-rail-$title'),
+            key: PageStorageKey<String>('phone-rail-${rail.id}'),
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: count,
+            itemCount: rail.items.length,
             separatorBuilder: (_, _) => const SizedBox(width: 12),
-            itemBuilder: (_, i) => _Poster(
-              label: 'Title ${i + 1}',
-              hue: hue + i * 12,
-              onTap: () => openDetails(context, title: 'Title ${i + 1}', hue: hue + i * 12),
+            itemBuilder: (context, i) => SizedBox(
+              width: _cardWidth,
+              child: PhoneVideoCard(
+                item: rail.items[i],
+                onOpen: () => playVideo(context, rail.items[i], source: rail.id),
+              ),
             ),
           ),
         ),
@@ -57,60 +101,19 @@ class PhoneHome extends StatelessWidget {
   }
 }
 
-/// A 112x168 dp poster with its title below.
-class _Poster extends StatelessWidget {
-  const _Poster({required this.label, required this.hue, required this.onTap});
-
-  final String label;
-  final double hue;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 112,
-      child: TouchCard(
-        label: label,
-        onTap: onTap,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              height: 168,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    HSLColor.fromAHSL(1, hue % 360, 0.35, 0.26).toColor(),
-                    HSLColor.fromAHSL(1, hue % 360, 0.30, 0.12).toColor(),
-                  ],
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(2, 6, 2, 0),
-              child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Five swipeable pages, edge to edge.
+/// The billboard's pages, edge to edge; one status page while there are none.
 class _PhoneHero extends StatefulWidget {
-  const _PhoneHero({required this.height});
+  const _PhoneHero({required this.height, required this.state, required this.onRetry});
 
   final double height;
+  final FeedState state;
+  final VoidCallback onRetry;
 
   @override
   State<_PhoneHero> createState() => _PhoneHeroState();
 }
 
 class _PhoneHeroState extends State<_PhoneHero> {
-  static const _pages = 5;
   final _controller = PageController();
   int _page = 0;
 
@@ -122,6 +125,9 @@ class _PhoneHeroState extends State<_PhoneHero> {
 
   @override
   Widget build(BuildContext context) {
+    final videos = widget.state.hero;
+    final suggested = widget.state.rails.any((r) => r.id == 'for-you');
+    final pages = math.max(videos.length, 1);
     return SizedBox(
       height: widget.height,
       child: Stack(
@@ -129,31 +135,105 @@ class _PhoneHeroState extends State<_PhoneHero> {
           PageView.builder(
             key: const ValueKey('phone-hero'),
             controller: _controller,
-            itemCount: _pages,
+            itemCount: pages,
             onPageChanged: (i) => setState(() => _page = i),
-            itemBuilder: (_, i) => _HeroPage(index: i),
+            itemBuilder: (_, i) => videos.isEmpty
+                ? _StatusPage(error: widget.state.error, onRetry: widget.onRetry)
+                : _HeroPage(video: videos[i], suggested: suggested),
           ),
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 8,
-            child: ExcludeSemantics(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  for (var i = 0; i < _pages; i++)
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 150),
-                      margin: const EdgeInsets.symmetric(horizontal: 3),
-                      width: i == _page ? 18 : 6,
-                      height: 6,
-                      decoration: BoxDecoration(
-                        color: i == _page ? ChithramColors.accent : ChithramColors.textDim,
-                        borderRadius: BorderRadius.circular(3),
+          if (pages > 1)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 8,
+              child: ExcludeSemantics(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    for (var i = 0; i < pages; i++)
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 150),
+                        margin: const EdgeInsets.symmetric(horizontal: 3),
+                        width: i == _page ? 18 : 6,
+                        height: 6,
+                        decoration: BoxDecoration(
+                          color: i == _page ? ChithramColors.accent : ChithramColors.textDim,
+                          borderRadius: BorderRadius.circular(3),
+                        ),
                       ),
-                    ),
-                ],
+                  ],
+                ),
               ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+const _heroBackground = BoxDecoration(
+  gradient: LinearGradient(
+    begin: Alignment.topRight,
+    end: Alignment.bottomLeft,
+    colors: [Color(0x59F5A300), ChithramColors.surface, ChithramColors.background],
+  ),
+);
+
+class _HeroPage extends StatelessWidget {
+  const _HeroPage({required this.video, required this.suggested});
+
+  final VideoItem video;
+  final bool suggested;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = Theme.of(context).textTheme;
+    final line = [video.author, video.viewsText].where((s) => s.isNotEmpty).join(' · ');
+    return DecoratedBox(
+      decoration: _heroBackground,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          HeroImage(videoId: video.videoId),
+          // Keeps the text readable over any frame.
+          const DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0x000B0B10), Color(0xF00B0B10)],
+                stops: [0.3, 1],
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.end,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(suggested ? 'Recommended for you' : 'Popular on YouTube',
+                    style: text.labelLarge?.copyWith(color: ChithramColors.accent, fontWeight: FontWeight.w600)),
+                const SizedBox(height: 4),
+                Text(video.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: text.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
+                if (line.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(line,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: text.bodyMedium?.copyWith(color: ChithramColors.textDim)),
+                ],
+                const SizedBox(height: 16),
+                FilledButton.icon(
+                  onPressed: () => playVideo(context, video, source: suggested ? 'for-you' : null),
+                  style: FilledButton.styleFrom(minimumSize: const Size(48, 48)),
+                  icon: const Icon(Icons.play_arrow_rounded),
+                  label: const Text('Play'),
+                ),
+              ],
             ),
           ),
         ],
@@ -162,60 +242,37 @@ class _PhoneHeroState extends State<_PhoneHero> {
   }
 }
 
-class _HeroPage extends StatelessWidget {
-  const _HeroPage({required this.index});
+class _StatusPage extends StatelessWidget {
+  const _StatusPage({required this.error, required this.onRetry});
 
-  final int index;
+  final String? error;
+  final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
-    final title = index == 0 ? 'Hero billboard' : 'Hero billboard ${index + 1}';
-    void open() => openDetails(context, title: title, hue: 40 + index * 50);
+    final failed = error;
     return DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topRight,
-          end: Alignment.bottomLeft,
-          colors: [
-            HSLColor.fromAHSL(1, (40 + index * 50) % 360, 0.55, 0.30).toColor(),
-            ChithramColors.surface,
-            ChithramColors.background,
-          ],
-        ),
-      ),
+      decoration: _heroBackground,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.end,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Featured',
-                style: text.labelLarge?.copyWith(color: ChithramColors.accent, fontWeight: FontWeight.w600)),
+            Text('YouTube', style: text.labelLarge?.copyWith(color: ChithramColors.accent, fontWeight: FontWeight.w600)),
             const SizedBox(height: 4),
-            Text(title, style: text.headlineMedium?.copyWith(fontWeight: FontWeight.w700)),
-            const SizedBox(height: 4),
-            Text(
-              'A placeholder: your own sources will fill this.',
-              style: text.bodyMedium?.copyWith(color: ChithramColors.textDim),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                FilledButton.icon(
-                  onPressed: open,
-                  style: FilledButton.styleFrom(minimumSize: const Size(48, 48)),
-                  icon: const Icon(Icons.play_arrow_rounded),
-                  label: const Text('Play'),
-                ),
-                const SizedBox(width: 12),
-                FilledButton.tonal(
-                  onPressed: open,
-                  style: FilledButton.styleFrom(minimumSize: const Size(48, 48)),
-                  child: const Text('More info'),
-                ),
-              ],
-            ),
+            Text(failed ?? 'Loading what is popular…',
+                style: text.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
+            if (failed != null) ...[
+              const SizedBox(height: 16),
+              FilledButton.tonalIcon(
+                onPressed: onRetry,
+                style: FilledButton.styleFrom(minimumSize: const Size(48, 48)),
+                icon: const Icon(Icons.refresh_rounded),
+                label: const Text('Retry'),
+              ),
+            ],
           ],
         ),
       ),

@@ -2,7 +2,6 @@
 // window sizes that used to be guessed wrong. CI copies this and support.dart
 // into test/_host/ next to host_test.dart and runs `flutter test test/_host`.
 import 'package:chithram/src/ui/common/app.dart';
-import 'package:chithram/src/ui/common/details_page.dart';
 import 'package:chithram/src/ui/common/dims.dart';
 import 'package:chithram/src/ui/phone/phone_shell.dart';
 import 'package:chithram/src/ui/tv/tv_shell.dart';
@@ -10,13 +9,15 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'support.dart';
+
 /// Pumps the app as [form] in a window of [size] (1 dp = 1 px). An overflow
 /// anywhere fails the test on its own.
 Future<void> pumpForm(WidgetTester t, Size size, FormFactor form) async {
   t.view.physicalSize = size;
   t.view.devicePixelRatio = 1;
   addTearDown(t.view.reset);
-  await t.pumpWidget(ChithramApp(formFactor: form));
+  await t.pumpWidget(ChithramApp(services: fixtureServices(), formFactor: form));
   await t.pumpAndSettle();
 }
 
@@ -57,7 +58,7 @@ void main() {
       expect(find.text('Search YouTube.'), findsOneWidget);
       await t.binding.handlePopRoute();
       await t.pumpAndSettle();
-      expect(find.text('Hero billboard'), findsOneWidget);
+      expect(find.text('Popular on YouTube'), findsWidgets);
     });
 
     testWidgets('the gear opens Settings, with no "Send from phone"', (t) async {
@@ -100,9 +101,10 @@ void main() {
       expect(t.getTopLeft(_navHome).dx, lessThan(40));
     });
 
-    testWidgets('hover highlights a tile without moving focus; a click opens details', (t) async {
+    testWidgets('hover highlights a tile without moving focus', (t) async {
       await pumpForm(t, const Size(1280, 800), FormFactor.desktop);
-      final tile = find.text('Title 1').first;
+      // Not the first video: the billboard shows its title too.
+      final tile = find.text('Fixture p-9 2').first;
       final focusBefore = FocusManager.instance.primaryFocus;
       final scale = find.ancestor(of: tile, matching: find.byType(AnimatedScale)).first;
       expect(t.widget<AnimatedScale>(scale).scale, 1.0);
@@ -114,11 +116,6 @@ void main() {
       await t.pumpAndSettle();
       expect(t.widget<AnimatedScale>(scale).scale, greaterThan(1.0));
       expect(FocusManager.instance.primaryFocus, focusBefore);
-
-      await mouse.down(t.getCenter(tile));
-      await mouse.up();
-      await t.pumpAndSettle();
-      expect(find.byType(DetailsPage), findsOneWidget);
     });
   });
 }

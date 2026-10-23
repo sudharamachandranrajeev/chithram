@@ -2,8 +2,8 @@
 // with integration_test/driver.dart; see .github/tv-emulator.sh.
 import 'dart:math';
 
+import 'package:chithram/src/player/player_route.dart';
 import 'package:chithram/src/ui/common/app.dart';
-import 'package:chithram/src/ui/common/details_page.dart';
 import 'package:chithram/src/ui/common/dims.dart';
 import 'package:chithram/src/ui/common/sections.dart';
 import 'package:flutter/material.dart';
@@ -15,7 +15,7 @@ import 'package:integration_test/integration_test.dart';
 import 'support.dart';
 
 Future<void> pumpApp(WidgetTester t) async {
-  await t.pumpWidget(const ChithramApp());
+  await t.pumpWidget(ChithramApp(services: fixtureServices()));
   await t.pumpAndSettle();
 }
 
@@ -27,7 +27,7 @@ String _query() => (find.byKey(const ValueKey('search-query')).evaluate().single
 void main() {
   final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('screenshots: home, search, details', (t) async {
+  testWidgets('screenshots: home, search', (t) async {
     await binding.convertFlutterSurfaceToImage();
     await pumpApp(t);
     await binding.takeScreenshot('home');
@@ -39,20 +39,6 @@ void main() {
     }
     await t.pumpAndSettle();
     await binding.takeScreenshot('search');
-
-    if (isPhone(t)) {
-      await t.tap(find.byKey(const ValueKey('nav-home')));
-      await t.pumpAndSettle();
-      await t.tap(find.text('Title 1').first);
-    } else {
-      await press(t, LogicalKeyboardKey.arrowUp);
-      await press(t, LogicalKeyboardKey.arrowRight);
-      await press(t, LogicalKeyboardKey.select);
-    }
-    await t.pumpAndSettle();
-    expect(find.byType(DetailsPage), findsOneWidget);
-    expectFocusInApp('on details');
-    await binding.takeScreenshot('details');
   });
 
   testWidgets('every nav item is reachable and leavable', (t) async {
@@ -100,9 +86,9 @@ void main() {
       final key = keys[rnd.nextInt(keys.length)];
       await press(t, key);
       expectFocusInApp('after press ${i + 1} (${key.keyLabel})');
-      // Leave a details page now and then, like Back would.
-      if (find.byType(DetailsPage).evaluate().isNotEmpty && rnd.nextInt(6) == 0) {
-        Navigator.of(t.element(find.byType(DetailsPage))).pop();
+      // Leave the player now and then, like Back would.
+      if (find.byType(PlayerRoute).evaluate().isNotEmpty && rnd.nextInt(6) == 0) {
+        Navigator.of(t.element(find.byType(PlayerRoute))).pop();
         await t.pumpAndSettle();
         expectFocusInApp('after Back at press ${i + 1}');
       }
@@ -154,10 +140,5 @@ void main() {
     check('Home');
     await press(t, LogicalKeyboardKey.arrowDown);
     check('Search');
-    await press(t, LogicalKeyboardKey.arrowUp);
-    await press(t, LogicalKeyboardKey.arrowRight);
-    await press(t, LogicalKeyboardKey.select);
-    expect(find.byType(DetailsPage), findsOneWidget);
-    check('Details');
   });
 }

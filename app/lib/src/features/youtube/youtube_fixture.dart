@@ -1,10 +1,32 @@
 import 'package:innertube/innertube.dart';
 
-/// Search that finds one "Fixture" item, for the end-to-end suite.
+/// Search that finds one "Fixture" item and Home lists of "Fixture N"
+/// videos, for the end-to-end suite and widget tests. Never touches the
+/// network.
 class FixtureBrowse extends InnertubeBrowse {
   FixtureBrowse(this.base);
 
   final String base;
+
+  /// [n] videos with ids starting with [prefix], each on its own channel.
+  static List<VideoItem> videos(String prefix, int n) => [
+    for (var i = 1; i <= n; i++)
+      VideoItem(
+        videoId: '$prefix${'$i'.padLeft(11 - prefix.length, '0')}',
+        title: 'Fixture $prefix $i',
+        author: 'Chithram tests $i',
+        channelId: 'UC${'$prefix$i'.padRight(22, 'f')}',
+        duration: const Duration(seconds: 60),
+      ),
+  ];
+
+  @override
+  Future<List<VideoItem>> channelHome(String channelId) async =>
+      videos('p${channelId.substring(2, 4)}', 6);
+
+  @override
+  Future<List<VideoItem>> related(String videoId) async =>
+      videos('r${videoId.substring(9)}', 8);
 
   @override
   Future<Page<VideoItem>> search(

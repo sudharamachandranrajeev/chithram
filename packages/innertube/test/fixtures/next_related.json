@@ -1,0 +1,382 @@
+{
+ "contents": {
+  "twoColumnWatchNextResults": {
+   "results": {
+    "results": {
+     "contents": [
+      {
+       "videoPrimaryInfoRenderer": {
+        "title": {
+         "runs": [
+          {
+           "text": "Seed"
+          }
+         ]
+        }
+       }
+      }
+     ]
+    }
+   },
+   "secondaryResults": {
+    "secondaryResults": {
+     "results": [
+      {
+       "lockupViewModel": {
+        "contentId": "ccccccccc01",
+        "contentType": "LOCKUP_CONTENT_TYPE_VIDEO",
+        "contentImage": {
+         "thumbnailViewModel": {
+          "image": {
+           "sources": [
+            {
+             "url": "https://i.ytimg.com/vi/ccccccccc01/hqdefault.jpg",
+             "width": 336,
+             "height": 188
+            }
+           ]
+          },
+          "overlays": [
+           {
+            "thumbnailBottomOverlayViewModel": {
+             "badges": [
+              {
+               "thumbnailBadgeViewModel": {
+                "text": "3:24",
+                "badgeStyle": "THUMBNAIL_OVERLAY_BADGE_STYLE_DEFAULT"
+               }
+              }
+             ]
+            }
+           }
+          ]
+         }
+        },
+        "metadata": {
+         "lockupMetadataViewModel": {
+          "title": {
+           "content": "Related One"
+          },
+          "image": {
+           "decoratedAvatarViewModel": {
+            "rendererContext": {
+             "commandContext": {
+              "onTap": {
+               "innertubeCommand": {
+                "browseEndpoint": {
+                 "browseId": "UCcccccccccccccccccccccc"
+                }
+               }
+              }
+             }
+            }
+           }
+          },
+          "metadata": {
+           "contentMetadataViewModel": {
+            "metadataRows": [
+             {
+              "metadataParts": [
+               {
+                "text": {
+                 "content": "Chan C"
+                }
+               }
+              ]
+             },
+             {
+              "metadataParts": [
+               {
+                "text": {
+                 "content": "208M"
+                },
+                "accessibilityLabel": "208 million views"
+               },
+               {
+                "text": {
+                 "content": "2y ago"
+                },
+                "accessibilityLabel": "2 years ago"
+               }
+              ]
+             }
+            ]
+           }
+          }
+         }
+        }
+       }
+      },
+      {
+       "lockupViewModel": {
+        "contentId": "PLmix000000",
+        "contentType": "LOCKUP_CONTENT_TYPE_PLAYLIST",
+        "contentImage": {
+         "thumbnailViewModel": {
+          "image": {
+           "sources": [
+            {
+             "url": "https://i.ytimg.com/vi/PLmix000000/hqdefault.jpg",
+             "width": 336,
+             "height": 188
+            }
+           ]
+          },
+          "overlays": [
+           {
+            "thumbnailBottomOverlayViewModel": {
+             "badges": [
+              {
+               "thumbnailBadgeViewModel": {
+                "text": "50 videos",
+                "badgeStyle": "THUMBNAIL_OVERLAY_BADGE_STYLE_DEFAULT"
+               }
+              }
+             ]
+            }
+           }
+          ]
+         }
+        },
+        "metadata": {
+         "lockupMetadataViewModel": {
+          "title": {
+           "content": "A mix"
+          },
+          "image": {
+           "decoratedAvatarViewModel": {
+            "rendererContext": {
+             "commandContext": {
+              "onTap": {
+               "innertubeCommand": {
+                "browseEndpoint": {
+                 "browseId": "UCcccccccccccccccccccccc"
+                }
+               }
+              }
+             }
+            }
+           }
+          },
+          "metadata": {
+           "contentMetadataViewModel": {
+            "metadataRows": [
+             {
+              "metadataParts": [
+               {
+                "text": {
+                 "content": "YouTube"
+                }
+               }
+              ]
+             },
+             {
+              "metadataParts": [
+               {
+                "text": {
+                 "content": ""
+                },
+                "accessibilityLabel": ""
+               },
+               {
+                "text": {
+                 "content": "2y ago"
+                },
+                "accessibilityLabel": "2 years ago"
+               }
+              ]
+             }
+            ]
+           }
+          }
+         }
+        }
+       }
+      },
+      {
+       "lockupViewModel": {
+        "contentId": "ccccccccc02",
+        "contentType": "LOCKUP_CONTENT_TYPE_VIDEO",
+        "contentImage": {
+         "thumbnailViewModel": {
+          "image": {
+           "sources": [
+            {
+             "url": "https://i.ytimg.com/vi/ccccccccc02/hqdefault.jpg",
+             "width": 336,
+             "height": 188
+            }
+           ]
+          },
+          "overlays": [
+           {
+            "thumbnailBottomOverlayViewModel": {
+             "badges": [
+              {
+               "thumbnailBadgeViewModel": {
+                "text": "LIVE",
+                "badgeStyle": "THUMBNAIL_OVERLAY_BADGE_STYLE_LIVE"
+               }
+              }
+             ]
+            }
+           }
+          ]
+         }
+        },
+        "metadata": {
+         "lockupMetadataViewModel": {
+          "title": {
+           "content": "Related Live"
+          },
+          "image": {
+           "decoratedAvatarViewModel": {
+            "rendererContext": {
+             "commandContext": {
+              "onTap": {
+               "innertubeCommand": {
+                "browseEndpoint": {
+                 "browseId": "UCcccccccccccccccccccccc"
+                }
+               }
+              }
+             }
+            }
+           }
+          },
+          "metadata": {
+           "contentMetadataViewModel": {
+            "metadataRows": [
+             {
+              "metadataParts": [
+               {
+                "text": {
+                 "content": "Chan C"
+                }
+               }
+              ]
+             },
+             {
+              "metadataParts": [
+               {
+                "text": {
+                 "content": "1.2K"
+                },
+                "accessibilityLabel": "1.2K watching"
+               },
+               {
+                "text": {
+                 "content": "2y ago"
+                },
+                "accessibilityLabel": "2 years ago"
+               }
+              ]
+             }
+            ]
+           }
+          }
+         }
+        }
+       }
+      },
+      {
+       "lockupViewModel": {
+        "contentId": "seedseed001",
+        "contentType": "LOCKUP_CONTENT_TYPE_VIDEO",
+        "contentImage": {
+         "thumbnailViewModel": {
+          "image": {
+           "sources": [
+            {
+             "url": "https://i.ytimg.com/vi/seedseed001/hqdefault.jpg",
+             "width": 336,
+             "height": 188
+            }
+           ]
+          },
+          "overlays": [
+           {
+            "thumbnailBottomOverlayViewModel": {
+             "badges": [
+              {
+               "thumbnailBadgeViewModel": {
+                "text": "1:00",
+                "badgeStyle": "THUMBNAIL_OVERLAY_BADGE_STYLE_DEFAULT"
+               }
+              }
+             ]
+            }
+           }
+          ]
+         }
+        },
+        "metadata": {
+         "lockupMetadataViewModel": {
+          "title": {
+           "content": "The seed itself"
+          },
+          "image": {
+           "decoratedAvatarViewModel": {
+            "rendererContext": {
+             "commandContext": {
+              "onTap": {
+               "innertubeCommand": {
+                "browseEndpoint": {
+                 "browseId": "UCcccccccccccccccccccccc"
+                }
+               }
+              }
+             }
+            }
+           }
+          },
+          "metadata": {
+           "contentMetadataViewModel": {
+            "metadataRows": [
+             {
+              "metadataParts": [
+               {
+                "text": {
+                 "content": "Chan C"
+                }
+               }
+              ]
+             },
+             {
+              "metadataParts": [
+               {
+                "text": {
+                 "content": "1"
+                },
+                "accessibilityLabel": "1 view"
+               },
+               {
+                "text": {
+                 "content": "2y ago"
+                },
+                "accessibilityLabel": "2 years ago"
+               }
+              ]
+             }
+            ]
+           }
+          }
+         }
+        }
+       }
+      },
+      {
+       "continuationItemRenderer": {
+        "continuationEndpoint": {
+         "continuationCommand": {
+          "token": "NEXT_TOKEN"
+         }
+        }
+       }
+      }
+     ]
+    }
+   }
+  }
+ }
+}

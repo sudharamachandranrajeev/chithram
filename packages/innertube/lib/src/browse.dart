@@ -9,6 +9,7 @@ import 'util.dart';
 
 final _searchApi = Uri.parse('https://www.youtube.com/youtubei/v1/search?prettyPrint=false');
 final _browseApi = Uri.parse('https://www.youtube.com/youtubei/v1/browse?prettyPrint=false');
+final _nextApi = Uri.parse('https://www.youtube.com/youtubei/v1/next?prettyPrint=false');
 final _channelIdRe = RegExp(r'^UC[A-Za-z0-9_-]{22}$');
 
 /// Search's "Videos" filter.
@@ -26,20 +27,24 @@ abstract final class SearchFilter {
   static const underFourMinutes = 'EgQQARgB';
 }
 
-/// Search, channel uploads and video details, with continuation paging.
-/// Keep calling [Page.continuation] back into the same method until it is
-/// null.
+/// Search, channel uploads, related videos and video details, with
+/// continuation paging. Keep calling [Page.continuation] back into the same
+/// method until it is null.
 class InnertubeBrowse {
-  InnertubeBrowse({http.Client? client, this.webVersion = '2.20250101.00.00'}) : net = Net(client) {
+  InnertubeBrowse({http.Client? client, this.webVersion = '2.20250101.00.00', this.region = 'US'})
+      : net = Net(client) {
     visitor = VisitorData(net);
   }
 
   final Net net;
   final String webVersion;
+
+  /// Two-letter country code: what is popular and what is available differ.
+  final String region;
   late final VisitorData visitor;
 
   Map<String, Object?> get _context => {
-        'client': {'clientName': 'WEB', 'clientVersion': webVersion, 'hl': 'en', 'gl': 'US'},
+        'client': {'clientName': 'WEB', 'clientVersion': webVersion, 'hl': 'en', 'gl': region},
       };
 
   static const _cookies = {'Cookie': 'CONSENT=YES+cb; SOCS=CAI'};
@@ -67,6 +72,23 @@ class InnertubeBrowse {
       body['browseId'] = 'VLUU${channelId.substring(2)}';
     }
     return parseVideoPage(await net.postJson(_browseApi, body, headers: _cookies));
+  }
+
+  /// What YouTube suggests watching after [videoId] (its "up next" list),
+  /// without [videoId] itself.
+  Future<List<VideoItem>> related(String videoId) async {
+    final page = parseVideoPage(
+        await net.postJson(_nextApi, {'context': _context, 'videoId': videoId}, headers: _cookies));
+    return [for (final v in page.items) if (v.videoId != videoId) v];
+  }
+
+  /// The videos on a channel's home tab, shelf by shelf. On YouTube's own
+  /// topic channels (Music, Sports, News, Gaming) that is what is popular in
+  /// [region] now.
+  Future<List<VideoItem>> channelHome(String channelId) async {
+    if (!_channelIdRe.hasMatch(channelId)) throw InnertubeException('not a channel id: $channelId');
+    final body = {'context': _context, 'browseId': channelId};
+    return parseVideoPage(await net.postJson(_browseApi, body, headers: _cookies)).items;
   }
 
   /// Title, channel, description and counters (from the VISIONOS player
@@ -98,7 +120,7 @@ Page<VideoItem> parseVideoPage(Object? response) {
   final items = <VideoItem>[];
   final seen = <String>{};
   _walk(response, (key, node) {
-    final item = _videoItem(node);
+    final item = key == 'lockupViewModel' ? _lockupItem(node) : _videoItem(node);
     if (item != null && seen.add(item.videoId)) items.add(item);
   });
   String? next;
@@ -112,7 +134,7 @@ Page<VideoItem> parseVideoPage(Object? response) {
 void _walk(Object? node, void Function(String key, Json node) onVideo) {
   if (node is Map) {
     node.forEach((k, v) {
-      if (_videoKeys.contains(k) && v is Map) {
+      if ((_videoKeys.contains(k) || k == 'lockupViewModel') && v is Map) {
         onVideo(k as String, asJson(v));
       } else {
         _walk(v, onVideo);
@@ -148,5 +170,51 @@ VideoItem? _videoItem(Json r) {
     viewsText: textOf(r['viewCountText']),
     isLive: live,
     thumbnails: parseThumbnails(r['thumbnail']),
+  );
+}
+
+/// The newer layout (related videos, topic channels): a `lockupViewModel`.
+/// Playlists and mixes use it too; only videos are kept.
+VideoItem? _lockupItem(Json l) {
+  if (asString(l['contentType']) != 'LOCKUP_CONTENT_TYPE_VIDEO') return null;
+  final id = asString(l['contentId']);
+  if (id.length != 11) return null;
+  final meta = asJson(asJson(l['metadata'])['lockupMetadataViewModel']);
+  final title = asString(asJson(meta['title'])['content']);
+  if (title.isEmpty) return null;
+  // Row 1: the channel. Row 2: views (or "watching") and age.
+  final rows = [
+    for (final r in asList(asJson(asJson(meta['metadata'])['contentMetadataViewModel'])['metadataRows']))
+      [for (final p in asList(asJson(r)['metadataParts'])) asJson(p)],
+  ];
+  final author = rows.isEmpty || rows.first.isEmpty ? '' : asString(asJson(rows.first.first['text'])['content']);
+  var views = '';
+  for (final p in rows.skip(1).expand((r) => r)) {
+    final text = asString(asJson(p['text'])['content']);
+    final label = asString(p['accessibilityLabel']);
+    if (label.contains('watching')) {
+      views = text.contains('watching') ? text : '$text watching';
+    } else if (label.contains('view')) {
+      views = text.contains('view') ? text : '$text views';
+    }
+  }
+  final channelId = findAll(meta, 'browseEndpoint')
+      .map((e) => asString(e['browseId']))
+      .firstWhere(_channelIdRe.hasMatch, orElse: () => '');
+  final image = asJson(asJson(l['contentImage'])['thumbnailViewModel']);
+  final badges = findAll(image, 'thumbnailBadgeViewModel');
+  Duration? duration;
+  for (final b in badges) {
+    duration ??= parseClock(asString(b['text']));
+  }
+  return VideoItem(
+    videoId: id,
+    title: title,
+    author: author,
+    channelId: channelId,
+    duration: duration,
+    viewsText: views,
+    isLive: badges.any((b) => asString(b['badgeStyle']).contains('LIVE') || asString(b['text']) == 'LIVE'),
+    thumbnails: parseThumbnails({'thumbnails': asJson(image['image'])['sources']}),
   );
 }

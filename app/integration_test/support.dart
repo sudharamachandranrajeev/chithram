@@ -1,3 +1,6 @@
+import 'package:chithram/src/core/services.dart';
+import 'package:chithram/src/features/youtube/youtube_fixture.dart';
+import 'package:chithram/src/features/youtube/youtube_service.dart';
 import 'package:chithram/src/ui/common/keys.dart';
 import 'package:chithram/src/ui/common/sections.dart';
 import 'package:flutter/material.dart';
@@ -9,6 +12,11 @@ Future<void> press(WidgetTester t, LogicalKeyboardKey key) async {
   await t.sendKeyEvent(key);
   await t.pumpAndSettle(const Duration(milliseconds: 50));
 }
+
+/// In-memory services with YouTube answered by fixtures: Home has rails of
+/// "Fixture" videos and nothing touches the network.
+AppServices fixtureServices() =>
+    AppServices.memory(youtube: YouTubeService(browse: FixtureBrowse(''), resolver: FixtureResolver('')));
 
 String? focusLabel() => FocusManager.instance.primaryFocus?.debugLabel;
 

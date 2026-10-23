@@ -15,7 +15,7 @@ Release notes are taken from the section of the version being tagged.
 ### Changed
 - The TV, phone and shared UI code now live in `ui/tv`, `ui/phone` and `ui/common`.
 
-## 0.2.1 (in progress)
+## 0.2.1
 
 ### Added
 - Phone views for YouTube, Search, Live TV, Torrents, Receive and Settings, kept apart from the TV
@@ -32,6 +32,11 @@ Release notes are taken from the section of the version being tagged.
 ### Fixed
 - A phone no longer shows the TV on-screen keyboard or the "Send from phone" buttons: it types with the
   system keyboard everywhere. The text entry dialog drops "Send from phone" on a phone.
+
+### Note
+- Builds tagged 0.2.1 also carry the 0.3.0 foundations, which merged onto main before this release was
+  cut: the Media Home database and interfaces, secret storage, and the placeholder Settings sections for
+  Metadata, Search plugins, Torznab and Image cache.
 
 ## 0.2.0
 

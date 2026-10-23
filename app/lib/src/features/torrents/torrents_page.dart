@@ -9,25 +9,37 @@ import '../../player/play_request.dart';
 import '../../theme.dart';
 import '../../ui/dims.dart';
 import '../../ui/focus_card.dart';
+import '../../ui/form_factor.dart';
 import '../../ui/home_page.dart' show ActionLabel;
 import '../../ui/sections.dart';
 import '../../ui/text_entry.dart';
 import '../receive/receive_page.dart';
+import 'phone/phone_torrents_page.dart';
 import 'torrent_files_page.dart';
 import 'torrent_logic.dart';
 
 /// Torrents section: paste a magnet, receive one from a phone, see the network
 /// choice, and the files of the active torrent with its live stats.
-class TorrentsPage extends StatefulWidget {
+class TorrentsPage extends StatelessWidget {
   const TorrentsPage({super.key, required this.focus});
 
   final SectionFocus focus;
 
   @override
-  State<TorrentsPage> createState() => _TorrentsPageState();
+  Widget build(BuildContext context) =>
+      FormSwitch(tv: _TvTorrentsPage(focus: focus), phone: const PhoneTorrentsPage());
 }
 
-class _TorrentsPageState extends State<TorrentsPage> {
+class _TvTorrentsPage extends StatefulWidget {
+  const _TvTorrentsPage({required this.focus});
+
+  final SectionFocus focus;
+
+  @override
+  State<_TvTorrentsPage> createState() => _TorrentsPageState();
+}
+
+class _TorrentsPageState extends State<_TvTorrentsPage> {
   void _say(String message) {
     if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }

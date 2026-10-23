@@ -8,6 +8,7 @@ import '../../theme.dart';
 import '../../ui/dims.dart';
 import '../../ui/focus_card.dart';
 import '../../ui/home_page.dart' show ActionLabel;
+import 'phone/phone_receive_page.dart';
 import 'receive_keys.dart';
 import 'receive_service.dart';
 
@@ -49,6 +50,7 @@ class _ReceivePageState extends State<ReceivePage> {
   @override
   Widget build(BuildContext context) {
     final d = Dims.of(context);
+    if (d.phone) return PhoneReceivePage(service: _service);
     final dim = TextStyle(color: ChithramColors.textDim, fontSize: d.t(14));
     final pin = AppServices.of(context).prefs.getString(ReceivePrefs.pin);
     return CallbackShortcuts(

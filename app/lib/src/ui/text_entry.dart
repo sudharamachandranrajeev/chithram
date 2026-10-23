@@ -202,14 +202,14 @@ class _TextEntryDialogState extends State<_TextEntryDialog> {
                     onPressed: _paste,
                     child: const Text('Paste'),
                   ),
-                  // A phone has the system keyboard; this one is for TVs and desktops.
+                  // A phone has the system keyboard and is the sender: these two are for TVs and desktops.
                   if (_link && !d.phone)
                     TextButton(
                       key: Keys.textEntryKeyboard,
                       onPressed: () => setState(() => _showKeys = !showKeys),
                       child: Text(showKeys ? 'Hide keyboard' : 'Keyboard'),
                     ),
-                  if (_link)
+                  if (_link && !d.phone)
                     TextButton(
                       key: Keys.textEntrySend,
                       onPressed: _sendFromPhone,

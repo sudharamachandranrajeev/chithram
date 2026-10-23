@@ -11,9 +11,11 @@ import '../intake/intake.dart';
 import '../player/play_request.dart';
 import '../theme.dart';
 import 'dims.dart';
+import 'form_factor.dart';
 import 'focus_card.dart';
 import 'focus_rail.dart';
 import 'keyboard.dart';
+import 'phone/phone_search_page.dart';
 import 'text_entry.dart';
 
 /// Search with an on-screen D-pad keyboard on TV and desktop (a TextField is
@@ -24,7 +26,7 @@ import 'text_entry.dart';
 /// Pressing Search looks up YouTube videos and, on the global page, matching
 /// Live TV channels. Nothing is searched while typing. [youtubeOnly] gives the
 /// YouTube section: same keyboard and results, without the channel rail.
-class SearchPage extends StatefulWidget {
+class SearchPage extends StatelessWidget {
   const SearchPage({
     super.key,
     required this.focus,
@@ -39,10 +41,24 @@ class SearchPage extends StatefulWidget {
   final String? initialQuery;
 
   @override
-  State<SearchPage> createState() => _SearchPageState();
+  Widget build(BuildContext context) => FormSwitch(
+    tv: _TvSearchPage(focus: focus, youtubeOnly: youtubeOnly, initialQuery: initialQuery),
+    phone: PhoneSearchPage(youtubeOnly: youtubeOnly, initialQuery: initialQuery),
+  );
 }
 
-class _SearchPageState extends State<SearchPage> {
+class _TvSearchPage extends StatefulWidget {
+  const _TvSearchPage({required this.focus, required this.youtubeOnly, this.initialQuery});
+
+  final SectionFocus focus;
+  final bool youtubeOnly;
+  final String? initialQuery;
+
+  @override
+  State<_TvSearchPage> createState() => _SearchPageState();
+}
+
+class _SearchPageState extends State<_TvSearchPage> {
   String _query = '';
   late final _field = TextEditingController(text: widget.initialQuery);
   YouTubeSearchController? _results;

@@ -12,6 +12,7 @@ import 'dims.dart';
 import '../tv/focus_card.dart';
 import '../tv/home_page.dart' show ActionLabel;
 import 'interface_settings.dart';
+import '../phone/phone_settings.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key, required this.focus});
@@ -21,6 +22,7 @@ class SettingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final d = Dims.of(context);
+    if (d.phone) return const PhoneSettings();
     return Padding(
       padding: EdgeInsets.all(d.phone ? 16 : 32),
       child: SingleChildScrollView(

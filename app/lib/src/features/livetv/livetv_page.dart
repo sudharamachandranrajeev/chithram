@@ -5,26 +5,38 @@ import '../../core/services.dart';
 import '../../player/play_request.dart';
 import '../../theme.dart';
 import '../../ui/common/dims.dart';
+import '../../ui/common/form_factor.dart';
+import '../../ui/common/sections.dart';
 import '../../ui/tv/focus_card.dart';
 import '../../ui/tv/home_page.dart' show ActionLabel;
-import '../../ui/common/sections.dart';
 import 'add_playlist.dart';
 import 'iptv_service.dart';
+import 'phone/phone_livetv_page.dart';
 import 'suggestions.dart';
 
 /// Live TV: your sources, their groups and channels. With no sources it
 /// offers to add a playlist or one of the community catalogues; nothing is
 /// downloaded until you choose one and confirm.
-class LiveTvPage extends StatefulWidget {
+class LiveTvPage extends StatelessWidget {
   const LiveTvPage({super.key, required this.focus});
 
   final SectionFocus focus;
 
   @override
-  State<LiveTvPage> createState() => _LiveTvPageState();
+  Widget build(BuildContext context) =>
+      FormSwitch(tv: _TvLiveTvPage(focus: focus), phone: const PhoneLiveTvPage());
 }
 
-class _LiveTvPageState extends State<LiveTvPage> {
+class _TvLiveTvPage extends StatefulWidget {
+  const _TvLiveTvPage({required this.focus});
+
+  final SectionFocus focus;
+
+  @override
+  State<_TvLiveTvPage> createState() => _LiveTvPageState();
+}
+
+class _LiveTvPageState extends State<_TvLiveTvPage> {
   IptvService? _service;
   LiveTvSnapshot? _snap;
   String? _sourceId;

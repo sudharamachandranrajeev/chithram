@@ -39,16 +39,16 @@ DynamicLibrary openTdLibrary() {
   throw const TdUnavailable('Telegram is not available on this platform.');
 }
 
-/// Runs `td_receive` forever in its own isolate (it blocks) and forwards each
-/// decoded JSON string. `td_send` is thread safe and is called from the
-/// caller's isolate.
+/// TDLib over `td_json_client`. `td_send` is thread safe and is called from the
+/// caller's isolate; answers arrive through the shared receive isolate.
 class NativeTdTransport implements TdTransport {
-  NativeTdTransport._(this._clientId, this._send, this._isolate, this._stop) {
+  NativeTdTransport._(this._clientId, this._send, this._receiver) {
     _router = TdRequestRouter(_sendJson);
+    _receiver.register(_clientId, _router.handle);
   }
 
-  /// Starts the receive isolate and creates the TDLib client. [logVerbosity]
-  /// is TDLib's own log level (1 = errors; it logs to stderr).
+  /// Creates a TDLib client. [logVerbosity] is TDLib's own log level
+  /// (1 = errors; it logs to stderr).
   static Future<NativeTdTransport> open({int logVerbosity = 1}) async {
     final lib = openTdLibrary();
     final create = lib.lookupFunction<_CreateC, _CreateD>('td_create_client_id');
@@ -60,29 +60,13 @@ class NativeTdTransport implements TdTransport {
     } finally {
       malloc.free(verbosity);
     }
-    final id = create();
-    final inbox = ReceivePort();
-    final ready = Completer<SendPort>();
-    late final NativeTdTransport t;
-    final isolate = await Isolate.spawn(_receiveLoop, (inbox.sendPort, Platform.environment['CHITHRAM_TDLIB_LIB']));
-    inbox.listen((m) {
-      if (m is SendPort) {
-        ready.complete(m);
-      } else if (m is String) {
-        t._deliver(m);
-      }
-    });
-    final stop = await ready.future;
-    t = NativeTdTransport._(id, send, isolate, stop);
-    t._inbox = inbox;
-    return t;
+    final receiver = await _SharedReceiver.get();
+    return NativeTdTransport._(create(), send, receiver);
   }
 
   final int _clientId;
   final _SendD _send;
-  final Isolate _isolate;
-  final SendPort _stop;
-  late final ReceivePort _inbox;
+  final _SharedReceiver _receiver;
   late final TdRequestRouter _router;
   bool _closed = false;
 
@@ -102,26 +86,48 @@ class NativeTdTransport implements TdTransport {
     }
   }
 
-  void _deliver(String json) {
-    try {
-      final o = jsonDecode(json);
-      if (o is Map<String, dynamic>) _router.handle(o);
-    } on FormatException {
-      // TDLib only sends JSON; ignore anything else.
-    }
-  }
-
   @override
   void close() {
     if (_closed) return;
     _closed = true;
-    _stop.send('stop');
+    _receiver.unregister(_clientId);
     _router.close();
-    // The loop notices the flag within its 1 s poll; the kill is the backstop.
-    Timer(const Duration(seconds: 3), () {
-      _isolate.kill(priority: Isolate.immediate);
-      _inbox.close();
+  }
+}
+
+/// The one `td_receive` loop of the process. TDLib forbids two threads in
+/// `td_receive` at once, so every client shares this isolate: it forwards each
+/// JSON string, and the main isolate routes it by `@client_id`. It lives for
+/// the rest of the process (the call blocks; an idle poll costs nothing).
+class _SharedReceiver {
+  _SharedReceiver._();
+
+  static Future<_SharedReceiver>? _starting;
+  static Future<_SharedReceiver> get() => _starting ??= _start();
+
+  static Future<_SharedReceiver> _start() async {
+    final r = _SharedReceiver._();
+    final inbox = ReceivePort();
+    await Isolate.spawn(_receiveLoop, (inbox.sendPort, Platform.environment['CHITHRAM_TDLIB_LIB']));
+    inbox.listen((m) {
+      if (m is String) r._route(m);
     });
+    return r;
+  }
+
+  final _clients = <int, void Function(Map<String, dynamic>)>{};
+
+  void register(int id, void Function(Map<String, dynamic>) sink) => _clients[id] = sink;
+  void unregister(int id) => _clients.remove(id);
+
+  void _route(String json) {
+    try {
+      final o = jsonDecode(json);
+      if (o is! Map<String, dynamic>) return;
+      _clients[(o['@client_id'] as num?)?.toInt()]?.call(o);
+    } on FormatException {
+      // TDLib only sends JSON; ignore anything else.
+    }
   }
 }
 
@@ -132,15 +138,9 @@ Future<void> _receiveLoop((SendPort, String?) args) async {
       ? DynamicLibrary.open(override)
       : (Platform.isWindows ? DynamicLibrary.open('tdjson.dll') : DynamicLibrary.open('libtdjson.so'));
   final receive = lib.lookupFunction<_ReceiveC, _ReceiveD>('td_receive');
-  final control = ReceivePort();
-  var running = true;
-  control.listen((_) => running = false);
-  out.send(control.sendPort);
-  while (running) {
+  while (true) {
     final p = receive(1.0);
     if (p != nullptr) out.send(p.toDartString()); // valid until the next td_receive: copied now
-    // Lets the stop message in.
     await Future<void>.delayed(Duration.zero);
   }
-  control.close();
 }

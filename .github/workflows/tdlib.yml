@@ -138,8 +138,9 @@ jobs:
           "$VCPKG_INSTALLATION_ROOT/vcpkg.exe" install gperf:x64-windows openssl:x64-windows-static-md zlib:x64-windows-static-md --clean-after-build
       - name: Build tdjson.dll
         run: |
-          export PATH="$PATH:$VCPKG_INSTALLATION_ROOT/installed/x64-windows/tools/gperf"
-          cmake -S td -B build -A x64 \
+          gperf=$(find "$VCPKG_INSTALLATION_ROOT/installed" -name 'gperf.exe' | head -1)
+          echo "gperf: $gperf"
+          cmake -S td -B build -A x64 -DGPERF_EXECUTABLE:FILEPATH="$gperf" \
             -DCMAKE_TOOLCHAIN_FILE="$VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" \
             -DVCPKG_TARGET_TRIPLET=x64-windows-static-md
           cmake --build build --target tdjson --config Release --parallel 3

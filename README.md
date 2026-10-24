@@ -42,7 +42,7 @@ Everything stays in your home directory; only step 1 needs `sudo`.
   [releases page](https://github.com/sudharamachandranrajeev/chithram/releases),
   then `chmod +x` it and run it. It bundles its own libmpv.
 
-Chithram opens full screen on a TV; on a desktop, turn on *Settings > 10-foot TV mode*
+On a desktop you can turn on *Settings > 10-foot TV mode*
 for the TV layout.
 
 ## Content-neutral

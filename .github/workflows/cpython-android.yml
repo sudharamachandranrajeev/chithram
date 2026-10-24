@@ -1,0 +1,83 @@
+# Builds CPython for Android armeabi-v7a (arm-linux-androideabi) from the pinned
+# upstream tag with CPython's own Android/android.py, the same tooling python.org
+# uses for its arm64-v8a and x86_64 Android releases (PEP 738). python.org does not
+# publish an armv7 build, so this one is published as the asset of the
+# `cpython-android-<version>` pre-release of this repo, and
+# packages/nova_host/tool/fetch_cpython_android.py pins its sha256. Run by hand
+# (workflow_dispatch), or on a pull request that changes this file. CPython is
+# PSF licensed (the licence text is inside the tarball).
+
+name: CPython Android armv7
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/workflows/cpython-android.yml"
+
+permissions:
+  contents: read
+
+env:
+  # Same version as the python.org tarballs pinned for the other ABIs. Change both together.
+  CPYTHON_VERSION: 3.14.8
+  CPYTHON_COMMIT: 8e6e75d9102e39bed2a2b279203a396741180f12
+  HOST: arm-linux-androideabi
+
+jobs:
+  build:
+    name: CPython arm-linux-androideabi
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq build-essential pkg-config >/dev/null
+      - name: CPython sources
+        run: |
+          git clone -q --depth 1 --branch "v$CPYTHON_VERSION" https://github.com/python/cpython.git cpython
+          test "$(git -C cpython rev-parse HEAD)" = "$CPYTHON_COMMIT"
+          grep -n '"arm-linux-androideabi"' cpython/Android/android.py
+          grep -n 'ndk_version=' cpython/Android/android-env.sh
+      - name: Build Python (for the build machine)
+        working-directory: cpython/Android
+        run: ./android.py build build
+      - name: Host Python (arm-linux-androideabi, API 24)
+        working-directory: cpython/Android
+        run: ./android.py build "$HOST"
+      - name: Package
+        working-directory: cpython/Android
+        run: ./android.py package "$HOST"
+      - name: Collect and inspect
+        run: |
+          mkdir -p dist
+          cp "cpython/cross-build/$HOST/dist/python-$CPYTHON_VERSION-$HOST.tar.gz" dist/
+          f=dist/python-$CPYTHON_VERSION-$HOST.tar.gz
+          ls -l dist
+          sha256sum dist/*
+          x=$RUNNER_TEMP/x; mkdir -p "$x"; tar -xzf "$f" -C "$x"
+          readelf=readelf
+          lib=$x/prefix/lib/libpython3.14.so
+          "$readelf" -h "$lib" | grep -E 'Class|Machine|Flags'
+          "$readelf" -h "$lib" | grep -q 'ELF32' && "$readelf" -h "$lib" | grep -q 'ARM'
+          "$readelf" -d "$lib" | grep -E 'NEEDED|SONAME'
+          test -f "$x/prefix/include/python3.14/Python.h"
+          test -f "$x/prefix/lib/python3.14/LICENSE.txt"
+          # Every extension module fetch_cpython_android.py ships must be present.
+          dyn=$x/prefix/lib/python3.14/lib-dynload
+          ls "$dyn" | sed 's/\..*//' | sort > "$RUNNER_TEMP/have"
+          missing=0
+          for m in array binascii _bisect _blake2 _bz2 cmath _csv _decimal _elementtree fcntl _heapq _hmac \
+                   _json _lzma math _md5 mmap _multibytecodec _pickle _posixsubprocess pyexpat _queue _random \
+                   resource select _sha1 _sha2 _sha3 _socket _statistics _struct termios unicodedata zlib _zoneinfo; do
+            grep -qx "$m" "$RUNNER_TEMP/have" || { echo "::error::missing extension module $m"; missing=1; }
+          done
+          for so in "$dyn"/*.so; do "$readelf" -h "$so" | grep -q 'ARM' || { echo "::error::not ARM: $so"; missing=1; }; done
+          echo "$(ls "$dyn" | wc -l) extension modules"
+          exit $missing
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: cpython-android-armeabi-v7a
+          retention-days: 2
+          path: dist/*

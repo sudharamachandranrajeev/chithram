@@ -1,0 +1,12 @@
+name: web_media
+description: "Finds the video on a web page without running the page, keeps ads out, and strips ad breaks from HLS playlists. Pure Dart."
+version: 0.0.1
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.13.5
+
+dev_dependencies:
+  test: any
+  lints: any

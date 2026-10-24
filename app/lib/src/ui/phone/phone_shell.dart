@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../features/livetv/livetv_page.dart';
 import '../../features/torrents/torrents_page.dart';
+import '../../features/websites/websites_page.dart';
 import '../../features/youtube/youtube_page.dart';
 import '../tv/focus_card.dart';
 import '../common/form_factor.dart';
@@ -11,7 +12,7 @@ import '../common/search_page.dart';
 import '../common/sections.dart';
 import '../common/settings_page.dart';
 
-/// The sections in the bottom bar (or the tablet rail); Settings is the gear
+/// The sections in the bottom bar (or the tablet rail); Websites and Settings are
 /// in the top bar. At most five: more go into a "More" sheet from 0.4.0.
 const _tabs = [
   Section.home,
@@ -58,10 +59,24 @@ class _PhoneShellState extends State<PhoneShell> {
         return TorrentsPage(focus: focus);
       case Section.youtube:
         return YouTubePage(focus: focus);
+      case Section.websites:
+        return WebsitesPage(focus: focus);
     }
   }
 
   void _select(int i) => setState(() => _index = i);
+
+  /// Websites has no tab (the bar holds five); it opens from the top bar.
+  void _openWebsites() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => Scaffold(
+          appBar: AppBar(title: const Text('Websites')),
+          body: SafeArea(child: WebsitesPage(focus: _sections[Section.websites.index])),
+        ),
+      ),
+    );
+  }
 
   void _openSettings() {
     Navigator.of(context).push(
@@ -103,6 +118,12 @@ class _PhoneShellState extends State<PhoneShell> {
         appBar: AppBar(
           title: const Text('Chithram'),
           actions: [
+            IconButton(
+              key: const ValueKey('nav-websites'),
+              tooltip: 'Websites',
+              icon: Icon(Section.websites.icon),
+              onPressed: _openWebsites,
+            ),
             IconButton(
               key: const ValueKey('nav-settings'),
               tooltip: 'Settings',

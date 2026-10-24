@@ -13,6 +13,12 @@ Release notes are taken from the section of the version being tagged.
   magnets, PINs, keys, phone numbers) now open compact and drop the same keyboard down only when you select the field.
 
 ### Added
+- Websites (TV rail; on phones the globe in the top bar): add a site by its link and Chithram reads its pages for
+  video and plays it in its own player. Pages are read as text and never run, so the site's ads, pop-ups and scripts
+  never load; video found in embedded players is followed two frames deep with the right Referer; links that look like
+  ads are left out; HLS streams pass through a loopback filter that cuts ad breaks (cue-out/cue-in, SCTE-35 ranges,
+  interstitials, ad-host segments, short stitched-in runs from another host). Pages built entirely by scripts cannot be
+  read. Shared or pasted web page links offer "Find video on page".
 - Themes: Settings > Theme (TV and phone) picks one of seven dark looks (Chithram, Ocean, Emerald, Rose, Violet, Sunset,
   Graphite), an AMOLED black background for any look, or a custom accent from a 16-colour grid; text on the accent turns
   black or white automatically. Changes fade in at once and are kept. On phones the status and navigation bars follow.

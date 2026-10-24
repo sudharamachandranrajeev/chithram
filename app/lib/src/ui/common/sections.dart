@@ -7,6 +7,7 @@ enum Section {
   liveTv('Live TV', Icons.live_tv_rounded),
   torrents('Torrents', Icons.downloading_rounded),
   youtube('YouTube', Icons.smart_display_rounded),
+  websites('Websites', Icons.public_rounded),
   settings('Settings', Icons.settings_rounded);
 
   const Section(this.label, this.icon);

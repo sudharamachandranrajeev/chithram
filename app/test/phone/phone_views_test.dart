@@ -14,7 +14,6 @@ import 'package:chithram/src/features/youtube/youtube_service.dart';
 import 'package:chithram/src/ui/common/app.dart';
 import 'package:chithram/src/ui/common/form_factor.dart';
 import 'package:chithram/src/theme.dart';
-import 'package:chithram/src/ui/tv/keyboard.dart';
 import 'package:chithram/src/ui/phone/phone_shell.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -111,7 +110,7 @@ void main() {
         final browse = _Browse();
         await _pump(t, size, AppServices.memory(youtube: YouTubeService(browse: browse)));
         await _open(t, 'youtube');
-        expect(find.byType(OnScreenKeyboard), findsNothing);
+        expect(find.byKey(const ValueKey('search-bar')), findsNothing);
         expect(find.text('Send from phone'), findsNothing);
         final field = find.byKey(const ValueKey('search-field'));
         expect(field, findsOneWidget);

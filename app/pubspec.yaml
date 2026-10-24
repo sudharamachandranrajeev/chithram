@@ -69,6 +69,8 @@ flutter:
   assets:
     # TMDB logo (attribution; TMDB's trademark, see NOTICE).
     - assets/attribution/
+    # Keyboard sounds (synthesised by tool/make_sfx.py).
+    - assets/sfx/
   # Poppins (SIL Open Font License, assets/fonts/OFL.txt).
   fonts:
     - family: Poppins

@@ -11,11 +11,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'support.dart';
 
 // Enter, not Select: the Linux test key map has no Select.
-/// Types [text] on the on-screen keyboard with the D-pad, searches, and opens
+/// Opens the keyboard from the search bar, types [text] with the D-pad, searches, and opens
 /// the [result] tile. Starts on the rail.
 Future<void> searchAndOpen(WidgetTester t, String text, Finder result) async {
   await press(t, LogicalKeyboardKey.arrowDown); // Search
-  await press(t, LogicalKeyboardKey.arrowRight); // into the keyboard
+  await press(t, LogicalKeyboardKey.arrowRight); // the search bar
+  await press(t, LogicalKeyboardKey.enter); // drops the keyboard down
   for (final c in text.split('')) {
     await dpadTo(t, find.byKey(ValueKey('key-${c == ' ' ? 'space' : c}')));
     await press(t, LogicalKeyboardKey.enter);

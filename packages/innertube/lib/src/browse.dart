@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:http/http.dart' as http;
 
 import 'clients.dart';
@@ -10,7 +12,30 @@ import 'util.dart';
 final _searchApi = Uri.parse('https://www.youtube.com/youtubei/v1/search?prettyPrint=false');
 final _browseApi = Uri.parse('https://www.youtube.com/youtubei/v1/browse?prettyPrint=false');
 final _nextApi = Uri.parse('https://www.youtube.com/youtubei/v1/next?prettyPrint=false');
+final _suggestApi = Uri.parse('https://suggestqueries-clients6.youtube.com/complete/search');
 final _channelIdRe = RegExp(r'^UC[A-Za-z0-9_-]{22}$');
+
+/// The suggestion strings from a suggest answer: JSONP
+/// `window.google.ac.h(["q",[["text",0,[..]],...],{..}])` or plain JSON
+/// `["q",["text",...]]`. Anything else gives an empty list.
+List<String> parseSuggestions(String body) {
+  final open = body.indexOf('[');
+  final close = body.lastIndexOf(']');
+  if (open < 0 || close <= open) return const [];
+  try {
+    final j = jsonDecode(body.substring(open, close + 1));
+    if (j is! List || j.length < 2 || j[1] is! List) return const [];
+    return [
+      for (final e in j[1] as List)
+        if (e is String)
+          e
+        else if (e is List && e.isNotEmpty && e.first is String)
+          e.first as String,
+    ].take(10).toList();
+  } on FormatException {
+    return const [];
+  }
+}
 
 /// Search's "Videos" filter.
 const _videosOnly = 'EgIQAQ==';
@@ -60,6 +85,21 @@ class InnertubeBrowse {
       body['params'] = params;
     }
     return parseVideoPage(await net.postJson(_searchApi, body, headers: _cookies));
+  }
+
+  /// What YouTube's search box suggests for [prefix] (at most 10, best first).
+  /// An empty prefix suggests nothing.
+  Future<List<String>> suggest(String prefix) async {
+    final q = prefix.trim();
+    if (q.isEmpty) return const [];
+    final uri = _suggestApi.replace(queryParameters: {
+      'client': 'youtube',
+      'ds': 'yt',
+      'hl': 'en',
+      'gl': region,
+      'q': q,
+    });
+    return parseSuggestions(await net.getText(uri, timeout: const Duration(seconds: 5)));
   }
 
   /// A channel's uploads (newest first). [channelId] is `UC...`.

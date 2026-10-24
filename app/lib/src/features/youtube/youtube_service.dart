@@ -77,6 +77,15 @@ class YouTubeService {
     return browse.search(q, continuation: continuation);
   }
 
+  /// Search box suggestions for [prefix]; empty when offline.
+  Future<List<String>> suggest(String prefix) async {
+    try {
+      return await browse.suggest(prefix);
+    } catch (_) {
+      return const [];
+    }
+  }
+
   /// [source] is the Home rail [v] was picked from, if any.
   Future<PlayRequest> playRequest(VideoItem v, {String? source}) async => PlayRequest(
     itemId: ItemId.youtube(v.videoId),

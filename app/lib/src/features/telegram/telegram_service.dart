@@ -253,10 +253,17 @@ class TelegramService extends ChangeNotifier {
         break;
       case TgAuthWaitPhone():
         // QR first: best on a TV. The phone number path is offered next to it.
+        _qrLink = null;
+        _phoneChosen = false;
         _state.value = const TelegramState(TelegramStatus.starting);
         unawaited(_requestQr());
       case TgAuthWaitQr(:final link):
-        _state.value = TelegramState(TelegramStatus.qr, qrLink: link);
+        // TDLib renews the link; while the user is on the phone number path
+        // it is kept for "Scan a QR code instead".
+        _qrLink = link;
+        if (_state.value.status != TelegramStatus.phone || !_phoneChosen) {
+          _state.value = TelegramState(TelegramStatus.qr, qrLink: link);
+        }
       case TgAuthWaitCode(:final phoneNumber):
         _state.value = TelegramState(TelegramStatus.code, phone: phoneNumber);
       case TgAuthWaitPassword(:final hint):
@@ -286,9 +293,28 @@ class TelegramService extends ChangeNotifier {
     }
   }
 
+  String? _qrLink;
+  bool _phoneChosen = false;
+
   /// Switches the sign-in from the QR code to a phone number.
   void usePhoneNumber() {
-    if (_state.value.status == TelegramStatus.qr) _state.value = const TelegramState(TelegramStatus.phone);
+    if (_state.value.status != TelegramStatus.qr) return;
+    _phoneChosen = true;
+    _state.value = const TelegramState(TelegramStatus.phone);
+  }
+
+  /// Back from the phone number to the QR code: the last link TDLib gave, or a
+  /// new one.
+  void useQrCode() {
+    if (_state.value.status != TelegramStatus.phone) return;
+    _phoneChosen = false;
+    final link = _qrLink;
+    if (link != null) {
+      _state.value = TelegramState(TelegramStatus.qr, qrLink: link);
+    } else {
+      _state.value = const TelegramState(TelegramStatus.starting);
+      unawaited(_requestQr());
+    }
   }
 
   Future<String?> submitPhone(String phone) => _guard(() => _client!.submitPhone(phone.trim()));

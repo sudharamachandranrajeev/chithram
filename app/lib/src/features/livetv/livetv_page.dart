@@ -82,7 +82,7 @@ class _LiveTvPageState extends State<_TvLiveTvPage> {
   Widget build(BuildContext context) {
     final d = Dims.of(context);
     final snap = _snap;
-    final pad = EdgeInsets.all(d.phone ? 16 : 32);
+    final pad = EdgeInsets.all(d.gutter);
     if (snap == null) {
       return Padding(padding: pad, child: const Center(child: CircularProgressIndicator()));
     }

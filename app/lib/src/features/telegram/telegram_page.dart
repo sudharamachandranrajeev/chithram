@@ -110,19 +110,31 @@ class _TelegramPageState extends State<TelegramPage> {
       case TelegramStatus.starting:
         return [_text('Connecting to Telegram...')];
       case TelegramStatus.qr:
+        final d = Dims.of(context);
+        final steps = _text('On your phone, open Telegram > Settings > Devices > Link Desktop Device and scan this code.');
+        // About 40% of the screen's height on a TV, so the code, the steps and
+        // the phone number fallback share one screen.
+        final size = d.phone ? 220.0 : (MediaQuery.sizeOf(context).height * 0.42 - 24).clamp(150.0, 300.0);
+        final qr = Container(
+          color: Colors.white,
+          padding: const EdgeInsets.all(10),
+          child: QrImageView(key: TelegramKeys.qr, data: s.qrLink ?? '', size: size, padding: EdgeInsets.zero),
+        );
+        final usePhone = _button('Use a phone number instead', _service.usePhoneNumber, key: TelegramKeys.usePhone, entry: true);
+        if (d.phone) return [steps, Padding(padding: const EdgeInsets.all(16), child: Center(child: qr)), usePhone];
         return [
-          _text('On your phone, open Telegram > Settings > Devices > Link Desktop Device and scan this code.'),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Center(
-              child: Container(
-                color: Colors.white,
-                padding: const EdgeInsets.all(12),
-                child: QrImageView(key: TelegramKeys.qr, data: s.qrLink ?? '', size: Dims.of(context).phone ? 220 : 280),
+          Row(
+            children: [
+              Padding(padding: const EdgeInsets.all(8), child: qr),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [steps, const SizedBox(height: 8), usePhone],
+                ),
               ),
-            ),
+            ],
           ),
-          _button('Use a phone number instead', _service.usePhoneNumber, key: TelegramKeys.usePhone, entry: true),
         ];
       case TelegramStatus.phone:
         return [
@@ -130,17 +142,18 @@ class _TelegramPageState extends State<TelegramPage> {
           _text('Enter the phone number of your Telegram account, with the country code.'),
           _button(
             'Enter phone number',
-            () => _ask('Phone number', '+353 ...', TextEntryKind.search, _service.submitPhone),
+            () => _ask('Phone number', '+ country code and number', TextEntryKind.number, _service.submitPhone),
             key: TelegramKeys.enterPhone,
             entry: true,
           ),
+          _button('Scan a QR code instead', _service.useQrCode, key: TelegramKeys.useQr),
         ];
       case TelegramStatus.code:
         return [
           _text('Telegram sent a code to your Telegram app${s.phone == null || s.phone!.isEmpty ? '' : ' (${s.phone})'}.'),
           _button(
             'Enter code',
-            () => _ask('Login code', '12345', TextEntryKind.search, _service.submitCode),
+            () => _ask('Login code', '12345', TextEntryKind.number, _service.submitCode),
             key: TelegramKeys.enterCode,
             entry: true,
           ),
@@ -197,7 +210,7 @@ class _TelegramPageState extends State<TelegramPage> {
         body: Overscan(
           child: FocusScope(
             child: Padding(
-              padding: const EdgeInsets.all(32),
+              padding: EdgeInsets.all(d.gutter),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

@@ -124,9 +124,40 @@ class _SearchPageState extends State<_TvSearchPage> {
       context,
       anchor: box.localToGlobal(Offset.zero) & box.size,
       query: _query,
-      suggest: AppServices.of(context).youtube.suggest,
+      suggest: _suggest,
       onSubmit: _search,
     );
+  }
+
+  /// Under the keyboard: YouTube's suggestions; on the global page also
+  /// matching catalogue titles and Live TV channels, each row labelled.
+  Future<List<KeyboardSuggestion>> _suggest(String prefix) async {
+    final services = AppServices.of(context);
+    Future<List<KeyboardSuggestion>> from<T>(
+      Future<List<T>> found,
+      String Function(T) text,
+      String source,
+      IconData icon,
+    ) async {
+      try {
+        final seen = <String>{};
+        return [
+          for (final t in await found)
+            if (seen.add(text(t).toLowerCase())) KeyboardSuggestion(text(t), source: source, icon: icon),
+        ].take(6).toList();
+      } catch (_) {
+        return const [];
+      }
+    }
+
+    final youtube = from(services.youtube.suggest(prefix), (t) => t, 'YouTube', Icons.smart_display_rounded);
+    if (widget.youtubeOnly) return youtube;
+    final all = await Future.wait([
+      youtube,
+      from(services.catalog.search(prefix), (t) => t.title, 'Titles', Icons.movie_outlined),
+      from(services.iptv.searchChannels(prefix, limit: 6), (c) => c.name, 'Live TV', Icons.live_tv_rounded),
+    ]);
+    return [for (final list in all) ...list];
   }
 
   KeyEventResult _onKey(FocusNode node, KeyEvent event) {
@@ -147,7 +178,7 @@ class _SearchPageState extends State<_TvSearchPage> {
   @override
   Widget build(BuildContext context) {
     final d = Dims.of(context);
-    final pad = d.phone ? 12.0 : 28.0;
+    final pad = d.phone ? 12.0 : (d.tv ? 20.0 : 28.0);
     final results = _results!;
     final title = widget.youtubeOnly ? 'YouTube' : 'Search';
     final subtitle = widget.youtubeOnly ? 'Search YouTube.' : 'Unified search across your sources.';
@@ -174,7 +205,7 @@ class _SearchPageState extends State<_TvSearchPage> {
                     subtitle,
                     style: TextStyle(color: ChithramColors.of(context).textDim, fontSize: d.t(14)),
                   ),
-                  const SizedBox(height: 14),
+                  SizedBox(height: d.tv ? 10 : 14),
                   if (d.phone)
                     _BarBox(
                       child: TextField(
@@ -356,13 +387,13 @@ class _ActionCard extends StatelessWidget {
       radius: 12,
       onActivate: onActivate,
       child: Container(
-        height: d.phone ? 44 : d.u(52),
-        padding: const EdgeInsets.symmetric(horizontal: 18),
+        height: d.phone ? 44 : (d.tv ? 40 : 52),
+        padding: EdgeInsets.symmetric(horizontal: d.tv ? 14 : 18),
         color: ChithramColors.of(context).surfaceHigh,
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: d.t(22)),
+            Icon(icon, size: d.tv ? 20 : 22),
             const SizedBox(width: 8),
             Text(
               label,

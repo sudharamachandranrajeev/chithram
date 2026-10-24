@@ -10,21 +10,54 @@ import '../common/dims.dart';
 import '../common/sfx.dart';
 import 'dpad.dart';
 
-/// Opens the search keyboard: a frosted panel that drops down from [anchor]
-/// (the search bar's rect on screen). Typing changes [query] at once.
-/// Suggestions for the text so far come from [suggest]; picking one, or the
-/// Search key, closes the panel and calls [onSubmit]. Back closes it and keeps
-/// the text.
+/// What the keyboard is for: the keys and the action key follow it.
+enum KeyboardLayout {
+  /// Lower-case letters and a symbols page; the action key searches.
+  search,
+
+  /// Names, passwords, PINs: a digits row, letters with Shift, symbols.
+  text,
+
+  /// Links, magnets, keys: a digits row, letters with Shift and the URL
+  /// characters `:/.?=&-_` on the main page.
+  url,
+
+  /// Phone numbers and login codes: a number pad with `+`.
+  number,
+}
+
+/// One suggestion, labelled with where it came from (`YouTube`, `Live TV`).
+/// Suggestions of one source share a row under the keys.
+class KeyboardSuggestion {
+  const KeyboardSuggestion(
+    this.text, {
+    this.source = '',
+    this.icon = Icons.search_rounded,
+  });
+
+  final String text;
+  final String source;
+  final IconData icon;
+}
+
+/// Opens the on-screen keyboard: a frosted panel that drops down from
+/// [anchor] (the search bar's or text field's rect on screen). Typing changes
+/// [query] at once. Suggestions for the text so far come from [suggest] and
+/// sit in rows under the keys; picking one, or the action key, closes the
+/// panel and calls [onSubmit]. Back closes it and keeps the text. Returns
+/// whether it was submitted.
 ///
 /// Key ids (what the tests tap): `key-<char>`, `key-space`, `key-backspace`,
-/// `key-clear`, `key-mode` (letters / symbols), `search-go` and
+/// `key-clear`, `key-shift`, `key-mode` (letters / symbols), the action key
+/// `search-go` ([KeyboardLayout.search]) or `key-ok` (the others), and
 /// `suggestion-<i>`.
-Future<void> showSearchKeyboard(
+Future<bool> showSearchKeyboard(
   BuildContext context, {
   required Rect anchor,
   required ValueNotifier<String> query,
-  required Future<List<String>> Function(String prefix) suggest,
-  required VoidCallback onSubmit,
+  Future<List<KeyboardSuggestion>> Function(String prefix)? suggest,
+  VoidCallback? onSubmit,
+  KeyboardLayout layout = KeyboardLayout.search,
 }) async {
   unawaited(preloadSfx(context));
   playSfx(context, Sfx.open);
@@ -36,44 +69,65 @@ Future<void> showSearchKeyboard(
     transitionDuration: const Duration(milliseconds: 240),
     pageBuilder: (context, _, _) => _KeyboardLayout(
       anchor: anchor,
-      child: _KeyboardPanel(query: query, suggest: suggest),
+      layout: layout,
+      child: _KeyboardPanel(query: query, suggest: suggest, layout: layout),
     ),
     // The panel unrolls downwards from the bar and fades in.
     transitionBuilder: (context, animation, _, child) {
-      final t = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic, reverseCurve: Curves.easeInCubic);
+      final t = CurvedAnimation(
+        parent: animation,
+        curve: Curves.easeOutCubic,
+        reverseCurve: Curves.easeInCubic,
+      );
       return FadeTransition(
         opacity: t,
         child: AnimatedBuilder(
           animation: t,
           builder: (context, child) => ClipRect(
-            child: Align(alignment: Alignment.topCenter, heightFactor: 0.6 + 0.4 * t.value, child: child),
+            child: Align(
+              alignment: Alignment.topCenter,
+              heightFactor: 0.6 + 0.4 * t.value,
+              child: child,
+            ),
           ),
           child: child,
         ),
       );
     },
   );
-  if (!context.mounted) return;
+  if (!context.mounted) return submitted == true;
   if (submitted == true) {
     playSfx(context, Sfx.submit);
-    onSubmit();
+    onSubmit?.call();
   } else {
     playSfx(context, Sfx.close);
   }
+  return submitted == true;
 }
 
-/// Places the panel under the bar, as wide as the bar, in the room between
-/// the bar and the bottom of the screen.
+/// Places the panel under the bar, starting at its left edge, in the room
+/// between the bar and the bottom of the screen. The panel is only as wide as
+/// its keys need (a number pad is narrow), never wider than the bar.
 class _KeyboardLayout extends StatelessWidget {
-  const _KeyboardLayout({required this.anchor, required this.child});
+  const _KeyboardLayout({
+    required this.anchor,
+    required this.layout,
+    required this.child,
+  });
 
   final Rect anchor;
+  final KeyboardLayout layout;
   final Widget child;
 
   @override
   Widget build(BuildContext context) {
+    final d = Dims.of(context);
     final screen = MediaQuery.sizeOf(context);
-    final double width = anchor.width.clamp(math.min(420.0, screen.width - 16), screen.width - 16);
+    final number = layout == KeyboardLayout.number;
+    final double most = number ? (d.tv ? 240 : 300) : (d.tv ? 520 : 680);
+    final double width = math
+        .min(math.max(anchor.width, math.min(320.0, most)), most)
+        .clamp(0, screen.width - 16);
     final left = anchor.left.clamp(8.0, screen.width - width - 8);
     return Stack(
       children: [
@@ -89,25 +143,53 @@ class _KeyboardLayout extends StatelessWidget {
   }
 }
 
+enum _Act { char, backspace, shift, mode, space, clear, go }
+
+/// One key of a layout: [span] columns wide.
+class _K {
+  const _K.char(String this.char) : act = _Act.char, span = 1;
+  const _K(this.act, [this.span = 1]) : char = null;
+
+  final _Act act;
+  final String? char;
+  final int span;
+}
+
+List<_K> _chars(String s) => [for (final c in s.split('')) _K.char(c)];
+
 class _KeyboardPanel extends StatefulWidget {
-  const _KeyboardPanel({required this.query, required this.suggest});
+  const _KeyboardPanel({
+    required this.query,
+    required this.suggest,
+    required this.layout,
+  });
 
   final ValueNotifier<String> query;
-  final Future<List<String>> Function(String prefix) suggest;
+  final Future<List<KeyboardSuggestion>> Function(String prefix)? suggest;
+  final KeyboardLayout layout;
 
   @override
   State<_KeyboardPanel> createState() => _KeyboardPanelState();
 }
 
 class _KeyboardPanelState extends State<_KeyboardPanel> {
-  static const _suggestionHeight = 34.0;
-  static const _letters = ['qwertyuiop', "asdfghjkl'", 'zxcvbnm-'];
-  static const _symbols = ['1234567890', '@#&*()"\':;', '!?/+=_.,'];
+  static const _gap = 6.0;
+  static const _symbols = [
+    '1234567890',
+    '@#&*()"\':;',
+    '!?/+=_.,-%',
+    r'~$<>[]{}',
+  ];
 
   bool _symbolsPage = false;
-  List<String> _suggestions = const [];
+  bool _shift = false;
+  List<KeyboardSuggestion> _suggestions = const [];
   Timer? _debounce;
   int _asked = 0;
+
+  KeyboardLayout get _layout => widget.layout;
+
+  int get _columns => _layout == KeyboardLayout.number ? 3 : 10;
 
   @override
   void initState() {
@@ -127,17 +209,93 @@ class _KeyboardPanelState extends State<_KeyboardPanel> {
   // text is dropped.
   void _queryChanged() {
     _debounce?.cancel();
+    final suggest = widget.suggest;
+    if (suggest == null) return;
     final text = widget.query.value;
     if (text.trim().isEmpty) {
+      _asked++;
       if (_suggestions.isNotEmpty) setState(() => _suggestions = const []);
       return;
     }
     _debounce = Timer(const Duration(milliseconds: 180), () async {
       final ask = ++_asked;
-      final found = await widget.suggest(text);
+      final found = await suggest(text);
       if (!mounted || ask != _asked) return;
-      setState(() => _suggestions = found.take(6).toList());
+      setState(() => _suggestions = found);
     });
+  }
+
+  /// The rows of the current page; each adds up to [_columns].
+  List<List<_K>> _rows() {
+    const back = _K(_Act.backspace, 2);
+    const bottom = [
+      _K(_Act.mode, 2),
+      _K(_Act.space, 4),
+      _K(_Act.clear, 2),
+      _K(_Act.go, 2),
+    ];
+    if (_layout == KeyboardLayout.number) {
+      return [
+        _chars('123'),
+        _chars('456'),
+        _chars('789'),
+        [..._chars('+0'), const _K(_Act.backspace)],
+        const [_K(_Act.clear), _K(_Act.go, 2)],
+      ];
+    }
+    if (_symbolsPage) {
+      return [
+        for (final r in _symbols.take(3)) _chars(r),
+        [..._chars(_symbols[3]), back],
+        if (_layout == KeyboardLayout.url)
+          [
+            const _K(_Act.mode, 2),
+            ..._chars('.-_'),
+            const _K(_Act.space, 1),
+            const _K(_Act.clear, 2),
+            const _K(_Act.go, 2),
+          ]
+        else
+          bottom,
+      ];
+    }
+    String cased(String s) => _shift ? s.toUpperCase() : s;
+    switch (_layout) {
+      case KeyboardLayout.search:
+        return [
+          _chars('qwertyuiop'),
+          _chars("asdfghjkl'"),
+          [..._chars('zxcvbnm-'), back],
+          bottom,
+        ];
+      case KeyboardLayout.text:
+        return [
+          _chars('1234567890'),
+          _chars(cased('qwertyuiop')),
+          _chars(cased("asdfghjkl'")),
+          [const _K(_Act.shift), ..._chars(cased('zxcvbnm')), back],
+          bottom,
+        ];
+      case KeyboardLayout.url:
+        return [
+          _chars('1234567890'),
+          _chars(cased('qwertyuiop')),
+          _chars('${cased('asdfghjkl')}:'),
+          [
+            const _K(_Act.shift),
+            ..._chars('${cased('zxcvbnm')}/'),
+            const _K(_Act.backspace),
+          ],
+          [
+            const _K(_Act.mode),
+            ..._chars('.?=&-_'),
+            const _K(_Act.clear),
+            const _K(_Act.go, 2),
+          ],
+        ];
+      case KeyboardLayout.number:
+        return const [];
+    }
   }
 
   void _type(String c) {
@@ -162,11 +320,35 @@ class _KeyboardPanelState extends State<_KeyboardPanel> {
   }
 
   void _submit() {
-    if (widget.query.value.trim().isEmpty) return;
+    // A search needs words; a form field may be left empty on purpose.
+    if (_layout == KeyboardLayout.search && widget.query.value.trim().isEmpty)
+      return;
     Navigator.of(context).pop(true);
   }
 
-  // A hardware or remote keyboard types too.
+  void _act(_K k) {
+    switch (k.act) {
+      case _Act.char:
+        _type(k.char!);
+      case _Act.backspace:
+        _backspace();
+      case _Act.space:
+        _type(' ');
+      case _Act.clear:
+        _clear();
+      case _Act.go:
+        _submit();
+      case _Act.shift:
+        playSfx(context, Sfx.key);
+        setState(() => _shift = !_shift);
+      case _Act.mode:
+        playSfx(context, Sfx.key);
+        setState(() => _symbolsPage = !_symbolsPage);
+    }
+  }
+
+  // A hardware or remote keyboard types too. Search is lower case; a number
+  // pad takes digits and `+` only.
   KeyEventResult _onKey(FocusNode node, KeyEvent event) {
     if (event is KeyUpEvent) return KeyEventResult.ignored;
     if (event.logicalKey == LogicalKeyboardKey.backspace) {
@@ -174,58 +356,104 @@ class _KeyboardPanelState extends State<_KeyboardPanel> {
       return KeyEventResult.handled;
     }
     final ch = event.character;
-    if (ch != null && ch.length == 1 && ch.codeUnitAt(0) >= 0x20 && ch.codeUnitAt(0) != 0x7f) {
-      _type(ch.toLowerCase());
+    if (ch != null &&
+        ch.length == 1 &&
+        ch.codeUnitAt(0) >= 0x20 &&
+        ch.codeUnitAt(0) != 0x7f) {
+      if (_layout == KeyboardLayout.number && !RegExp(r'[0-9+]').hasMatch(ch))
+        return KeyEventResult.handled;
+      _type(_layout == KeyboardLayout.search ? ch.toLowerCase() : ch);
       return KeyEventResult.handled;
     }
     return KeyEventResult.ignored;
   }
 
+  String _id(_K k) => switch (k.act) {
+    _Act.char => 'key-${k.char}',
+    _Act.backspace => 'key-backspace',
+    _Act.shift => 'key-shift',
+    _Act.mode => 'key-mode',
+    _Act.space => 'key-space',
+    _Act.clear => 'key-clear',
+    _Act.go => _layout == KeyboardLayout.search ? 'search-go' : 'key-ok',
+  };
+
+  Widget _label(_K k, Dims d) {
+    final label = TextStyle(fontSize: 18, fontWeight: FontWeight.w600);
+    final small = TextStyle(
+      fontSize: d.tv ? 16 : 14,
+      fontWeight: FontWeight.w600,
+    );
+    final icon = d.tv ? 20.0 : 22.0;
+    return switch (k.act) {
+      _Act.char => Text(k.char!, style: label),
+      _Act.backspace => Icon(Icons.backspace_outlined, size: icon),
+      _Act.shift => Icon(
+        _shift ? Icons.keyboard_capslock_rounded : Icons.arrow_upward_rounded,
+        size: icon,
+      ),
+      _Act.mode => Text(
+        _symbolsPage ? 'abc' : (k.span > 1 ? '&123' : '#+'),
+        style: small,
+      ),
+      _Act.space => Icon(Icons.space_bar_rounded, size: icon),
+      _Act.clear => Text('Clear', style: small),
+      _Act.go => Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            _layout == KeyboardLayout.search
+                ? Icons.search_rounded
+                : Icons.check_rounded,
+            size: icon,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            _layout == KeyboardLayout.search ? 'Search' : 'OK',
+            style: small,
+          ),
+        ],
+      ),
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final d = Dims.of(context);
-    const gap = 8.0;
-    final rows = _symbolsPage ? _symbols : _letters;
+    final keyHeight = d.tv ? 32.0 : 40.0;
+    final rows = _rows();
     return Focus(
       canRequestFocus: false,
       skipTraversal: true,
       onKeyEvent: _onKey,
       child: _Acrylic(
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(10),
           child: LayoutBuilder(
             builder: (context, box) {
-              final unit = (box.maxWidth - gap * 9) / 10;
-              // Four rows of keys share what is left under the suggestions.
-              final height = box.maxHeight.isFinite
-                  ? ((box.maxHeight - _suggestionHeight - gap * 4.5) / 4).clamp(28.0, 44.0)
-                  : 44.0;
-              Widget key(
-                String id,
-                Widget label,
-                VoidCallback onTap, {
-                int span = 1,
-                bool accent = false,
-                bool first = false,
-              }) {
-                return _Key(
-                  key: ValueKey(id),
-                  width: unit * span + gap * (span - 1),
-                  height: height,
-                  autofocus: first,
-                  accent: accent,
-                  onActivate: onTap,
-                  child: label,
-                );
-              }
-
-              final label = TextStyle(fontSize: d.t(18), fontWeight: FontWeight.w600);
-              final small = TextStyle(fontSize: d.t(14), fontWeight: FontWeight.w600);
-              Widget row(List<Widget> keys) => Padding(
-                padding: const EdgeInsets.only(top: gap),
+              final unit = (box.maxWidth - _gap * (_columns - 1)) / _columns;
+              final keysHeight = rows.length * (keyHeight + _gap) - _gap;
+              // Suggestion rows fill what is left under the keys.
+              final room = box.maxHeight.isFinite
+                  ? box.maxHeight - keysHeight - 20
+                  : 200.0;
+              Widget row(int r) => Padding(
+                padding: EdgeInsets.only(top: r == 0 ? 0 : _gap),
                 child: Row(
                   children: [
-                    for (var i = 0; i < keys.length; i++) ...[if (i > 0) const SizedBox(width: gap), keys[i]],
+                    for (final (i, k) in rows[r].indexed) ...[
+                      if (i > 0) const SizedBox(width: _gap),
+                      _Key(
+                        key: ValueKey(_id(k)),
+                        width: unit * k.span + _gap * (k.span - 1),
+                        height: keyHeight,
+                        autofocus: r == 0 && i == 0,
+                        accent:
+                            k.act == _Act.go || (k.act == _Act.shift && _shift),
+                        onActivate: () => _act(k),
+                        child: _label(k, d),
+                      ),
+                    ],
                   ],
                 ),
               );
@@ -234,52 +462,15 @@ class _KeyboardPanelState extends State<_KeyboardPanel> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _Suggestions(
-                    items: _suggestions,
-                    empty: widget.query.value.trim().isEmpty,
-                    height: _suggestionHeight,
-                    onPick: _pick,
-                  ),
-                  const SizedBox(height: gap / 2),
-                  for (var r = 0; r < rows.length; r++)
-                    row([
-                      for (var i = 0; i < rows[r].length; i++)
-                        key(
-                          'key-${rows[r][i]}',
-                          Text(rows[r][i], style: label),
-                          () => _type(rows[r][i]),
-                          first: r == 0 && i == 0,
-                        ),
-                      if (r == rows.length - 1)
-                        key(
-                          'key-backspace',
-                          Icon(Icons.backspace_outlined, size: d.t(22)),
-                          _backspace,
-                          span: 10 - rows[r].length,
-                        ),
-                    ]),
-                  row([
-                    key('key-mode', Text(_symbolsPage ? 'abc' : '&123', style: small), () {
-                      playSfx(context, Sfx.key);
-                      setState(() => _symbolsPage = !_symbolsPage);
-                    }, span: 2),
-                    key('key-space', Icon(Icons.space_bar_rounded, size: d.t(24)), () => _type(' '), span: 4),
-                    key('key-clear', Text('Clear', style: small), _clear, span: 2),
-                    key(
-                      'search-go',
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.search_rounded, size: d.t(20)),
-                          const SizedBox(width: 4),
-                          Text('Search', style: small),
-                        ],
-                      ),
-                      _submit,
-                      span: 2,
-                      accent: true,
+                  for (var r = 0; r < rows.length; r++) row(r),
+                  if (widget.suggest != null)
+                    _Suggestions(
+                      items: _suggestions,
+                      empty: widget.query.value.trim().isEmpty,
+                      height: d.tv ? 30 : 34,
+                      room: room,
+                      onPick: _pick,
                     ),
-                  ]),
                 ],
               );
             },
@@ -290,54 +481,133 @@ class _KeyboardPanelState extends State<_KeyboardPanel> {
   }
 }
 
-/// One line of suggestion chips over the keys; a hint while nothing is typed.
+/// Suggestion pills under the keys, one row per source (YouTube, titles, Live
+/// TV), each labelled; a hint while nothing is typed. Rows that do not fit in
+/// [room] are left out.
 class _Suggestions extends StatelessWidget {
-  const _Suggestions({required this.items, required this.empty, required this.height, required this.onPick});
+  const _Suggestions({
+    required this.items,
+    required this.empty,
+    required this.height,
+    required this.room,
+    required this.onPick,
+  });
 
-  final List<String> items;
+  final List<KeyboardSuggestion> items;
   final bool empty;
   final double height;
+  final double room;
   final ValueChanged<String> onPick;
 
   @override
   Widget build(BuildContext context) {
     final d = Dims.of(context);
-    final dim = TextStyle(color: ChithramColors.of(context).textDim, fontSize: d.t(14));
-    return SizedBox(
-      height: height,
-      child: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 160),
-        child: items.isEmpty
-            ? Align(
-                key: ValueKey(empty),
-                alignment: Alignment.centerLeft,
-                child: Text(empty ? 'Start typing for suggestions' : '', style: dim),
-              )
-            : ListView.separated(
-                key: ValueKey(items.join('\n')),
-                scrollDirection: Axis.horizontal,
-                itemCount: items.length,
-                separatorBuilder: (_, _) => const SizedBox(width: 8),
-                itemBuilder: (context, i) => _Key(
-                  key: ValueKey('suggestion-$i'),
-                  height: height,
-                  pill: true,
-                  onActivate: () => onPick(items[i]),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 14),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.search_rounded, size: d.t(16), color: ChithramColors.of(context).textDim),
-                        const SizedBox(width: 6),
-                        Text(
-                          items[i],
-                          style: TextStyle(fontSize: d.t(15), fontWeight: FontWeight.w500),
-                        ),
-                      ],
-                    ),
+    final colors = ChithramColors.of(context);
+    final dim = TextStyle(color: colors.textDim, fontSize: d.tv ? 16 : 14);
+    final sources = <String, List<int>>{};
+    for (var i = 0; i < items.length; i++) {
+      sources.putIfAbsent(items[i].source, () => []).add(i);
+    }
+    const gap = 8.0;
+    final fit = math.max(1, ((room - 10) / (height + gap)).floor());
+    final shown = sources.entries.take(fit).toList();
+    final label = d.tv ? 80.0 : 84.0;
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 160),
+      curve: Curves.easeOut,
+      alignment: Alignment.topCenter,
+      child: Padding(
+        padding: const EdgeInsets.only(top: 10),
+        child: shown.isEmpty
+            ? SizedBox(
+                height: height,
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    empty ? 'Start typing for suggestions' : '',
+                    style: dim,
                   ),
                 ),
+              )
+            : Column(
+                key: const ValueKey('keyboard-suggestions'),
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (final (n, MapEntry(key: source, value: indexes))
+                      in shown.indexed)
+                    Padding(
+                      padding: EdgeInsets.only(top: n == 0 ? 0 : gap),
+                      child: SizedBox(
+                        height: height,
+                        child: Row(
+                          children: [
+                            if (source.isNotEmpty)
+                              SizedBox(
+                                width: label,
+                                child: Padding(
+                                  padding: const EdgeInsets.only(right: 6),
+                                  child: Text(
+                                    source,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: dim.copyWith(
+                                      fontSize: d.tv ? 16 : 13,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            Expanded(
+                              // Room above and below for the focused pill's
+                              // scale; focus scrolls the row.
+                              child: SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                clipBehavior: Clip.none,
+                                child: Row(
+                                  children: [
+                                    for (final i in indexes) ...[
+                                      if (i != indexes.first)
+                                        const SizedBox(width: gap),
+                                      _Key(
+                                        key: ValueKey('suggestion-$i'),
+                                        height: height,
+                                        pill: true,
+                                        onActivate: () => onPick(items[i].text),
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(
+                                                items[i].icon,
+                                                size: 16,
+                                                color: colors.textDim,
+                                              ),
+                                              const SizedBox(width: 6),
+                                              Text(
+                                                items[i].text,
+                                                maxLines: 1,
+                                                style: TextStyle(
+                                                  fontSize: d.tv ? 16 : 15,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
               ),
       ),
     );
@@ -356,7 +626,13 @@ class _Acrylic extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         borderRadius: radius,
-        boxShadow: const [BoxShadow(color: Color(0x80000000), blurRadius: 40, offset: Offset(0, 16))],
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x80000000),
+            blurRadius: 40,
+            offset: Offset(0, 16),
+          ),
+        ],
       ),
       child: ClipRRect(
         borderRadius: radius,
@@ -434,6 +710,14 @@ class _KeyState extends State<_Key> {
     // The key focused when the panel opens does not tick.
     if (focused && !(widget.autofocus && _first)) playSfx(context, Sfx.move);
     _first = false;
+    // A suggestion off the side of its row scrolls in.
+    if (focused && widget.pill) {
+      Scrollable.ensureVisible(
+        context,
+        alignment: 0.5,
+        duration: const Duration(milliseconds: 140),
+      );
+    }
   }
 
   bool _first = true;
@@ -444,10 +728,14 @@ class _KeyState extends State<_Key> {
     final Color fill;
     final Color ink;
     if (_focused) {
-      fill = widget.accent ? ChithramColors.of(context).accent : Colors.white.withValues(alpha: 0.94);
+      fill = widget.accent
+          ? ChithramColors.of(context).accent
+          : Colors.white.withValues(alpha: 0.94);
       ink = const Color(0xFF111117);
     } else {
-      fill = widget.accent ? ChithramColors.of(context).accent.withValues(alpha: 0.28) : Colors.white.withValues(alpha: 0.07);
+      fill = widget.accent
+          ? ChithramColors.of(context).accent.withValues(alpha: 0.28)
+          : Colors.white.withValues(alpha: 0.07);
       ink = Colors.white.withValues(alpha: 0.9);
     }
     return FocusableActionDetector(
@@ -487,11 +775,17 @@ class _KeyState extends State<_Key> {
             decoration: BoxDecoration(
               color: fill,
               borderRadius: radius,
-              border: Border.all(color: Colors.white.withValues(alpha: _focused ? 0 : 0.06)),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: _focused ? 0 : 0.06),
+              ),
               boxShadow: _focused
                   ? [
                       BoxShadow(
-                        color: (widget.accent ? ChithramColors.of(context).accent : Colors.white).withValues(alpha: 0.35),
+                        color:
+                            (widget.accent
+                                    ? ChithramColors.of(context).accent
+                                    : Colors.white)
+                                .withValues(alpha: 0.35),
                         blurRadius: 18,
                         spreadRadius: 1,
                       ),
@@ -506,7 +800,10 @@ class _KeyState extends State<_Key> {
                     ? widget.child
                     : Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 4),
-                        child: FittedBox(fit: BoxFit.scaleDown, child: widget.child),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: widget.child,
+                        ),
                       ),
               ),
             ),

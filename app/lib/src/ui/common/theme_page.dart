@@ -121,7 +121,7 @@ class _ThemePageState extends State<ThemePage> {
                 final accent = prefs.getInt(ThemePrefs.accent);
                 final amoled = prefs.getBool(ThemePrefs.amoled);
                 return SingleChildScrollView(
-                  padding: EdgeInsets.all(d.phone ? 16 : 32),
+                  padding: EdgeInsets.all(d.gutter),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [

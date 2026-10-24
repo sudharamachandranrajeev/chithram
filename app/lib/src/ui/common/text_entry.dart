@@ -8,18 +8,21 @@ import '../../features/receive/receive_page.dart';
 import '../../features/receive/receive_service.dart';
 import 'dims.dart';
 import '../tv/dpad.dart';
-import '../tv/focus_card.dart';
-import '../tv/keyboard.dart';
+import '../tv/search_keyboard.dart';
 import 'keys.dart';
 
-enum TextEntryKind { search, url, magnet, pin }
+/// What the text is: it picks the system keyboard type and the on-screen
+/// keyboard's layout. [number] is a phone number or a login code.
+enum TextEntryKind { search, url, magnet, pin, number }
 
 /// Asks for a line of text. Null when cancelled.
 ///
 /// The TextField uses the system keyboard, so a phone keyboard, a remote app
-/// or a USB keyboard can type into it. On a TV the on-screen link keyboard is
-/// open from the start; elsewhere a Keyboard button opens it. Paste reads the
-/// clipboard, and "Send from phone" (for links) opens the receive screen.
+/// or a USB keyboard can type into it. On a TV and desktop the dialog opens
+/// compact (field and buttons); the on-screen keyboard (the search keyboard,
+/// in a layout for the [kind]) drops down from the field only when the field
+/// is selected or Keyboard is pressed, and its OK key confirms. Paste reads
+/// the clipboard, and "Send from phone" (for links) opens the receive screen.
 ///
 /// With [acceptFromPhone] (keys and long tokens, not on phones), the receiver
 /// runs while the dialog is open and LocalSend text from the user's phone fills
@@ -69,8 +72,8 @@ class _TextEntryDialog extends StatefulWidget {
 
 class _TextEntryDialogState extends State<_TextEntryDialog> {
   late final _controller = TextEditingController(text: widget.initial);
-  final _keys = SectionFocus();
-  bool? _showKeys;
+  final _field = GlobalKey();
+  bool _keysOpen = false;
   VoidCallback? _unroute;
   ReceiveService? _receive;
 
@@ -96,7 +99,6 @@ class _TextEntryDialogState extends State<_TextEntryDialog> {
     final receive = _receive;
     if (receive != null) unawaited(receive.stop());
     _controller.dispose();
-    _keys.dispose();
     super.dispose();
   }
 
@@ -106,30 +108,35 @@ class _TextEntryDialogState extends State<_TextEntryDialog> {
     if (text != null) _controller.text = text.trim();
   }
 
-  void _type(String s) {
-    final sel = _controller.selection;
-    final text = _controller.text;
-    final at = sel.isValid ? sel.start : text.length;
-    final end = sel.isValid ? sel.end : text.length;
-    _controller.value = TextEditingValue(
-      text: text.replaceRange(at, end, s),
-      selection: TextSelection.collapsed(offset: at + s.length),
-    );
-  }
+  KeyboardLayout get _layout => switch (widget.kind) {
+    TextEntryKind.url || TextEntryKind.magnet => KeyboardLayout.url,
+    TextEntryKind.number => KeyboardLayout.number,
+    TextEntryKind.search || TextEntryKind.pin => KeyboardLayout.text,
+  };
 
-  void _backspace() {
-    final sel = _controller.selection;
-    final text = _controller.text;
-    if (text.isEmpty) return;
-    final end = sel.isValid ? sel.end : text.length;
-    final start = sel.isValid && !sel.isCollapsed
-        ? sel.start
-        : (end - 1).clamp(0, end);
-    if (end == 0) return;
-    _controller.value = TextEditingValue(
-      text: text.replaceRange(start, end, ''),
-      selection: TextSelection.collapsed(offset: start),
+  /// Drops the on-screen keyboard down from the field. Its keys type at the
+  /// end of the text; its OK key confirms the dialog.
+  Future<void> _openKeys() async {
+    final box = _field.currentContext?.findRenderObject() as RenderBox?;
+    if (_keysOpen || box == null) return;
+    _keysOpen = true;
+    final text = ValueNotifier(_controller.text);
+    void sync() => _controller.value = TextEditingValue(
+      text: text.value,
+      selection: TextSelection.collapsed(offset: text.value.length),
     );
+    text.addListener(sync);
+    final ok = await showSearchKeyboard(
+      context,
+      anchor: box.localToGlobal(Offset.zero) & box.size,
+      query: text,
+      layout: _layout,
+    );
+    text
+      ..removeListener(sync)
+      ..dispose();
+    _keysOpen = false;
+    if (ok && mounted) Navigator.of(context).pop(_controller.text.trim());
   }
 
   void _sendFromPhone() {
@@ -139,9 +146,18 @@ class _TextEntryDialogState extends State<_TextEntryDialog> {
   }
 
   // flutter/flutter#147772: Up and Down stay inside a TextField on a TV. This
-  // catches them first and moves focus by geometry instead.
+  // catches them first and moves focus by geometry instead. Select (the
+  // remote's centre key), or Enter on an empty field, opens the keyboard.
   KeyEventResult _leaveField(FocusNode node, KeyEvent event) {
     if (event is! KeyDownEvent) return KeyEventResult.ignored;
+    final key = event.logicalKey;
+    if (!Dims.of(context).phone &&
+        (key == LogicalKeyboardKey.select ||
+            key == LogicalKeyboardKey.gameButtonA ||
+            (key == LogicalKeyboardKey.enter && _controller.text.isEmpty))) {
+      unawaited(_openKeys());
+      return KeyEventResult.handled;
+    }
     final TraversalDirection direction;
     if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
       direction = TraversalDirection.down;
@@ -160,91 +176,78 @@ class _TextEntryDialogState extends State<_TextEntryDialog> {
   @override
   Widget build(BuildContext context) {
     final d = Dims.of(context);
-    final showKeys = _showKeys ?? d.tv;
-    // Not an AlertDialog: its intrinsic sizing cannot lay out the keyboard.
+    final pad = d.tv ? 20.0 : 24.0;
     return Dialog(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 680),
-        // The field and keyboard scroll; the buttons stay pinned below them so
-        // OK is on screen even when the keyboard is taller than a 540 dp TV.
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Flexible(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      widget.title,
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    const SizedBox(height: 16),
-                    Focus(
-                      canRequestFocus: false,
-                      skipTraversal: true,
-                      onKeyEvent: _leaveField,
-                      child: TextField(
-                        key: Keys.textEntryField,
-                        controller: _controller,
-                        autofocus: true,
-                        textInputAction: switch (widget.kind) {
-                          TextEntryKind.search => TextInputAction.search,
-                          TextEntryKind.pin => TextInputAction.done,
-                          _ => TextInputAction.go,
-                        },
-                        obscureText: widget.kind == TextEntryKind.pin,
-                        keyboardType: switch (widget.kind) {
-                          TextEntryKind.pin => TextInputType.number,
-                          TextEntryKind.search => TextInputType.text,
-                          _ => TextInputType.url,
-                        },
-                        decoration: InputDecoration(hintText: widget.hint),
-                        onSubmitted: (v) => Navigator.of(context).pop(v.trim()),
-                      ),
-                    ),
-                    if (_fromPhone) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        'Or send the text from your phone with LocalSend.',
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                    ],
-                    if (showKeys && _link && !d.phone) ...[
-                      const SizedBox(height: 16),
-                      UrlKeyboard(
-                        focus: _keys,
-                        onChar: _type,
-                        onBackspace: _backspace,
-                        onClear: _controller.clear,
-                      ),
-                    ],
-                  ],
+        constraints: BoxConstraints(maxWidth: d.tv ? 540 : 680),
+        child: SingleChildScrollView(
+          padding: EdgeInsets.all(pad),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                widget.title,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: d.tv ? 20 : null),
+              ),
+              SizedBox(height: d.tv ? 10 : 16),
+              Focus(
+                key: _field,
+                canRequestFocus: false,
+                skipTraversal: true,
+                onKeyEvent: _leaveField,
+                child: TextField(
+                  key: Keys.textEntryField,
+                  controller: _controller,
+                  autofocus: true,
+                  textInputAction: switch (widget.kind) {
+                    TextEntryKind.search => TextInputAction.search,
+                    TextEntryKind.pin || TextEntryKind.number => TextInputAction.done,
+                    _ => TextInputAction.go,
+                  },
+                  obscureText: widget.kind == TextEntryKind.pin,
+                  keyboardType: switch (widget.kind) {
+                    TextEntryKind.pin => TextInputType.number,
+                    TextEntryKind.number => TextInputType.phone,
+                    TextEntryKind.search => TextInputType.text,
+                    _ => TextInputType.url,
+                  },
+                  decoration: InputDecoration(
+                    hintText: widget.hint,
+                    // On a TV the field says how to bring up the keys.
+                    helperText: d.tv ? 'Select the field to type' : null,
+                  ),
+                  // A TV remote has no pointer; a tap there is a touch remote.
+                  onTap: d.tv ? () => unawaited(_openKeys()) : null,
+                  onSubmitted: (v) => Navigator.of(context).pop(v.trim()),
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-              child: Wrap(
+              if (_fromPhone) ...[
+                const SizedBox(height: 8),
+                Text(
+                  'Or send the text from your phone with LocalSend.',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+              SizedBox(height: d.tv ? 12 : 16),
+              Wrap(
                 alignment: WrapAlignment.end,
                 spacing: 8,
                 runSpacing: 4,
                 children: [
+                  // A phone has the system keyboard and is the sender: these are for TVs and desktops.
+                  if (!d.phone)
+                    TextButton.icon(
+                      key: Keys.textEntryKeyboard,
+                      onPressed: () => unawaited(_openKeys()),
+                      icon: const Icon(Icons.keyboard_rounded),
+                      label: const Text('Keyboard'),
+                    ),
                   TextButton(
                     key: Keys.textEntryPaste,
                     onPressed: _paste,
                     child: const Text('Paste'),
                   ),
-                  // A phone has the system keyboard and is the sender: these two are for TVs and desktops.
-                  if (_link && !d.phone)
-                    TextButton(
-                      key: Keys.textEntryKeyboard,
-                      onPressed: () => setState(() => _showKeys = !showKeys),
-                      child: Text(showKeys ? 'Hide keyboard' : 'Keyboard'),
-                    ),
                   if (_link && !d.phone && !widget.acceptFromPhone)
                     TextButton(
                       key: Keys.textEntrySend,
@@ -263,8 +266,8 @@ class _TextEntryDialogState extends State<_TextEntryDialog> {
                   ),
                 ],
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

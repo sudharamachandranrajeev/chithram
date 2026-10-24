@@ -74,7 +74,7 @@ class _Hero extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final d = Dims.of(context);
-    final height = (MediaQuery.sizeOf(context).height * 0.42).clamp(220.0, 460.0);
+    final height = (MediaQuery.sizeOf(context).height * 0.42).clamp(d.tv ? 190.0 : 220.0, 460.0);
     final VideoItem? video = state.hero.firstOrNull;
     final suggested = state.rails.any((r) => r.id == 'for-you');
     final error = state.error;
@@ -92,7 +92,7 @@ class _Hero extends StatelessWidget {
       // Fill the width: without it the card shrinks to its widest child.
       width: double.infinity,
       constraints: BoxConstraints(minHeight: height),
-      margin: EdgeInsets.fromLTRB(d.phone ? 8 : 16, 16, d.phone ? 8 : 16, 0),
+      margin: EdgeInsets.fromLTRB(d.phone ? 8 : 16, d.tv ? 12 : 16, d.phone ? 8 : 16, 0),
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
@@ -127,9 +127,9 @@ class _Hero extends StatelessWidget {
             ),
           ],
           Padding(
-            padding: EdgeInsets.all(d.phone ? 18 : 28),
+            padding: EdgeInsets.all(d.phone ? 18 : (d.tv ? 20 : 28)),
             child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: height - (d.phone ? 36 : 56)),
+              constraints: BoxConstraints(minHeight: height - (d.phone ? 36 : (d.tv ? 40 : 56))),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.end,
@@ -143,7 +143,7 @@ class _Hero extends StatelessWidget {
                     child: Text(title,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontSize: d.t(34), fontWeight: FontWeight.w700)),
+                        style: TextStyle(fontSize: d.t(32), fontWeight: FontWeight.w700)),
                   ),
                   if (line.isNotEmpty) ...[
                     const SizedBox(height: 4),
@@ -152,7 +152,7 @@ class _Hero extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(color: ChithramColors.of(context).textDim, fontSize: d.t(14))),
                   ],
-                  const SizedBox(height: 18),
+                  SizedBox(height: d.tv ? 14 : 18),
                   FocusCard(
                     key: const ValueKey('home-hero-action'),
                     focusNode: focus.entry,
@@ -192,12 +192,14 @@ class ActionLabel extends StatelessWidget {
     final color = primary ? c.onAccent : c.text;
     return Container(
       color: primary ? ChithramColors.of(context).accent : ChithramColors.of(context).surfaceHigh,
-      padding: EdgeInsets.symmetric(horizontal: d.u(24), vertical: d.u(11)),
+      padding: d.tv
+          ? const EdgeInsets.symmetric(horizontal: 18, vertical: 8)
+          : const EdgeInsets.symmetric(horizontal: 24, vertical: 11),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (icon != null) ...[
-            Icon(icon, color: color, size: d.t(24)),
+            Icon(icon, color: color, size: d.tv ? 22 : 24),
             const SizedBox(width: 6),
           ],
           Flexible(

@@ -82,7 +82,7 @@ class _TorrentsPageState extends State<_TvTorrentsPage> {
     final d = Dims.of(context);
     final service = AppServices.of(context).torrents;
     return Padding(
-      padding: EdgeInsets.all(d.phone ? 16 : 32),
+      padding: EdgeInsets.all(d.gutter),
       child: SingleChildScrollView(
         child: ListenableBuilder(
           listenable: service,

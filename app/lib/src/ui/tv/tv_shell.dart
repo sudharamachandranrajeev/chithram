@@ -244,12 +244,12 @@ class _RailItemState extends State<_RailItem> {
   Widget _railItem(Color color, bool active) {
     final d = widget.dims;
     return Container(
-      height: d.tv ? 56 : 52,
+      height: d.tv ? 44 : 52,
       margin: EdgeInsets.symmetric(vertical: d.tv ? 2 : 4),
-      padding: EdgeInsets.symmetric(horizontal: d.tv ? 26 : 16),
+      padding: EdgeInsets.symmetric(horizontal: d.tv ? 17 : 16),
       decoration: BoxDecoration(
         color: _focused ? ChithramColors.of(context).accent : Colors.transparent,
-        borderRadius: BorderRadius.circular(d.u(26)),
+        borderRadius: BorderRadius.circular(d.tv ? 22 : 26),
         boxShadow: _focused
             ? [BoxShadow(color: ChithramColors.of(context).accent.withValues(alpha: 0.4), blurRadius: 16)]
             : const [],
@@ -266,7 +266,7 @@ class _RailItemState extends State<_RailItem> {
             children: [
               Icon(widget.section.icon, color: color, size: d.u(26)),
               if (widget.expanded) ...[
-                const SizedBox(width: 16),
+                SizedBox(width: d.tv ? 12 : 16),
                 Text(
                   widget.section.label,
                   maxLines: 1,

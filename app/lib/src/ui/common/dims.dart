@@ -31,14 +31,26 @@ class Dims {
   static Dims of(BuildContext context) =>
       Dims._(FormScope.maybeOf(context) ?? formFor(MediaQuery.sizeOf(context)));
 
-  /// A font size: never below 24 on a TV (10-foot reading), bigger there.
-  double t(double base) => tv ? math.max(24, base * 1.25) : base;
+  // A 1080p Android TV lays out at 960x540 dp (density 2), about half a
+  // desktop window, so TV sizes stay close to the base ones. The font floor
+  // keeps text readable from the sofa.
 
-  /// A length (tile sizes, icons): larger on a TV.
-  double u(double base) => tv ? base * 1.35 : base;
+  /// A font size: never below 18 on a TV (10-foot reading); large headings a
+  /// little smaller there, so a 540 dp tall screen holds them.
+  double t(double base) => tv ? math.max(18, base * 0.9) : base;
 
-  double get railOpen => tv ? 290 : 220;
-  double get railClosed => tv ? 100 : 84;
+  /// A length (tile sizes, icons): the base on a TV and desktop alike.
+  double u(double base) => base;
+
+  double get railOpen => tv ? 200 : 220;
+  double get railClosed => tv ? 76 : 84;
+
+  /// The padding around a full page (inside the overscan margin on a TV).
+  double get gutter => switch (form) {
+    FormFactor.phone => 16,
+    FormFactor.tv => 20,
+    FormFactor.desktop => 32,
+  };
 }
 
 /// 5% overscan-safe padding on an Android TV; nothing elsewhere (a desktop in

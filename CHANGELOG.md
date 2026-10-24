@@ -4,6 +4,14 @@ Release notes are taken from the section of the version being tagged.
 
 ## 0.3.0 (in progress)
 
+### Changed
+- TV fit: everything is about a quarter smaller on a 1080p TV (it lays out at 960x540): text floor 18 instead of 24,
+  tiles at their base size, a narrower nav rail and tighter pages, so Home, Settings and dialogs fit one screen.
+  Telegram sign-in shows a smaller QR code beside its steps, and the phone-number view has a way back to the QR code.
+- The drop-down keyboard is smaller (32 dp keys, narrower panel) and its suggestions sit in rows under the keys,
+  labelled by source: YouTube suggestions, and on Search also matching Live TV channels. Text-entry dialogs (links,
+  magnets, PINs, keys, phone numbers) now open compact and drop the same keyboard down only when you select the field.
+
 ### Added
 - Themes: Settings > Theme (TV and phone) picks one of seven dark looks (Chithram, Ocean, Emerald, Rose, Violet, Sunset,
   Graphite), an AMOLED black background for any look, or a custom accent from a 16-colour grid; text on the accent turns

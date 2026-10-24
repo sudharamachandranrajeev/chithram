@@ -4,6 +4,7 @@ import 'package:chithram/src/features/livetv/iptv_service.dart';
 import 'package:chithram/src/ui/tv/focus_card.dart';
 import 'package:chithram/src/ui/common/search_page.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:innertube/innertube.dart' as yt;
 import 'package:iptv/iptv.dart' hide HttpStatusException;
@@ -74,9 +75,11 @@ Future<void> _pump(
   WidgetTester t,
   AppServices services, {
   required bool youtubeOnly,
+  Size size = const Size(1920, 1080),
+  double dpr = 1,
 }) async {
-  t.view.physicalSize = const Size(1920, 1080);
-  t.view.devicePixelRatio = 1;
+  t.view.physicalSize = size * dpr;
+  t.view.devicePixelRatio = dpr;
   addTearDown(t.view.reset);
   final focus = SectionFocus();
   addTearDown(focus.dispose);
@@ -184,6 +187,53 @@ void main() {
     expect(browse.queries, ['cat live']);
     expect(find.byKey(const ValueKey('key-a')), findsNothing);
     expect(find.text('Result 0 of cat live'), findsOneWidget);
+  });
+
+  testWidgets('suggestions sit under the keys, labelled by source', (t) async {
+    final (services, _) = await _services();
+    await _pump(t, services, youtubeOnly: false);
+    await _type(t, 'cat');
+    await t.pumpAndSettle();
+    // YouTube's two, then the matching Live TV channel.
+    expect(find.text('YouTube'), findsOneWidget);
+    expect(find.text('Live TV'), findsOneWidget);
+    expect(find.text('cat videos'), findsOneWidget);
+    final channel = find.ancestor(of: find.text('Cat News'), matching: find.byKey(const ValueKey('suggestion-2')));
+    expect(channel, findsOneWidget);
+    final go = t.getRect(find.byKey(const ValueKey('search-go')));
+    expect(t.getRect(find.byKey(const ValueKey('suggestion-0'))).top, greaterThan(go.bottom));
+    expect(t.getRect(channel).top, greaterThan(t.getRect(find.byKey(const ValueKey('suggestion-0'))).bottom));
+
+    // D-pad Down from the bottom row reaches the suggestions.
+    await t.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await t.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await t.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await t.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await t.pumpAndSettle();
+    final focused = FocusManager.instance.primaryFocus!.rect;
+    expect(focused.top, greaterThan(go.bottom), reason: 'focus is on a suggestion');
+    await t.sendKeyEvent(LogicalKeyboardKey.select);
+    await t.pumpAndSettle();
+    expect(find.byKey(const ValueKey('key-a')), findsNothing);
+  });
+
+  testWidgets('960x540 TV: keys about 32 high, panel and suggestions on screen', (t) async {
+    final (services, _) = await _services();
+    await _pump(t, services, youtubeOnly: false, size: const Size(960, 540), dpr: 2);
+    await _type(t, 'cat');
+    await t.pumpAndSettle();
+    final bar = t.getRect(find.byKey(const ValueKey('search-bar')));
+    final q = t.getRect(find.byKey(const ValueKey('key-q')));
+    expect(q.top, greaterThan(bar.bottom));
+    expect(q.height, inInclusiveRange(30, 34));
+    final go = t.getRect(find.byKey(const ValueKey('search-go')));
+    expect(go.right - q.left, lessThanOrEqualTo(520));
+    for (final i in [0, 1, 2]) {
+      final s = t.getRect(find.byKey(ValueKey('suggestion-$i')));
+      expect(s.top, greaterThan(go.bottom));
+      expect(s.bottom, lessThanOrEqualTo(540));
+    }
+    expect(find.text('Start typing for suggestions'), findsNothing);
   });
 
   testWidgets('a failing search shows the message', (t) async {

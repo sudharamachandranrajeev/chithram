@@ -63,7 +63,7 @@ class _ReceivePageState extends State<ReceivePage> {
         body: Overscan(
           child: FocusScope(
             child: Padding(
-              padding: EdgeInsets.all(d.phone ? 16 : 32),
+              padding: EdgeInsets.all(d.gutter),
               child: ValueListenableBuilder<ReceiveState>(
                 valueListenable: _service.state,
                 builder: (context, state, _) => SingleChildScrollView(

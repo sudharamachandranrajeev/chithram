@@ -6,6 +6,7 @@ abstract final class TelegramKeys {
   static const qr = ValueKey('telegram-qr');
   static const signIn = ValueKey('telegram-sign-in');
   static const usePhone = ValueKey('telegram-use-phone');
+  static const useQr = ValueKey('telegram-use-qr');
   static const enterPhone = ValueKey('telegram-enter-phone');
   static const enterCode = ValueKey('telegram-enter-code');
   static const enterPassword = ValueKey('telegram-enter-password');

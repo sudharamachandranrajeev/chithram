@@ -1,6 +1,5 @@
 import 'package:chithram/src/core/services.dart';
 import 'package:chithram/src/ui/tv/focus_card.dart';
-import 'package:chithram/src/ui/tv/keyboard.dart';
 import 'package:chithram/src/ui/common/keys.dart';
 import 'package:chithram/src/ui/common/search_page.dart';
 import 'package:chithram/src/ui/common/text_entry.dart';
@@ -60,7 +59,7 @@ void main() {
     ));
     await t.tap(find.text('go'));
     await t.pumpAndSettle();
-    expect(find.byType(UrlKeyboard), findsNothing);
+    expect(find.byKey(const ValueKey('key-a')), findsNothing);
     expect(find.byKey(Keys.textEntryKeyboard), findsNothing);
     expect(find.byKey(Keys.textEntryField), findsOneWidget);
     expect(calls, contains('TextInput.show'));

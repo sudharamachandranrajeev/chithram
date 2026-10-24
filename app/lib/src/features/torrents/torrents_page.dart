@@ -14,6 +14,7 @@ import '../../ui/common/text_entry.dart';
 import '../../ui/tv/focus_card.dart';
 import '../../ui/tv/home_page.dart' show ActionLabel;
 import '../receive/receive_page.dart';
+import 'home/torrent_home_tv.dart';
 import 'phone/phone_torrents_page.dart';
 import 'torrent_files_page.dart';
 import 'torrent_logic.dart';
@@ -141,6 +142,8 @@ class _TorrentsPageState extends State<_TvTorrentsPage> {
                 ),
                 if (active != null) ...[
                   const SizedBox(height: 24),
+                  Text('Downloads', style: TextStyle(color: ChithramColors.accent, fontSize: d.t(14), fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 4),
                   Text(active.name ?? 'Torrent',
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -159,6 +162,7 @@ class _TorrentsPageState extends State<_TvTorrentsPage> {
                     onPlay: (f) => unawaited(_play(active, f)),
                   ),
                 ],
+                TorrentHomeRails(focus: widget.focus),
               ],
             );
           },

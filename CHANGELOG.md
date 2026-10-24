@@ -22,6 +22,13 @@ Release notes are taken from the section of the version being tagged.
   are asked first. Files are kept for 7 days or up to 4 GB; "Clear Telegram downloads" empties them; Sign out
   wipes the local Telegram data. Only Saved Messages is read. Uses TDLib; builds made without the project's
   Telegram app id show "This build has no Telegram app id" and nothing else changes.
+- Torznab: add your own indexers in Settings (address and API key; the key sits in the secret store), with a
+  capabilities check, test, enable or disable, remove and health. Each enabled endpoint is also a Find provider.
+- Torrent Home: the Torrents tab opens on "Popular today / this week / this month" (Films and TV) and "Most seeded"
+  rails built from your own Torznab indexers, ranked by seeders and split by upload date. Select adds the torrent
+  (network question first) and plays the film; Menu or a long press opens the file list. With no source it offers
+  "Add a source". Lists are cached (3 h, 12 h, 24 h) and refreshed on open, pull to refresh and Retry. Search plugins
+  join through a small `PopularSource` seam once the plugin registry lands.
 
 ### Changed
 - The TV, phone and shared UI code now live in `ui/tv`, `ui/phone` and `ui/common`.

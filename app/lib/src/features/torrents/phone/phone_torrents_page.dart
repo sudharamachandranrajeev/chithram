@@ -9,6 +9,7 @@ import '../../../core/services.dart';
 import '../../../player/play_request.dart';
 import '../../../theme.dart';
 import '../../../ui/phone/phone_widgets.dart';
+import '../home/torrent_home_phone.dart';
 import '../torrent_files_page.dart' show TorrentKeys;
 import '../torrent_logic.dart';
 import 'phone_torrent_files.dart';
@@ -24,6 +25,12 @@ class PhoneTorrentsPage extends StatefulWidget {
 
 class _PhoneTorrentsPageState extends State<PhoneTorrentsPage> {
   final _field = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    openTorrentHomeAfterFrame(this);
+  }
 
   @override
   void dispose() {
@@ -77,12 +84,16 @@ class _PhoneTorrentsPageState extends State<PhoneTorrentsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final service = AppServices.of(context).torrents;
+    final services = AppServices.of(context);
+    final service = services.torrents;
+    final feed = services.torrentHome;
     return ListenableBuilder(
-      listenable: service,
+      listenable: Listenable.merge([service, feed.state]),
       builder: (context, _) {
         final active = service.active;
-        return ListView(
+        return RefreshIndicator(
+          onRefresh: () => feed.refresh(force: true),
+          child: ListView(
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           padding: const EdgeInsets.only(bottom: 24),
           children: [
@@ -127,7 +138,11 @@ class _PhoneTorrentsPageState extends State<PhoneTorrentsPage> {
               onTap: () => unawaited(service.changeNetworkChoice(context)),
             ),
             if (active != null) ...[
-              PhoneSectionTitle(active.name ?? 'Torrent'),
+              const PhoneSectionTitle('Downloads'),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: phoneGutter),
+                child: Text(active.name ?? 'Torrent', style: Theme.of(context).textTheme.titleMedium),
+              ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: phoneGutter),
                 child: Text(
@@ -138,7 +153,9 @@ class _PhoneTorrentsPageState extends State<PhoneTorrentsPage> {
               ),
               PhoneFileTiles(info: active, onPlay: (f) => unawaited(_play(active, f))),
             ],
+            ...phoneTorrentHomeChildren(context, feed.state.value, () => feed.refresh(force: true)),
           ],
+          ),
         );
       },
     );

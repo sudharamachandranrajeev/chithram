@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:torznab="http://torznab.com/schemas/2015/feed">
+  <channel>
+    <title>Fixture Indexer</title>
+    <item>
+      <title>Fixture Film 1 2026 1080p WEB-DL</title>
+      <guid>https://indexer.example/details/m1</guid>
+      <link>https://indexer.example/dl/m1.torrent</link>
+      <comments>https://indexer.example/details/m1</comments>
+      <pubDate>Sat, 24 Oct 2026 07:00:00 +0000</pubDate>
+      <size>2147483648</size>
+      <enclosure url="https://indexer.example/dl/m1.torrent" length="2147483648" type="application/x-bittorrent"/>
+      <torznab:attr name="category" value="2040"/>
+      <torznab:attr name="seeders" value="900"/>
+      <torznab:attr name="peers" value="1000"/>
+      <torznab:attr name="infohash" value="ae23b94ccaf714337e4ce5ba99ef3dc257e300df"/>
+      <torznab:attr name="size" value="2147483648"/>
+    </item>
+    <item>
+      <title>Fixture Film 2 2026 2160p HDR</title>
+      <guid>https://indexer.example/details/m2</guid>
+      <link>https://indexer.example/dl/m2.torrent</link>
+      <comments>https://indexer.example/details/m2</comments>
+      <pubDate>Fri, 23 Oct 2026 20:00:00 +0000</pubDate>
+      <size>8589934592</size>
+      <enclosure url="https://indexer.example/dl/m2.torrent" length="8589934592" type="application/x-bittorrent"/>
+      <torznab:attr name="category" value="2040"/>
+      <torznab:attr name="seeders" value="300"/>
+      <torznab:attr name="peers" value="340"/>
+      <torznab:attr name="infohash" value="32d332da761f44df7959e5887b6b94cb4667d781"/>
+      <torznab:attr name="size" value="8589934592"/>
+    </item>
+    <item>
+      <title>Fixture Film 3 2026 720p</title>
+      <guid>https://indexer.example/details/m3</guid>
+      <link>https://indexer.example/dl/m3.torrent</link>
+      <comments>https://indexer.example/details/m3</comments>
+      <pubDate>Tue, 20 Oct 2026 10:00:00 +0000</pubDate>
+      <size>1073741824</size>
+      <enclosure url="https://indexer.example/dl/m3.torrent" length="1073741824" type="application/x-bittorrent"/>
+      <torznab:attr name="category" value="2040"/>
+      <torznab:attr name="seeders" value="1500"/>
+      <torznab:attr name="peers" value="1600"/>
+      <torznab:attr name="infohash" value="862a51f8b6294a4b0729a7c5c929bfd67068d962"/>
+      <torznab:attr name="size" value="1073741824"/>
+    </item>
+    <item>
+      <title>Fixture Film 4 2026 1080p</title>
+      <guid>https://indexer.example/details/m4</guid>
+      <link>https://indexer.example/dl/m4.torrent</link>
+      <comments>https://indexer.example/details/m4</comments>
+      <pubDate>Mon, 05 Oct 2026 10:00:00 +0000</pubDate>
+      <size>3221225472</size>
+      <enclosure url="https://indexer.example/dl/m4.torrent" length="3221225472" type="application/x-bittorrent"/>
+      <torznab:attr name="category" value="2000"/>
+      <torznab:attr name="seeders" value="700"/>
+      <torznab:attr name="peers" value="760"/>
+      <torznab:attr name="infohash" value="0e5bc0a684c7afe47fa66cdf21a4dfa33742f9c3"/>
+      <torznab:attr name="size" value="3221225472"/>
+    </item>
+    <item>
+      <title>Fixture Film 5 2025 1080p</title>
+      <guid>https://indexer.example/details/m5</guid>
+      <link>https://indexer.example/dl/m5.torrent</link>
+      <comments>https://indexer.example/details/m5</comments>
+      <pubDate>Wed, 03 Sep 2026 10:00:00 +0000</pubDate>
+      <size>2684354560</size>
+      <enclosure url="https://indexer.example/dl/m5.torrent" length="2684354560" type="application/x-bittorrent"/>
+      <torznab:attr name="category" value="2000"/>
+      <torznab:attr name="seeders" value="5000"/>
+      <torznab:attr name="peers" value="5100"/>
+      <torznab:attr name="infohash" value="ec4c91afbf23e886603daadfa3e7d16aa13fd0b7"/>
+      <torznab:attr name="size" value="2684354560"/>
+    </item>
+    <item>
+      <title>Fixture Film 6 2026 1080p</title>
+      <guid>https://indexer.example/details/m6</guid>
+      <link>https://indexer.example/dl/m6.torrent</link>
+      <comments>https://indexer.example/details/m6</comments>
+      
+      <size>1610612736</size>
+      <enclosure url="https://indexer.example/dl/m6.torrent" length="1610612736" type="application/x-bittorrent"/>
+      <torznab:attr name="category" value="2000"/>
+      <torznab:attr name="seeders" value="40"/>
+      <torznab:attr name="peers" value="45"/>
+      <torznab:attr name="infohash" value="5ad436a1dca33823a8d6bf33785511c4bf00d99a"/>
+      <torznab:attr name="size" value="1610612736"/>
+    </item>
+    <item>
+      <title>Fixture Adult 1 2026</title>
+      <guid>https://indexer.example/details/x1</guid>
+      <link>https://indexer.example/dl/x1.torrent</link>
+      <comments>https://indexer.example/details/x1</comments>
+      <pubDate>Sat, 24 Oct 2026 09:00:00 +0000</pubDate>
+      <size>1000000000</size>
+      <enclosure url="https://indexer.example/dl/x1.torrent" length="1000000000" type="application/x-bittorrent"/>
+      <torznab:attr name="category" value="6040"/>
+      <torznab:attr name="seeders" value="9999"/>
+      <torznab:attr name="peers" value="9999"/>
+      <torznab:attr name="infohash" value="16d4afa270ff905221b8edc8c851e6275a3f7da4"/>
+      <torznab:attr name="size" value="1000000000"/>
+    </item>
+  </channel>
+</rss>

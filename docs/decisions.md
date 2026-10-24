@@ -154,3 +154,15 @@ Full plan in the project notes; what binds later versions:
   Retention: 7 days or 4 GB total, oldest first, via `deleteFile` (`planCleanup`). Sign out calls `logOut` and deletes the
   directory.
 
+- Torrent Home ranks what the user's own sources list: Torznab endpoints (latest in Movies 2000 and TV 5000, limit 100, no
+  query) and, through `PopularSource`, search plugins (query = current year). Merged by infohash (else normalised title
+  plus size), adult dropped (Torznab 6000-6999 at the parser, plus obvious words), ranked by seeders; items with no
+  seeders are left out. Windows are cumulative (24 h, 7 d, 30 d); items with no date appear only in "Most seeded".
+  Cache `torrent_home.json` in the cache dir, per-window TTLs 3 h / 12 h / 24 h, everything stale when the set of
+  sources changes. No timers.
+- Torznab traffic: a host on the user's network is reached directly; a public host needs HTTPS and goes through the
+  nova HTTP broker and the SOCKS5 proxy when the torrent network choice is SOCKS5. One request per 2 s per endpoint,
+  backoff 30 s doubling to 6 h with +-20% jitter, 429 Retry-After honoured. Errors never carry the address (it holds
+  the key). No conditional requests: Torznab answers carry no useful validators and callers cache for hours.
+- Select on a Torrent Home tile plays without asking only when the torrent has one video or one at least three times
+  larger than the next; a pack opens the file list.

@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:torznab="http://torznab.com/schemas/2015/feed">
+  <channel>
+    <title>Fixture Indexer</title>
+    <item>
+      <title>Fixture Show S02E05 1080p WEB</title>
+      <guid>https://indexer.example/details/t1</guid>
+      <link>https://indexer.example/dl/t1.torrent</link>
+      <comments>https://indexer.example/details/t1</comments>
+      <pubDate>Sat, 24 Oct 2026 06:00:00 +0000</pubDate>
+      <size>1288490188</size>
+      <enclosure url="https://indexer.example/dl/t1.torrent" length="1288490188" type="application/x-bittorrent"/>
+      <torznab:attr name="category" value="5040"/>
+      <torznab:attr name="seeders" value="800"/>
+      <torznab:attr name="peers" value="900"/>
+      <torznab:attr name="infohash" value="e5353879bd69bfddcb465dad176ff52db8319d6f"/>
+      <torznab:attr name="size" value="1288490188"/>
+    </item>
+    <item>
+      <title>Fixture Show S02E04 1080p WEB</title>
+      <guid>https://indexer.example/details/t2</guid>
+      <link>https://indexer.example/dl/t2.torrent</link>
+      <comments>https://indexer.example/details/t2</comments>
+      <pubDate>Sat, 17 Oct 2026 06:00:00 +0000</pubDate>
+      <size>1288490188</size>
+      <enclosure url="https://indexer.example/dl/t2.torrent" length="1288490188" type="application/x-bittorrent"/>
+      <torznab:attr name="category" value="5040"/>
+      <torznab:attr name="seeders" value="650"/>
+      <torznab:attr name="peers" value="700"/>
+      <torznab:attr name="infohash" value="2a5bd02710e975a7fbb92da876655950fbd5e70d"/>
+      <torznab:attr name="size" value="1288490188"/>
+    </item>
+    <item>
+      <title>Another Show S01 Complete 720p</title>
+      <guid>https://indexer.example/details/t3</guid>
+      <link>https://indexer.example/dl/t3.torrent</link>
+      <comments>https://indexer.example/details/t3</comments>
+      <pubDate>Thu, 08 Oct 2026 06:00:00 +0000</pubDate>
+      <size>21474836480</size>
+      <enclosure url="https://indexer.example/dl/t3.torrent" length="21474836480" type="application/x-bittorrent"/>
+      <torznab:attr name="category" value="5000"/>
+      <torznab:attr name="seeders" value="2200"/>
+      <torznab:attr name="peers" value="2300"/>
+      <torznab:attr name="infohash" value="4358694eeb098c6708ae914a10562ce722bbbc34"/>
+      <torznab:attr name="size" value="21474836480"/>
+    </item>
+    <item>
+      <title>Fixture Film 1 2026 1080p WEB-DL</title>
+      <guid>https://indexer.example/details/m1dup</guid>
+      <link>https://indexer.example/dl/m1dup.torrent</link>
+      <comments>https://indexer.example/details/m1dup</comments>
+      <pubDate>Sat, 24 Oct 2026 07:00:00 +0000</pubDate>
+      <size>2147483648</size>
+      <enclosure url="https://indexer.example/dl/m1dup.torrent" length="2147483648" type="application/x-bittorrent"/>
+      <torznab:attr name="category" value="5000"/>
+      <torznab:attr name="seeders" value="450"/>
+      <torznab:attr name="peers" value="500"/>
+      <torznab:attr name="infohash" value="ae23b94ccaf714337e4ce5ba99ef3dc257e300df"/>
+      <torznab:attr name="size" value="2147483648"/>
+    </item>
+  </channel>
+</rss>

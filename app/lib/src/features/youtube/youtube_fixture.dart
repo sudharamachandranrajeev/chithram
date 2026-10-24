@@ -32,6 +32,16 @@ class FixtureBrowse extends InnertubeBrowse {
   Future<List<String>> suggest(String prefix) async =>
       prefix.trim().isEmpty ? const [] : ['${prefix.trim()} fixture', '${prefix.trim()} songs'];
 
+  Future<WatchInfo> watchInfo(String videoId, {Duration? duration}) async =>
+      WatchInfo(
+        related: await related(videoId),
+        chapters: const [
+          Chapter(Duration.zero, 'Start'),
+          Chapter(Duration(seconds: 20), 'Middle'),
+          Chapter(Duration(seconds: 40), 'End'),
+        ],
+      );
+
   @override
   Future<Page<VideoItem>> search(
     String query, {

@@ -3,8 +3,9 @@ import 'package:flutter/material.dart';
 import '../../core/services.dart';
 import '../../ui/tv/focus_card.dart';
 import '../../ui/tv/home_page.dart' show ActionLabel;
+import 'youtube_prefs.dart';
 
-/// Settings: forget what Home learnt from YouTube plays and searches. The
+/// Settings: autoplay, SponsorBlock on the seek bar, and forget what Home learnt from YouTube plays and searches. The
 /// first press arms, the second clears, so a stray press on a remote does not.
 class YouTubeSettings extends StatefulWidget {
   const YouTubeSettings({super.key});
@@ -32,19 +33,60 @@ class _YouTubeSettingsState extends State<YouTubeSettings> {
       listenable: taste,
       builder: (context, _) {
         final plays = taste.profile.history.length;
-        return Padding(
-          padding: const EdgeInsets.all(8),
-          child: FocusCard(
-            radius: 24,
-            onActivate: _press,
-            child: ActionLabel(
-              text: _armed
-                  ? 'Press again to forget $plays YouTube plays'
-                  : 'Clear YouTube watch history ($plays plays, kept on this device)',
-            ),
+        final prefs = AppServices.of(context).prefs;
+        return ListenableBuilder(
+          listenable: prefs,
+          builder: (context, _) => Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(8),
+                child: FocusCard(
+                  radius: 24,
+                  onActivate: () => prefs.set(
+                    YouTubePrefs.autoplay,
+                    !YouTubePrefs.autoplayOn(prefs),
+                  ),
+                  child: ActionLabel(
+                    text:
+                        'Autoplay next video: ${YouTubePrefs.autoplayOn(prefs) ? 'On' : 'Off'}',
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(8),
+                child: FocusCard(
+                  radius: 24,
+                  onActivate: () => prefs.set(
+                    YouTubePrefs.sponsorBlock,
+                    !YouTubePrefs.sponsorBlockOn(prefs),
+                  ),
+                  child: ActionLabel(
+                    text:
+                        'SponsorBlock segments on the seek bar: ${YouTubePrefs.sponsorBlockOn(prefs) ? 'On' : 'Off'}',
+                  ),
+                ),
+              ),
+              _clearCard(plays),
+            ],
           ),
         );
       },
+    );
+  }
+
+  Widget _clearCard(int plays) {
+    return Padding(
+      padding: const EdgeInsets.all(8),
+      child: FocusCard(
+        radius: 24,
+        onActivate: _press,
+        child: ActionLabel(
+          text: _armed
+              ? 'Press again to forget $plays YouTube plays'
+              : 'Clear YouTube watch history ($plays plays, kept on this device)',
+        ),
+      ),
     );
   }
 }

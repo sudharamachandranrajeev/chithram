@@ -68,18 +68,25 @@ void main() {
     await t.pumpWidget(const SizedBox());
   });
 
-  testWidgets('Right and Left seek by ten seconds on VOD, not on live', (t) async {
+  testWidgets('Right and Left scrub by ten seconds, a pause commits; not on live', (t) async {
     final (engine, _) = await _open(t, _request());
     engine.durationC.add(const Duration(minutes: 5));
     engine.positionC.add(const Duration(seconds: 30));
     await t.pump();
     await t.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+    await t.pump(const Duration(milliseconds: 300));
+    expect(engine.seeks, isEmpty, reason: 'scrubbing does not seek yet');
+    expect(t.widget<Text>(find.byKey(Keys.playerPosition)).data, '0:40');
+    await t.pump(const Duration(seconds: 2));
+    expect(engine.seeks, [const Duration(seconds: 40)]);
     await t.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+    await t.pump(const Duration(seconds: 2));
     expect(engine.seeks, [const Duration(seconds: 40), const Duration(seconds: 30)]);
     await t.pumpWidget(const SizedBox());
 
     final (live, _) = await _open(t, _request(live: true));
     await t.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+    await t.pump(const Duration(seconds: 2));
     expect(live.seeks, isEmpty);
     await t.pumpWidget(const SizedBox());
   });

@@ -64,6 +64,12 @@ abstract interface class PlayerEngine {
 
   Stream<Duration> get position;
   Stream<Duration> get duration;
+
+  /// How far ahead of [position] is loaded (absolute, so >= position).
+  Stream<Duration> get buffered;
+
+  /// True when playback reached the end of the media (never for live).
+  Stream<bool> get completed;
   Stream<bool> get buffering;
   Stream<bool> get playing;
   Stream<String> get error;

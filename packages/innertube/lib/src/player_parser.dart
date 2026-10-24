@@ -139,6 +139,7 @@ VideoStreams parsePlayerResponse(Json response,
     muxed: muxed,
     video: video,
     audio: audio,
+    storyboardSpec: storyboardSpecOf(response),
   );
   if (!streams.hasFormats && streams.hlsManifestUrl == null) {
     throw InnertubeException('no playable links in the response');
@@ -162,4 +163,10 @@ VideoDetails parseVideoDetails(Json response) {
     isLive: d['isLive'] == true,
     thumbnails: parseThumbnails(d['thumbnail']),
   );
+}
+
+/// The storyboard spec string of a player response, or null.
+String? storyboardSpecOf(Json response) {
+  final spec = asString(asJson(asJson(response['storyboards'])['playerStoryboardSpecRenderer'])['spec']);
+  return spec.isEmpty ? null : spec;
 }

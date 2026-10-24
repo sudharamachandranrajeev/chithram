@@ -12,6 +12,8 @@ class FakeEngine implements PlayerEngine {
 
   final positionC = StreamController<Duration>.broadcast();
   final durationC = StreamController<Duration>.broadcast();
+  final bufferedC = StreamController<Duration>.broadcast();
+  final completedC = StreamController<bool>.broadcast();
   final bufferingC = StreamController<bool>.broadcast();
   final playingC = StreamController<bool>.broadcast();
   final errorC = StreamController<String>.broadcast();
@@ -45,6 +47,10 @@ class FakeEngine implements PlayerEngine {
   Stream<Duration> get position => positionC.stream;
   @override
   Stream<Duration> get duration => durationC.stream;
+  @override
+  Stream<Duration> get buffered => bufferedC.stream;
+  @override
+  Stream<bool> get completed => completedC.stream;
   @override
   Stream<bool> get buffering => bufferingC.stream;
   @override

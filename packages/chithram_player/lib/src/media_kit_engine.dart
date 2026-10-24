@@ -93,6 +93,10 @@ class MediaKitPlayerEngine implements PlayerEngine {
   @override
   Stream<Duration> get duration => _player.stream.duration;
   @override
+  Stream<Duration> get buffered => _player.stream.buffer;
+  @override
+  Stream<bool> get completed => _player.stream.completed;
+  @override
   Stream<bool> get buffering => _player.stream.buffering;
   @override
   Stream<bool> get playing => _player.stream.playing;

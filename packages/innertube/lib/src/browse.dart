@@ -7,6 +7,7 @@ import 'errors.dart';
 import 'models.dart';
 import 'net.dart';
 import 'player_parser.dart';
+import 'seek_data.dart';
 import 'util.dart';
 
 final _searchApi = Uri.parse('https://www.youtube.com/youtubei/v1/search?prettyPrint=false');
@@ -116,10 +117,13 @@ class InnertubeBrowse {
 
   /// What YouTube suggests watching after [videoId] (its "up next" list),
   /// without [videoId] itself.
-  Future<List<VideoItem>> related(String videoId) async {
-    final page = parseVideoPage(
-        await net.postJson(_nextApi, {'context': _context, 'videoId': videoId}, headers: _cookies));
-    return [for (final v in page.items) if (v.videoId != videoId) v];
+  Future<List<VideoItem>> related(String videoId) async => (await watchInfo(videoId)).related;
+
+  /// One `/next` call: the related list, the chapters and the "most
+  /// replayed" graph of [videoId]. [duration] trims chapters past the end.
+  Future<WatchInfo> watchInfo(String videoId, {Duration? duration}) async {
+    final response = await net.postJson(_nextApi, {'context': _context, 'videoId': videoId}, headers: _cookies);
+    return parseWatchInfo(response, videoId, duration: duration);
   }
 
   /// The videos on a channel's home tab, shelf by shelf. On YouTube's own
@@ -143,6 +147,16 @@ class InnertubeBrowse {
       return parseVideoDetails(await fetchPlayer(net, visionosClient, videoId, id));
     }
   }
+}
+
+/// Related videos, chapters and heatmap in a `/next` response.
+WatchInfo parseWatchInfo(Object? response, String videoId, {Duration? duration}) {
+  final page = parseVideoPage(response);
+  return WatchInfo(
+    related: [for (final v in page.items) if (v.videoId != videoId) v],
+    chapters: parseChapters(response, description: descriptionOf(response), duration: duration),
+    heatmap: parseHeatmap(response),
+  );
 }
 
 /// Seconds from "1:02:03" / "3:45".

@@ -3,6 +3,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../core/services.dart';
 import '../../features/receive/phone/phone_receive_settings.dart';
+import '../../features/youtube/youtube_prefs.dart';
 import '../../features/telegram/phone/phone_telegram_settings.dart';
 import '../../features/torrents/phone/phone_torrent_settings.dart';
 import '../../find/torznab/torznab_settings.dart' show PhoneTorznabSettings;
@@ -54,6 +55,30 @@ class PhoneSettings extends StatelessWidget {
         const PhoneSectionTitle('Receive'),
         const PhoneReceiveSettings(),
         const PhoneSectionTitle('YouTube'),
+        ListenableBuilder(
+          listenable: AppServices.of(context).prefs,
+          builder: (context, _) {
+            final prefs = AppServices.of(context).prefs;
+            return Column(
+              children: [
+                SwitchListTile(
+                  secondary: const Icon(Icons.skip_next_rounded),
+                  title: const Text('Autoplay next video'),
+                  subtitle: const Text('When a video ends, play the next one after a short countdown.'),
+                  value: YouTubePrefs.autoplayOn(prefs),
+                  onChanged: (v) => prefs.set(YouTubePrefs.autoplay, v),
+                ),
+                SwitchListTile(
+                  secondary: const Icon(Icons.block_rounded),
+                  title: const Text('SponsorBlock on the seek bar'),
+                  subtitle: const Text('Marks sponsor and intro segments. Asks sponsor.ajay.app with a hashed prefix of the video id.'),
+                  value: YouTubePrefs.sponsorBlockOn(prefs),
+                  onChanged: (v) => prefs.set(YouTubePrefs.sponsorBlock, v),
+                ),
+              ],
+            );
+          },
+        ),
         ListTile(
           minTileHeight: 56,
           leading: const Icon(Icons.history_rounded),

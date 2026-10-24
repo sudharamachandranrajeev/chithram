@@ -116,6 +116,7 @@ class VideoStreams {
     this.video = const [],
     this.audio = const [],
     this.attempts = const [],
+    this.storyboardSpec,
   });
 
   final String videoId;
@@ -144,6 +145,9 @@ class VideoStreams {
   final List<StreamFormat> audio;
   final List<TierAttempt> attempts;
 
+  /// The preview sprite spec (see `parseStoryboardSpec`); null when none.
+  final String? storyboardSpec;
+
   bool get hasFormats => muxed.isNotEmpty || video.isNotEmpty || audio.isNotEmpty;
 
   /// Earliest expiry across formats, or null when unknown.
@@ -170,6 +174,7 @@ class VideoStreams {
         video: video,
         audio: audio,
         attempts: attempts,
+        storyboardSpec: storyboardSpec,
       );
 }
 

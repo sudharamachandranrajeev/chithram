@@ -13,4 +13,5 @@ export 'src/picker.dart';
 export 'src/player_parser.dart';
 export 'src/ranged.dart';
 export 'src/resolver.dart';
+export 'src/seek_data.dart';
 export 'src/sponsorblock.dart';

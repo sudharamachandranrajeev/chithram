@@ -69,7 +69,7 @@ class AppServices {
       snapshots.load(),
     ).wait;
     final navigatorKey = GlobalKey<NavigatorState>();
-    final youtube = YouTubeService(taste: TasteStore(paths.supportFile('youtube_taste.json')));
+    final youtube = YouTubeService(taste: TasteStore(paths.supportFile('youtube_taste.json')), prefs: prefs);
     final db = AppDatabase.open(paths); // opens on its first query
     final plugins = openPluginRegistry(db: db, paths: paths);
     final secrets = openSecretStore(paths);
@@ -128,7 +128,7 @@ class AppServices {
     final key = navigatorKey ?? GlobalKey<NavigatorState>();
     final paths = AppPaths.under('${Directory.systemTemp.path}/chithram-memory');
     final prefs0 = prefs ?? Prefs.memory();
-    final youtube0 = youtube ?? YouTubeService();
+    final youtube0 = youtube ?? YouTubeService(prefs: prefs0);
     final torrents0 = torrents ?? TorrentService(paths: paths, prefs: prefs0);
     final db0 = db ?? AppDatabase(LazyDatabase(() async => NativeDatabase.memory()));
     final secrets0 = secrets ?? MemorySecretStore();

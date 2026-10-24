@@ -1,0 +1,46 @@
+name: zz nova windows debug (temporary)
+on:
+  push:
+    branches: [feat/plugins]
+    paths: [".github/workflows/zz-nova-win-debug.yml"]
+permissions:
+  contents: read
+jobs:
+  win:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+        with:
+          toolchain: stable
+      - name: Runtime into a per-user program folder
+        run: |
+          d="$LOCALAPPDATA/Programs/ChithramDbg"
+          mkdir -p "$d"
+          bash .github/nova-runtime.sh windows "$d"
+          ls -la "$d/nova" "$d/nova/python" | head -40
+      - name: Experiments
+        shell: pwsh
+        run: |
+          $d = Join-Path $env:LOCALAPPDATA 'Programs\ChithramDbg\nova'
+          $sb = Join-Path $d 'nova-sandbox.exe'
+          $py = Join-Path $d 'python\python.exe'
+          function Run($label, $extra) {
+            Write-Output "=== $label"
+            $a = @() + $extra + @('--ro', "$d\python", '--ro', "$d\runtime", '--cwd', "$d\runtime", '--', $py, '-I', '-c', 'import sys, threading; print("ok", sys.version.split()[0], sys.prefix)')
+            & $sb @a 2>&1 | Out-String | Write-Output
+          }
+          Write-Output "plain python outside the sandbox:"
+          & $py -I -c "import threading; print('ok')" 2>&1 | Write-Output
+          Run 'A: as shipped' @()
+          Run 'B: also grant the whole nova dir' @('--ro', $d)
+          Run 'C: grant the app dir' @('--ro', (Split-Path $d -Parent))
+          Set-Content -Path (Join-Path $d 'python\python313._pth') -Value "Lib`nDLLs`n.`n"
+          Run 'D: with python313._pth' @()
+          Remove-Item (Join-Path $d 'python\python313._pth')
+          icacls $d\python\python.exe | Write-Output
+          icacls (Split-Path $d -Parent) | Write-Output

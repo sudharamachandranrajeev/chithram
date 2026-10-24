@@ -37,8 +37,10 @@ class NovaPluginRunner implements PluginRunner {
         unavailable: () => AndroidNovaSession.disabledReason,
       );
     }
-    final rt = DesktopNovaRuntime.locate(env: env);
-    return NovaPluginRunner(start: rt.start, policy: broker, unavailable: () => rt.reason);
+    // Looked up on first use, which is after the first frame.
+    DesktopNovaRuntime? rt;
+    DesktopNovaRuntime runtime() => rt ??= DesktopNovaRuntime.locate(env: env);
+    return NovaPluginRunner(start: () => runtime().start(), policy: broker, unavailable: () => runtime().reason);
   }
 
   @override

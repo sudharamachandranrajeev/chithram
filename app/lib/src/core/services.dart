@@ -124,6 +124,7 @@ class AppServices {
   }) {
     // Tests build many; each database is lazy and in memory.
     driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
+    final pluginRegistry = plugins ?? PluginRegistry();
     final key = navigatorKey ?? GlobalKey<NavigatorState>();
     final paths = AppPaths.under('${Directory.systemTemp.path}/chithram-memory');
     final prefs0 = prefs ?? Prefs.memory();
@@ -149,10 +150,10 @@ class AppServices {
       secrets: secrets0,
       home: home ?? HomeEngine(),
       catalog: catalog ?? const TmdbCatalog(),
-      findSources: findSources ?? [plugins ?? PluginRegistry()],
+      findSources: findSources ?? [pluginRegistry],
       torznab: torznab0,
       torrentHome: torrentHome ?? TorrentHomeFeed(sources: TorznabPopularSources(torznab0)),
-      plugins: plugins,
+      plugins: pluginRegistry,
     );
   }
 

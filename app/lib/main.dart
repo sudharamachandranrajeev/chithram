@@ -8,6 +8,7 @@ import 'package:media_kit/media_kit.dart';
 import 'src/core/app_channel.dart';
 import 'src/core/perf.dart';
 import 'src/core/services.dart';
+import 'src/core/update/update_settings.dart';
 import 'src/intake/intake.dart';
 import 'src/smoke.dart';
 import 'src/ui/common/app.dart';
@@ -52,6 +53,8 @@ Future<void> main(List<String> args) async {
   });
   final smoke = smokeTarget(args);
   if (smoke != null) unawaited(runSmoke(smoke));
+  // Not in the release smoke tests, which only check the app starts.
+  if (smoke == null && novaSmokeTarget(args) == null) unawaited(dailyUpdateCheck(services));
   final novaSmoke = novaSmokeTarget(args);
   if (novaSmoke != null) unawaited(runNovaSmoke(novaSmoke));
 }

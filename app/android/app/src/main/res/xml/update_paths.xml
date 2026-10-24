@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Where the in-app update (lib/src/core/update/app_update.dart) downloads
+     the APK, shared with the system installer as a content: URI. -->
+<paths>
+    <cache-path name="updates" path="updates/"/>
+</paths>

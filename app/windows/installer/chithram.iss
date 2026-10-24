@@ -48,7 +48,7 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 Source: "{#Release}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-Name: "{autoprograms}\Chithram"; Filename: "{app}\chithram.exe"; Comment: "Malayalam & Tamil music"
+Name: "{autoprograms}\Chithram"; Filename: "{app}\chithram.exe"; Comment: "YouTube, live TV and torrents"
 Name: "{autodesktop}\Chithram"; Filename: "{app}\chithram.exe"; Tasks: desktopicon
 
 [Run]

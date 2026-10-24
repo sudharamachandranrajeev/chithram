@@ -42,3 +42,5 @@ packages/torrent/android/src/main/jniLibs/
 # TDLib built by tdlib.yml, fetched by packages/tdlib/tool/fetch_tdlib.py
 packages/tdlib/prebuilt/
 packages/tdlib/android/src/main/jniLibs/
+__pycache__/
+*.pyc

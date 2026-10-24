@@ -55,5 +55,5 @@ The registry and the `app.dart` hook are set in S0; spikes edit only their own p
 - Accept via `integration_test` on `system-images;android-36;android-tv;x86_64`: reach every nav item; 200 random keys never lose focus; typing "sintel" works; screenshots and uiautomator dumps uploaded; `am start -W` < 3 s (emulator-only).
 
 ### spike/youtube
-- Port Paattu's resolver (`/home/rajeevrama/Work/paattu/app/lib/src/sources/youtube.dart`, `http.dart`) plus DASH video formats. Tiers: VISIONOS, android_vr, tv, youtube_explode_dart.
+- Port Paattu's resolver (`paattu/app/lib/src/sources/youtube.dart`, `http.dart`) plus DASH video formats. Tiers: VISIONOS, android_vr, tv, youtube_explode_dart.
 - Accept: fixture unit tests pass; live 20-video panel: at least 18 at >= 1080p with 206 Range (non-blocking).

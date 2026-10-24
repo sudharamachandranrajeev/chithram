@@ -4,6 +4,9 @@ import 'package:flutter/widgets.dart';
 
 import 'android_engine.dart';
 import 'media_kit_engine.dart';
+import 'tracks.dart';
+
+export 'tracks.dart';
 
 /// What to play. Two URLs mean separate video and audio (YouTube DASH): the
 /// engine merges them. Headers apply to both requests.
@@ -14,6 +17,7 @@ class MediaSpec {
     this.headers = const <String, String>{},
     this.isLive = false,
     this.startPosition = Duration.zero,
+    this.audioChoices = const [],
   });
 
   final String videoUrl;
@@ -21,6 +25,21 @@ class MediaSpec {
   final Map<String, String> headers;
   final bool isLive;
   final Duration startPosition;
+
+  /// Other audio streams of the video (YouTube dubs), [audioUrl]'s among
+  /// them. Engines ignore this: the app switches by opening a copy with
+  /// another choice's url as [audioUrl] (see [withAudio]).
+  final List<AudioChoice> audioChoices;
+
+  /// This spec with [url] as the audio, starting at [start].
+  MediaSpec withAudio(String url, {Duration? start}) => MediaSpec(
+    videoUrl: videoUrl,
+    audioUrl: url,
+    headers: headers,
+    isLive: isLive,
+    startPosition: start ?? startPosition,
+    audioChoices: audioChoices,
+  );
 
   @override
   String toString() =>
@@ -73,6 +92,20 @@ abstract interface class PlayerEngine {
   Stream<bool> get buffering;
   Stream<bool> get playing;
   Stream<String> get error;
+
+  /// Audio and subtitle tracks of the current media, with the selected ones
+  /// marked. Empty after [open] until the engine knows them.
+  Stream<MediaTracks> get tracks;
+
+  /// Plays the audio track with this [MediaTrack.id].
+  Future<void> selectAudioTrack(String id);
+
+  /// Shows the subtitle track with this id; null turns subtitles off.
+  Future<void> selectSubtitleTrack(String? id);
+
+  /// What the next [open] picks by itself. The current media keeps its
+  /// tracks; use the select methods for those.
+  Future<void> setTrackPreferences(TrackPreferences preferences);
 
   /// The video surface. Put it in the tree before or after [open].
   Widget get view;

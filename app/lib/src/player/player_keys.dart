@@ -28,4 +28,12 @@ abstract final class PlayerKeys {
   static const upNextCount = ValueKey('player-up-next-count');
   static const upNextPlay = ValueKey('player-up-next-play');
   static const upNextCancel = ValueKey('player-up-next-cancel');
+
+  /// The OSD button that opens [tracksMenu].
+  static const tracks = ValueKey('player-tracks');
+  static const tracksMenu = ValueKey('player-tracks-menu');
+  static const subtitlesOff = ValueKey('player-subtitles-off');
+  static ValueKey<String> audioTrack(String id) => ValueKey('player-audio-$id');
+  static ValueKey<String> subtitleTrack(String id) =>
+      ValueKey('player-subtitle-$id');
 }

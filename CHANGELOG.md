@@ -44,6 +44,10 @@ Release notes are taken from the section of the version being tagged.
 - Search on TV and desktop: the keyboard is hidden until you press the search bar, then drops down under it as a
   compact frosted panel (letters, a symbols page, space, Clear and Search) with suggestions as you type. Keys tick,
   click and chime on Android TV; Settings > "Keyboard sounds" turns the sounds off.
+- Player: pick the audio track and subtitles (embedded tracks, and YouTube's dubbed audio) from a menu on the display
+  (Down to the subtitles button, or the Menu / Info key; a sheet on a phone). The last language and subtitles on/off are
+  remembered. The display now fades out slowly after a few seconds of playback and comes back on any key, touch or mouse
+  move; the key that wakes it does nothing else. It stays up while paused or while a menu is open.
 
 ### Changed
 - The TV, phone and shared UI code now live in `ui/tv`, `ui/phone` and `ui/common`.

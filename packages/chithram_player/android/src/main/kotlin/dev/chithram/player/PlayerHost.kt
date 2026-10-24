@@ -11,10 +11,13 @@ import android.util.Log
 import android.view.SurfaceView
 import androidx.annotation.OptIn
 import androidx.media3.common.C
+import androidx.media3.common.Format
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
+import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.common.Tracks
+import androidx.media3.common.text.CueGroup
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.DefaultHttpDataSource
@@ -23,6 +26,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.exoplayer.source.MediaSource
 import androidx.media3.exoplayer.source.MergingMediaSource
+import androidx.media3.ui.SubtitleView
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.EventChannel
 
@@ -55,6 +59,12 @@ class PlayerHost(
     private var durationLogged = false
     private var pendingSeekTarget = -1L
     private var surfaceView: SurfaceView? = null
+    private var subtitleView: SubtitleView? = null
+
+    // Applied on each open (see setPreferences).
+    private var preferredAudio: String? = null
+    private var preferredText: String? = null
+    private var textOn = false
 
     private val ticker = object : Runnable {
         override fun run() {
@@ -92,6 +102,11 @@ class PlayerHost(
                 val v = tracks.groups.count { it.type == C.TRACK_TYPE_VIDEO && it.isSelected }
                 val a = tracks.groups.count { it.type == C.TRACK_TYPE_AUDIO && it.isSelected }
                 Log.i(TAG, "CHITHRAM_TRACKS video=$v audio=$a")
+                sendTracks(tracks)
+            }
+
+            override fun onCues(cueGroup: CueGroup) {
+                subtitleView?.setCues(cueGroup.cues)
             }
 
             override fun onPositionDiscontinuity(
@@ -151,11 +166,80 @@ class PlayerHost(
         )
     }
 
+    /** Audio and text tracks as maps for the `tracks` event; ids are "group:track". */
+    private fun trackList(tracks: Tracks, type: Int): List<Map<String, Any?>> {
+        val out = ArrayList<Map<String, Any?>>()
+        tracks.groups.forEachIndexed { g, group ->
+            if (group.type != type) return@forEachIndexed
+            for (i in 0 until group.length) {
+                if (!group.isTrackSupported(i)) continue
+                val f = group.getTrackFormat(i)
+                out.add(
+                    mapOf(
+                        "id" to "$g:$i",
+                        "lang" to f.language,
+                        "label" to f.label,
+                        "mime" to f.sampleMimeType,
+                        "codecs" to f.codecs,
+                        "ch" to (if (f.channelCount == Format.NO_VALUE) null else f.channelCount),
+                        "sel" to group.isTrackSelected(i),
+                        "def" to ((f.selectionFlags and C.SELECTION_FLAG_DEFAULT) != 0),
+                        "forced" to ((f.selectionFlags and C.SELECTION_FLAG_FORCED) != 0),
+                    ),
+                )
+            }
+        }
+        return out
+    }
+
+    private fun sendTracks(tracks: Tracks) {
+        sink?.success(
+            mapOf(
+                "t" to "tracks",
+                "audio" to trackList(tracks, C.TRACK_TYPE_AUDIO),
+                "text" to trackList(tracks, C.TRACK_TYPE_TEXT),
+            ),
+        )
+    }
+
+    /** [kind] is "audio" or "text"; a null [trackId] turns that type off. */
+    fun selectTrack(kind: String, trackId: String?) {
+        val type = if (kind == "audio") C.TRACK_TYPE_AUDIO else C.TRACK_TYPE_TEXT
+        val params = player.trackSelectionParameters.buildUpon()
+        if (trackId == null) {
+            params.clearOverridesOfType(type).setTrackTypeDisabled(type, true)
+        } else {
+            val parts = trackId.split(':')
+            val g = parts.getOrNull(0)?.toIntOrNull() ?: return
+            val i = parts.getOrNull(1)?.toIntOrNull() ?: return
+            val group = player.currentTracks.groups.getOrNull(g) ?: return
+            if (group.type != type || i >= group.length) return
+            params.setTrackTypeDisabled(type, false)
+                .setOverrideForType(TrackSelectionOverride(group.mediaTrackGroup, i))
+        }
+        player.trackSelectionParameters = params.build()
+        Log.i(TAG, "CHITHRAM_SELECT_TRACK $kind=${trackId ?: "off"}")
+    }
+
+    /** What the next [open] picks: preferred languages, subtitles on or off. */
+    fun setPreferences(audioLanguage: String?, textLanguage: String?, text: Boolean) {
+        preferredAudio = audioLanguage
+        preferredText = textLanguage
+        textOn = text
+    }
+
     fun open(videoUrl: String, audioUrl: String?, headers: Map<String, String>, isLive: Boolean, startMs: Long) {
         openStartMs = SystemClock.elapsedRealtime()
         firstFrameLogged = false
         durationLogged = false
         pendingSeekTarget = -1
+        // A new item: earlier picks do not carry over, the preferences do.
+        player.trackSelectionParameters = player.trackSelectionParameters.buildUpon()
+            .clearOverrides()
+            .setPreferredAudioLanguage(preferredAudio)
+            .setPreferredTextLanguage(preferredText)
+            .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, !textOn)
+            .build()
 
         val http = DefaultHttpDataSource.Factory()
             .setAllowCrossProtocolRedirects(true)
@@ -193,15 +277,20 @@ class PlayerHost(
     fun pause() { player.playWhenReady = false }
     fun seek(ms: Long) { player.seekTo(ms) }
 
-    fun attach(view: SurfaceView) {
+    fun attach(view: SurfaceView, subtitles: SubtitleView) {
         if (released) return
         surfaceView = view
+        subtitleView = subtitles
+        subtitles.setCues(player.currentCues.cues)
         updateKeepScreenOn()
         player.setVideoSurfaceView(view)
     }
 
     fun detach(view: SurfaceView) {
-        if (surfaceView === view) surfaceView = null
+        if (surfaceView === view) {
+            surfaceView = null
+            subtitleView = null
+        }
         if (!released) player.clearVideoSurfaceView(view)
     }
 

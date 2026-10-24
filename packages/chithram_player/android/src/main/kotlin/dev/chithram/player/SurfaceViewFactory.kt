@@ -1,8 +1,15 @@
+@file:OptIn(UnstableApi::class)
+
 package dev.chithram.player
 
 import android.content.Context
 import android.view.SurfaceView
 import android.view.View
+import android.view.ViewGroup
+import android.widget.FrameLayout
+import androidx.annotation.OptIn
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.ui.SubtitleView
 import io.flutter.plugin.common.StandardMessageCodec
 import io.flutter.plugin.platform.PlatformView
 import io.flutter.plugin.platform.PlatformViewFactory
@@ -17,14 +24,27 @@ class SurfaceViewFactory(private val lookup: (Int) -> PlayerHost?) :
     }
 }
 
+/**
+ * The video surface with Media3's SubtitleView over it, which draws text and
+ * bitmap subtitles in the system caption style (Settings > Accessibility).
+ */
 private class SurfacePlatformView(context: Context, private val host: PlayerHost?) : PlatformView {
     private val surfaceView = SurfaceView(context)
-
-    init {
-        host?.attach(surfaceView)
+    private val subtitleView = SubtitleView(context).apply {
+        setUserDefaultStyle()
+        setUserDefaultTextSize()
+    }
+    private val root = FrameLayout(context).apply {
+        val match = ViewGroup.LayoutParams.MATCH_PARENT
+        addView(surfaceView, FrameLayout.LayoutParams(match, match))
+        addView(subtitleView, FrameLayout.LayoutParams(match, match))
     }
 
-    override fun getView(): View = surfaceView
+    init {
+        host?.attach(surfaceView, subtitleView)
+    }
+
+    override fun getView(): View = root
 
     override fun dispose() {
         host?.detach(surfaceView)

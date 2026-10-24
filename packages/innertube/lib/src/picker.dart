@@ -51,9 +51,31 @@ PickedFormats pickFormats(VideoStreams streams, DeviceCaps caps) {
   return PickedFormats(video: video, audio: audio);
 }
 
-StreamFormat? _bestVideo(List<StreamFormat> formats, DeviceCaps caps, {bool anyCodec = false}) {
+/// The best audio format of each audio track (a dubbed video has one track
+/// per language), the original first. One entry for a single-track video;
+/// empty without adaptive audio.
+List<StreamFormat> pickAudioTracks(VideoStreams streams, DeviceCaps caps) {
+  final byTrack = <String?, List<StreamFormat>>{};
+  for (final f in streams.audio) {
+    if (f.hasAudio) (byTrack[f.audioTrackId] ??= []).add(f);
+  }
+  final best = [for (final group in byTrack.values) ?_bestAudio(group, caps)];
+  best.sort((a, b) {
+    if (a.isDefaultTrack != b.isDefaultTrack) return a.isDefaultTrack ? -1 : 1;
+    return (a.audioTrackName ?? '').compareTo(b.audioTrackName ?? '');
+  });
+  return best;
+}
+
+StreamFormat? _bestVideo(
+  List<StreamFormat> formats,
+  DeviceCaps caps, {
+  bool anyCodec = false,
+}) {
   var pool = formats.where((f) => f.hasVideo).toList();
-  final codecOk = pool.where((f) => anyCodec || caps.videoCodecs.contains(f.videoCodec)).toList();
+  final codecOk = pool
+      .where((f) => anyCodec || caps.videoCodecs.contains(f.videoCodec))
+      .toList();
   pool = codecOk;
   if (pool.isEmpty) return null;
   final capped = pool.where((f) => f.shortSide <= caps.maxHeight).toList();
@@ -90,7 +112,9 @@ StreamFormat? _bestVideo(List<StreamFormat> formats, DeviceCaps caps, {bool anyC
 StreamFormat? _bestAudio(List<StreamFormat> formats, DeviceCaps caps) {
   var pool = formats.where((f) => f.hasAudio).toList();
   if (pool.isEmpty) return null;
-  final supported = pool.where((f) => caps.audioCodecs.contains(f.audioCodec)).toList();
+  final supported = pool
+      .where((f) => caps.audioCodecs.contains(f.audioCodec))
+      .toList();
   if (supported.isNotEmpty) pool = supported;
   int codecRank(StreamFormat f) {
     final i = caps.audioCodecs.indexOf(f.audioCodec!);
@@ -102,7 +126,8 @@ StreamFormat? _bestAudio(List<StreamFormat> formats, DeviceCaps caps) {
     if (a.isDrc != b.isDrc) return a.isDrc ? 1 : -1;
     // Within ~10%, prefer the codec order; otherwise the higher bitrate.
     final hi = a.bitrate > b.bitrate ? a.bitrate : b.bitrate;
-    if ((a.bitrate - b.bitrate).abs() > hi * 0.1) return b.bitrate.compareTo(a.bitrate);
+    if ((a.bitrate - b.bitrate).abs() > hi * 0.1)
+      return b.bitrate.compareTo(a.bitrate);
     final c = codecRank(a).compareTo(codecRank(b));
     if (c != 0) return c;
     return b.bitrate.compareTo(a.bitrate);

@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../core/prefs.dart';
 import '../core/redact.dart';
 import '../core/resume_store.dart';
 import '../core/services.dart';
@@ -20,6 +21,8 @@ import 'player_osd.dart';
 import 'seek/double_tap_ripple.dart';
 import 'seek/scrub.dart';
 import 'seek/storyboard_thumb.dart';
+import 'tracks.dart';
+import 'tracks_menu.dart';
 import 'up_next_card.dart';
 
 /// Seek step for Left and Right.
@@ -30,7 +33,9 @@ const resumeMinimum = Duration(seconds: 30);
 
 /// How often the position is saved while playing.
 const _saveEvery = Duration(seconds: 10);
-const _osdHideAfter = Duration(seconds: 4);
+
+/// Idle time before the display fades out during playback.
+const osdHideAfter = Duration(seconds: 4);
 
 /// Turns an engine error into text for the error panel. Never shows a URL.
 String describePlayerError(String raw) {
@@ -51,12 +56,21 @@ String formatPlayerTime(Duration d) {
 }
 
 /// Fullscreen player for any [PlayRequest]: on-screen display that hides
-/// itself, seeking, channel zapping, resume and an error panel.
+/// itself, seeking, channel zapping, resume, audio and subtitle tracks and an
+/// error panel.
+///
+/// The display shows on any key, touch or mouse move and fades out after
+/// [osdHideAfter] of playback without input. It stays while paused and while
+/// a scrub, the track menu or the Up next card is open. When it is hidden,
+/// the arrow or OK press that brings it back does nothing else; media keys
+/// (play/pause, rewind, next, channel up/down) always act.
 ///
 /// Center plays or pauses. Left and Right scrub (VOD, live with a DVR window):
 /// a preview position moves, faster the longer the key is held, and OK or a
 /// pause commits it; Back drops it. Up and Down zap when the request has a
-/// [ZapList]; with a queue, Down reaches Previous and Next. When a video with
+/// [ZapList]; otherwise Down reaches the buttons (Previous, Next, Audio and
+/// subtitles). Menu, Info or Settings opens the track menu; on a live channel
+/// without a seek bar Left and Right reach it too. When a video with
 /// a queue ends, an "Up next" card counts down to the next one. Back closes
 /// the route, which disposes the engine.
 class PlayerRoute extends StatefulWidget {
@@ -84,6 +98,7 @@ class _PlayerRouteState extends State<PlayerRoute> {
   final _promptFocus = FocusNode(debugLabel: 'player prompt');
   final _errorFocus = FocusNode(debugLabel: 'player error');
   ResumeStore? _resume;
+  Prefs? _prefs;
   PlayerEngine? _engine;
   late PlayRequest _request = widget.request;
   int _zapIndex = 0;
@@ -97,6 +112,7 @@ class _PlayerRouteState extends State<PlayerRoute> {
     ..addListener(_scrubChanged);
   final _previousFocus = FocusNode(debugLabel: 'player previous');
   final _nextFocus = FocusNode(debugLabel: 'player next');
+  final _tracksFocus = FocusNode(debugLabel: 'player tracks');
   final _rippleKey = GlobalKey<DoubleTapRippleState>();
   PlayExtras _extras = PlayExtras.none;
   PlayRequest? _extrasFor;
@@ -119,6 +135,17 @@ class _PlayerRouteState extends State<PlayerRoute> {
   String? _error;
   String? _statusLine;
 
+  // Tracks of the current item. The preferred audio and subtitles are picked
+  // once per item, when the first tracks arrive.
+  MediaTracks _tracks = MediaTracks.none;
+  MediaSpec? _spec;
+  bool _audioPicked = false;
+  bool _subsPicked = false;
+  bool _menuOpen = false;
+
+  /// The key that brought the display back; it does nothing else until up.
+  LogicalKeyboardKey? _wakeKey;
+
   /// Set while "Resume from / Start over" is on screen.
   Duration? _offer;
   bool _chromeSet = false;
@@ -126,10 +153,11 @@ class _PlayerRouteState extends State<PlayerRoute> {
   @override
   void initState() {
     super.initState();
-    _resume = context
+    final services = context
         .getInheritedWidgetOfExactType<AppServicesScope>()
-        ?.services
-        .resume;
+        ?.services;
+    _resume = services?.resume;
+    _prefs = services?.prefs;
     _zapIndex = _request.zap?.initialIndex ?? 0;
     _saveTimer = Timer.periodic(_saveEvery, (_) => unawaited(_save()));
     unawaited(_start());
@@ -174,7 +202,8 @@ class _PlayerRouteState extends State<PlayerRoute> {
         ..add(engine.completed.listen(_onCompleted))
         ..add(engine.buffering.listen((v) => _set(() => _buffering = v)))
         ..add(engine.playing.listen(_onPlaying))
-        ..add(engine.error.listen(_onEngineError));
+        ..add(engine.error.listen(_onEngineError))
+        ..add(engine.tracks.listen(_onTracks));
       setState(() => _engine = engine);
       // The video surface must be in the tree before open.
       await WidgetsBinding.instance.endOfFrame;
@@ -325,6 +354,9 @@ class _PlayerRouteState extends State<PlayerRoute> {
   bool get _canScrub => !_request.isLive || _duration >= dvrMinimum;
 
   void _onPlaying(bool playing) {
+    // Media3 repeats the state four times a second; only a change counts,
+    // or the hide timer would restart forever.
+    if (playing == _playing) return;
     _set(() => _playing = playing);
     // A paused video keeps its display up.
     if (!playing) {
@@ -378,12 +410,14 @@ class _PlayerRouteState extends State<PlayerRoute> {
       _upNextDeclined = false;
       _prefetched = false;
       _finished = false;
+      _menuOpen = false;
+      _tracks = MediaTracks.none;
     });
     _extrasFor = null;
     _scrubber.cancel();
     _bindStatus(request);
     try {
-      final spec = await request.resolve();
+      final spec = _preferAudio(await request.resolve());
       if (!mounted || generation != _generation) return;
       var start = startAt ?? spec.startPosition;
       if (offerResume && startAt == null && !request.isLive && !spec.isLive) {
@@ -419,11 +453,17 @@ class _PlayerRouteState extends State<PlayerRoute> {
       headers: spec.headers,
       isLive: spec.isLive,
       startPosition: start,
+      audioChoices: spec.audioChoices,
     );
     _set(() {
       _loading = true;
       _offer = null;
+      _spec = opened;
+      _tracks = MediaTracks.none;
     });
+    _audioPicked = false;
+    _subsPicked = false;
+    await engine.setTrackPreferences(PlayerPrefs.read(_prefs));
     await engine.open(opened);
     _set(() => _loading = false);
     _armHide();
@@ -529,8 +569,168 @@ class _PlayerRouteState extends State<PlayerRoute> {
     _hideTimer?.cancel();
     if (!_playing || _error != null || _offer != null || _scrubber.active)
       return;
-    if (_previousFocus.hasFocus || _nextFocus.hasFocus) return;
-    _hideTimer = Timer(_osdHideAfter, () => _set(() => _osd = false));
+    if (_menuOpen || _upNextShown || _controlsFocused) return;
+    _hideTimer = Timer(osdHideAfter, () => _set(() => _osd = false));
+  }
+
+  bool get _controlsFocused =>
+      _previousFocus.hasFocus || _nextFocus.hasFocus || _tracksFocus.hasFocus;
+
+  // --- Tracks ---
+
+  /// The audio entries: YouTube's dubs when the source has them (the engine
+  /// only sees the one playing), else the engine's tracks.
+  List<MediaTrack> get _audioItems {
+    final spec = _spec;
+    if (spec != null && spec.audioChoices.length > 1) return choiceTracks(spec);
+    return _tracks.audio;
+  }
+
+  bool get _hasTrackChoice =>
+      _audioItems.length > 1 || _tracks.subtitles.isNotEmpty;
+
+  /// A dubbed YouTube video starts in the preferred language when it has it.
+  MediaSpec _preferAudio(MediaSpec spec) {
+    final want = PlayerPrefs.read(_prefs).audioLanguage;
+    if (want == null || spec.audioChoices.length < 2) return spec;
+    for (final c in spec.audioChoices) {
+      if (c.language == want) {
+        return c.url == spec.audioUrl ? spec : spec.withAudio(c.url);
+      }
+    }
+    return spec;
+  }
+
+  void _onTracks(MediaTracks t) {
+    _set(() => _tracks = t);
+    final engine = _engine;
+    if (engine == null) return;
+    // The engine already prefers these; this covers what it cannot match
+    // (subtitles on with no language, three-letter codes, no default flag).
+    final prefs = PlayerPrefs.read(_prefs);
+    if (!_audioPicked && t.audio.isNotEmpty) {
+      _audioPicked = true;
+      final want = prefs.audioLanguage;
+      if (want != null && t.selectedAudio?.language != want) {
+        final match = t.audio.where((a) => a.language == want).firstOrNull;
+        if (match != null) unawaited(engine.selectAudioTrack(match.id));
+      }
+    }
+    if (!_subsPicked && t.subtitles.isNotEmpty) {
+      _subsPicked = true;
+      if (prefs.subtitles && t.selectedSubtitle == null) {
+        final pick = preferredTrack(t.subtitles, prefs.subtitleLanguage);
+        if (pick != null) unawaited(engine.selectSubtitleTrack(pick.id));
+      }
+    }
+  }
+
+  Future<void> _remember(Map<String, Object?> values) async {
+    final prefs = _prefs;
+    if (prefs == null) return;
+    for (final e in values.entries) {
+      await prefs.set(e.key, e.value);
+    }
+  }
+
+  Future<void> _pickAudio(MediaTrack t) async {
+    _closeMenu();
+    if (t.language != null) {
+      unawaited(_remember({PlayerPrefs.audioLanguage: t.language}));
+    }
+    if (t.selected) return;
+    final spec = _spec;
+    if (t.id.startsWith(choicePrefix) && spec != null) {
+      // Another YouTube audio stream: open again where we are.
+      final i = int.tryParse(t.id.substring(choicePrefix.length));
+      if (i == null || i >= spec.audioChoices.length) return;
+      final wasPlaying = _playing;
+      final at = _position;
+      await _open(spec.withAudio(spec.audioChoices[i].url), at);
+      if (!wasPlaying) await _engine?.pause();
+      return;
+    }
+    _set(
+      () => _tracks = MediaTracks(
+        audio: [
+          for (final a in _tracks.audio) a.copyWith(selected: a.id == t.id),
+        ],
+        subtitles: _tracks.subtitles,
+      ),
+    );
+    await _engine?.selectAudioTrack(t.id);
+  }
+
+  /// Null turns subtitles off.
+  Future<void> _pickSubtitle(MediaTrack? t) async {
+    _closeMenu();
+    unawaited(
+      _remember({
+        PlayerPrefs.subtitles: t != null,
+        if (t?.language != null) PlayerPrefs.subtitleLanguage: t!.language,
+      }),
+    );
+    _set(
+      () => _tracks = MediaTracks(
+        audio: _tracks.audio,
+        subtitles: [
+          for (final s in _tracks.subtitles)
+            s.copyWith(selected: s.id == t?.id),
+        ],
+      ),
+    );
+    await _engine?.selectSubtitleTrack(t?.id);
+  }
+
+  /// The captions key: off, or on in the preferred language.
+  void _toggleSubtitles() {
+    if (_tracks.subtitles.isEmpty) return;
+    _showOsd();
+    if (_tracks.selectedSubtitle != null) {
+      unawaited(_pickSubtitle(null));
+    } else {
+      final lang = PlayerPrefs.read(_prefs).subtitleLanguage;
+      unawaited(_pickSubtitle(preferredTrack(_tracks.subtitles, lang)));
+    }
+  }
+
+  void _openMenu() {
+    if (_menuOpen || !_hasTrackChoice) return;
+    _hideTimer?.cancel();
+    setState(() {
+      _menuOpen = true;
+      _osd = true;
+    });
+    if (Dims.of(context).phone) unawaited(_openSheet());
+  }
+
+  Future<void> _openSheet() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: ChithramColors.of(context).surface,
+      isScrollControlled: true,
+      builder: (sheet) => TracksMenu(
+        sheet: true,
+        audio: _audioItems,
+        subtitles: _tracks.subtitles,
+        onAudio: (t) {
+          Navigator.of(sheet).pop();
+          unawaited(_pickAudio(t));
+        },
+        onSubtitle: (t) {
+          Navigator.of(sheet).pop();
+          unawaited(_pickSubtitle(t));
+        },
+      ),
+    );
+    _closeMenu();
+  }
+
+  void _closeMenu() {
+    if (!_menuOpen || !mounted) return;
+    setState(() => _menuOpen = false);
+    _rootFocus.requestFocus();
+    _armHide();
   }
 
   Future<void> _save() async {
@@ -570,11 +770,32 @@ class _PlayerRouteState extends State<PlayerRoute> {
       ..dispose();
     _previousFocus.dispose();
     _nextFocus.dispose();
+    _tracksFocus.dispose();
     _promptFocus.dispose();
     _errorFocus.dispose();
     _rootFocus.dispose();
     super.dispose();
   }
+
+  /// Keys that only bring a hidden display back.
+  static final _wakeOnly = {
+    LogicalKeyboardKey.arrowLeft,
+    LogicalKeyboardKey.arrowRight,
+    LogicalKeyboardKey.arrowUp,
+    LogicalKeyboardKey.arrowDown,
+    LogicalKeyboardKey.select,
+    LogicalKeyboardKey.enter,
+    LogicalKeyboardKey.numpadEnter,
+  };
+
+  /// Remote keys that open the track menu.
+  static final _menuKeys = {
+    LogicalKeyboardKey.contextMenu,
+    LogicalKeyboardKey.info,
+    LogicalKeyboardKey.settings,
+    LogicalKeyboardKey.tvMediaContext,
+    LogicalKeyboardKey.mediaAudioTrack,
+  };
 
   static Duration _wallClock() =>
       Duration(microseconds: DateTime.now().microsecondsSinceEpoch);
@@ -585,6 +806,10 @@ class _PlayerRouteState extends State<PlayerRoute> {
         key == LogicalKeyboardKey.arrowLeft ||
         key == LogicalKeyboardKey.arrowRight;
     if (event is KeyUpEvent) {
+      if (key == _wakeKey) {
+        _wakeKey = null;
+        return KeyEventResult.handled;
+      }
       if (isArrow && _scrubber.active) {
         _scrubber.keyUp();
         return KeyEventResult.handled;
@@ -595,11 +820,29 @@ class _PlayerRouteState extends State<PlayerRoute> {
       return KeyEventResult.ignored;
     // Buttons on the error panel, the resume prompt and the Up next card use
     // normal focus movement.
-    if (_error != null || _offer != null || _upNextShown)
+    if (_error != null || _offer != null || _upNextShown || _menuOpen)
       return KeyEventResult.ignored;
     final fresh = event is KeyDownEvent;
-    // On Previous / Next: Up goes back to the video, the rest is focus movement.
-    if (_previousFocus.hasFocus || _nextFocus.hasFocus) {
+    // Holding the key that brought the display back does nothing more.
+    if (!fresh && key == _wakeKey) return KeyEventResult.handled;
+    if (fresh && !_osd && _wakeOnly.contains(key)) {
+      _wakeKey = key;
+      _showOsd();
+      return KeyEventResult.handled;
+    }
+    if (fresh && _menuKeys.contains(key)) {
+      _showOsd();
+      _openMenu();
+      return KeyEventResult.handled;
+    }
+    if (fresh &&
+        (key == LogicalKeyboardKey.closedCaptionToggle ||
+            key == LogicalKeyboardKey.subtitle)) {
+      _toggleSubtitles();
+      return KeyEventResult.handled;
+    }
+    // On the buttons: Up goes back to the video, the rest is focus movement.
+    if (_controlsFocused) {
       if (fresh && key == LogicalKeyboardKey.arrowUp) {
         _rootFocus.requestFocus();
         _showOsd();
@@ -647,6 +890,8 @@ class _PlayerRouteState extends State<PlayerRoute> {
     if (left || right) {
       if (!_canScrub) {
         _showOsd();
+        // A live channel has no seek bar: the sides reach the track button.
+        if (fresh && isArrow && _hasTrackChoice) _tracksFocus.requestFocus();
       } else {
         _showOsd();
         _scrubber.key(
@@ -668,10 +913,15 @@ class _PlayerRouteState extends State<PlayerRoute> {
     if (fresh && (up || down)) {
       if (widget.request.zap != null) {
         unawaited(_zap(up ? -1 : 1));
-      } else if (down && key == LogicalKeyboardKey.arrowDown && _hasQueue) {
-        // Down from the video reaches Previous / Next.
+      } else if (down &&
+          key == LogicalKeyboardKey.arrowDown &&
+          (_hasQueue || _hasTrackChoice)) {
+        // Down from the video reaches the buttons.
         _showOsd();
-        (_request.queue!.hasPrevious ? _previousFocus : _nextFocus)
+        final queue = _hasQueue ? _request.queue : null;
+        (queue == null
+                ? _tracksFocus
+                : (queue.hasPrevious ? _previousFocus : _nextFocus))
             .requestFocus();
       } else {
         _showOsd();
@@ -683,6 +933,10 @@ class _PlayerRouteState extends State<PlayerRoute> {
 
   void _onTap() {
     if (_error != null || _offer != null) return;
+    if (_menuOpen) {
+      _closeMenu();
+      return;
+    }
     final d = Dims.of(context);
     // A phone's tap shows or hides the controls; elsewhere it pauses as well.
     if (d.phone) {
@@ -716,10 +970,12 @@ class _PlayerRouteState extends State<PlayerRoute> {
     final upNext = _upNext;
     return PopScope(
       // Back drops a scrub or the Up next card before it closes the player.
-      canPop: !_scrubber.active && !_upNextShown,
+      canPop: !_scrubber.active && !_upNextShown && !_menuOpen,
       onPopInvokedWithResult: (didPop, _) {
         if (didPop) return;
-        if (_upNextShown) {
+        if (_menuOpen) {
+          _closeMenu();
+        } else if (_upNextShown) {
           _cancelUpNext();
         } else {
           _scrubber.cancel();
@@ -732,60 +988,73 @@ class _PlayerRouteState extends State<PlayerRoute> {
           focusNode: _rootFocus,
           autofocus: true,
           onKeyEvent: _onKey,
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: _onTap,
-            onDoubleTapDown: d.phone
-                ? (details) => _doubleTapAt = details.localPosition
-                : null,
-            onDoubleTap: d.phone ? _onDoubleTap : null,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                if (engine != null) engine.view,
-                if (_loading || _buffering)
-                  Center(
-                    child: CircularProgressIndicator(
-                      key: PlayerKeys.spinner,
-                      color: ChithramColors.of(context).accent,
+          child: MouseRegion(
+            onHover: (_) => _showOsd(),
+            cursor: _osd ? MouseCursor.defer : SystemMouseCursors.none,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: _onTap,
+              onDoubleTapDown: d.phone
+                  ? (details) => _doubleTapAt = details.localPosition
+                  : null,
+              onDoubleTap: d.phone ? _onDoubleTap : null,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  if (engine != null) engine.view,
+                  if (_loading || _buffering)
+                    Center(
+                      child: CircularProgressIndicator(
+                        key: PlayerKeys.spinner,
+                        color: ChithramColors.of(context).accent,
+                      ),
                     ),
+                  if (d.phone) DoubleTapRipple(key: _rippleKey),
+                  PlayerOsd(
+                    visible: _osd && !_upNextShown,
+                    title: _request.title,
+                    subtitle: _request.subtitle,
+                    status: _statusLine,
+                    position: _position,
+                    duration: _duration,
+                    buffered: _buffered,
+                    live: _request.isLive,
+                    playing: _playing,
+                    scrubber: _scrubber,
+                    extras: _extras,
+                    onSeek: _commitScrub,
+                    onLive: () => _commitScrub(_duration),
+                    onToggle: () => unawaited(_toggle()),
+                    onPrevious: queue == null
+                        ? null
+                        : (queue.hasPrevious
+                              ? () => unawaited(_playPrevious())
+                              : null),
+                    onNext: queue == null ? null : () => unawaited(_playNext()),
+                    previousFocus: _previousFocus,
+                    nextFocus: _nextFocus,
+                    onTracks: _hasTrackChoice ? _openMenu : null,
+                    tracksFocus: _tracksFocus,
+                    sheetProvider: widget.sheetProvider,
                   ),
-                if (d.phone) DoubleTapRipple(key: _rippleKey),
-                PlayerOsd(
-                  visible: _osd && !_upNextShown,
-                  title: _request.title,
-                  subtitle: _request.subtitle,
-                  status: _statusLine,
-                  position: _position,
-                  duration: _duration,
-                  buffered: _buffered,
-                  live: _request.isLive,
-                  playing: _playing,
-                  scrubber: _scrubber,
-                  extras: _extras,
-                  onSeek: _commitScrub,
-                  onLive: () => _commitScrub(_duration),
-                  onToggle: () => unawaited(_toggle()),
-                  onPrevious: queue == null
-                      ? null
-                      : (queue.hasPrevious
-                            ? () => unawaited(_playPrevious())
-                            : null),
-                  onNext: queue == null ? null : () => unawaited(_playNext()),
-                  previousFocus: _previousFocus,
-                  nextFocus: _nextFocus,
-                  sheetProvider: widget.sheetProvider,
-                ),
-                if (_offer != null) _resumePrompt(_offer!),
-                if (_error != null) _errorPanel(),
-                if (_upNextShown && upNext != null)
-                  UpNextCard(
-                    key: ValueKey(upNext),
-                    next: upNext,
-                    onPlay: () => unawaited(_playNext()),
-                    onCancel: _cancelUpNext,
-                  ),
-              ],
+                  if (_menuOpen && !d.phone)
+                    TracksMenu(
+                      audio: _audioItems,
+                      subtitles: _tracks.subtitles,
+                      onAudio: (t) => unawaited(_pickAudio(t)),
+                      onSubtitle: (t) => unawaited(_pickSubtitle(t)),
+                    ),
+                  if (_offer != null) _resumePrompt(_offer!),
+                  if (_error != null) _errorPanel(),
+                  if (_upNextShown && upNext != null)
+                    UpNextCard(
+                      key: ValueKey(upNext),
+                      next: upNext,
+                      onPlay: () => unawaited(_playNext()),
+                      onCancel: _cancelUpNext,
+                    ),
+                ],
+              ),
             ),
           ),
         ),

@@ -26,6 +26,8 @@ class StreamFormat {
     this.isDrc = false,
     this.qualityLabel,
     this.audioSampleRate,
+    this.audioTrackId,
+    this.audioTrackName,
   });
 
   final int itag;
@@ -57,6 +59,21 @@ class StreamFormat {
   final String? qualityLabel;
   final int? audioSampleRate;
 
+  /// YouTube's id of the audio track, e.g. "hi.4"; null when the video has
+  /// a single track.
+  final String? audioTrackId;
+
+  /// The track's display name, e.g. "Hindi" or "English (United States) original".
+  final String? audioTrackName;
+
+  /// Language code of the audio track ("hi", "en-US"), from [audioTrackId].
+  String? get audioLanguage {
+    final id = audioTrackId;
+    if (id == null || id.isEmpty) return null;
+    final dot = id.indexOf('.');
+    return dot > 0 ? id.substring(0, dot) : id;
+  }
+
   bool get hasVideo => videoCodec != null;
   bool get hasAudio => audioCodec != null;
 
@@ -69,17 +86,17 @@ class StreamFormat {
   }
 
   Map<String, Object?> toJson() => {
-        'itag': itag,
-        'container': container,
-        'codecs': codecs,
-        'width': width,
-        'height': height,
-        'fps': fps,
-        'bitrate': bitrate,
-        'contentLength': contentLength,
-        'expires': expires?.toIso8601String(),
-        'hdr': hdr,
-      };
+    'itag': itag,
+    'container': container,
+    'codecs': codecs,
+    'width': width,
+    'height': height,
+    'fps': fps,
+    'bitrate': bitrate,
+    'contentLength': contentLength,
+    'expires': expires?.toIso8601String(),
+    'hdr': hdr,
+  };
 }
 
 class ThumbnailInfo {
@@ -148,7 +165,8 @@ class VideoStreams {
   /// The preview sprite spec (see `parseStoryboardSpec`); null when none.
   final String? storyboardSpec;
 
-  bool get hasFormats => muxed.isNotEmpty || video.isNotEmpty || audio.isNotEmpty;
+  bool get hasFormats =>
+      muxed.isNotEmpty || video.isNotEmpty || audio.isNotEmpty;
 
   /// Earliest expiry across formats, or null when unknown.
   DateTime? get expires {
@@ -160,7 +178,8 @@ class VideoStreams {
     return best;
   }
 
-  VideoStreams withAttempts(Tier winner, List<TierAttempt> attempts) => VideoStreams(
+  VideoStreams withAttempts(Tier winner, List<TierAttempt> attempts) =>
+      VideoStreams(
         videoId: videoId,
         tier: winner,
         userAgent: userAgent,
@@ -225,31 +244,40 @@ class VideoItem {
 
   /// For caches: [fromJson] reads it back.
   Map<String, Object?> toJson() => {
-        'id': videoId,
-        'title': title,
-        if (author.isNotEmpty) 'author': author,
-        if (channelId.isNotEmpty) 'channel': channelId,
-        if (duration != null) 'secs': duration!.inSeconds,
-        if (viewsText.isNotEmpty) 'views': viewsText,
-        if (isLive) 'live': true,
-        'thumbs': [
-          for (final t in thumbnails) {'url': t.url, if (t.width != null) 'w': t.width, if (t.height != null) 'h': t.height},
-        ],
-      };
+    'id': videoId,
+    'title': title,
+    if (author.isNotEmpty) 'author': author,
+    if (channelId.isNotEmpty) 'channel': channelId,
+    if (duration != null) 'secs': duration!.inSeconds,
+    if (viewsText.isNotEmpty) 'views': viewsText,
+    if (isLive) 'live': true,
+    'thumbs': [
+      for (final t in thumbnails)
+        {
+          'url': t.url,
+          if (t.width != null) 'w': t.width,
+          if (t.height != null) 'h': t.height,
+        },
+    ],
+  };
 
   static VideoItem fromJson(Map<String, Object?> j) => VideoItem(
-        videoId: j['id'] as String,
-        title: j['title'] as String,
-        author: j['author'] as String? ?? '',
-        channelId: j['channel'] as String? ?? '',
-        duration: j['secs'] == null ? null : Duration(seconds: j['secs'] as int),
-        viewsText: j['views'] as String? ?? '',
-        isLive: j['live'] as bool? ?? false,
-        thumbnails: [
-          for (final t in j['thumbs'] as List? ?? const [])
-            ThumbnailInfo((t as Map)['url'] as String, width: t['w'] as int?, height: t['h'] as int?),
-        ],
-      );
+    videoId: j['id'] as String,
+    title: j['title'] as String,
+    author: j['author'] as String? ?? '',
+    channelId: j['channel'] as String? ?? '',
+    duration: j['secs'] == null ? null : Duration(seconds: j['secs'] as int),
+    viewsText: j['views'] as String? ?? '',
+    isLive: j['live'] as bool? ?? false,
+    thumbnails: [
+      for (final t in j['thumbs'] as List? ?? const [])
+        ThumbnailInfo(
+          (t as Map)['url'] as String,
+          width: t['w'] as int?,
+          height: t['h'] as int?,
+        ),
+    ],
+  );
 }
 
 /// One page of results and the token for the next one (null at the end).

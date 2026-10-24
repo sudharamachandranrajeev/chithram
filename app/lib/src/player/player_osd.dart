@@ -18,6 +18,12 @@ const dvrMinimum = Duration(seconds: 60);
 /// Within this of the end of a DVR window counts as "at the live edge".
 const liveEdgeSlack = Duration(seconds: 15);
 
+/// How fast the display comes up on a key, touch or mouse move.
+const osdFadeIn = Duration(milliseconds: 150);
+
+/// How slowly it fades away when idle.
+const osdFadeOut = Duration(milliseconds: 500);
+
 /// Title, status line, controls, seek bar and times. Always in the tree (the
 /// position text is what tests read); it only fades. No blur, no shadows: the
 /// TV this runs on has 2 GB.
@@ -42,6 +48,8 @@ class PlayerOsd extends StatelessWidget {
     this.onNext,
     this.previousFocus,
     this.nextFocus,
+    this.onTracks,
+    this.tracksFocus,
     this.sheetProvider = networkSheet,
   });
 
@@ -65,6 +73,11 @@ class PlayerOsd extends StatelessWidget {
   final VoidCallback? onNext;
   final FocusNode? previousFocus;
   final FocusNode? nextFocus;
+
+  /// Opens the audio and subtitle menu; null hides the button (nothing to
+  /// choose).
+  final VoidCallback? onTracks;
+  final FocusNode? tracksFocus;
   final SheetProvider sheetProvider;
 
   @override
@@ -83,12 +96,14 @@ class PlayerOsd extends StatelessWidget {
         d.phone ||
         d.form == FormFactor.desktop ||
         onPrevious != null ||
-        onNext != null;
+        onNext != null ||
+        onTracks != null;
     return IgnorePointer(
       ignoring: !visible,
       child: AnimatedOpacity(
         opacity: visible ? 1 : 0,
-        duration: const Duration(milliseconds: 200),
+        duration: visible ? osdFadeIn : osdFadeOut,
+        curve: Curves.easeOut,
         child: Container(
           alignment: Alignment.bottomCenter,
           decoration: const BoxDecoration(
@@ -155,12 +170,21 @@ class PlayerOsd extends StatelessWidget {
                         ),
                         const SizedBox(width: 12),
                       ],
-                      if (onNext != null)
+                      if (onNext != null) ...[
                         _RoundButton(
                           key: PlayerKeys.next,
                           icon: Icons.skip_next_rounded,
                           focusNode: nextFocus,
                           onTap: onNext!,
+                        ),
+                        const SizedBox(width: 12),
+                      ],
+                      if (onTracks != null)
+                        _RoundButton(
+                          key: PlayerKeys.tracks,
+                          icon: Icons.subtitles_rounded,
+                          focusNode: tracksFocus,
+                          onTap: onTracks!,
                         ),
                     ],
                   ),

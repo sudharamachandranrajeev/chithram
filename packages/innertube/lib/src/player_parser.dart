@@ -71,6 +71,8 @@ StreamFormat? parseFormat(Json f, {required DateTime now, int? expiresInSeconds}
     isDrc: f['isDrc'] == true,
     qualityLabel: f['qualityLabel'] as String?,
     audioSampleRate: toInt(f['audioSampleRate']),
+    audioTrackId: track['id'] as String?,
+    audioTrackName: track['displayName'] as String?,
   );
 }
 

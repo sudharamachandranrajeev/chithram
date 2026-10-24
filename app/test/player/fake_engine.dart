@@ -17,6 +17,22 @@ class FakeEngine implements PlayerEngine {
   final bufferingC = StreamController<bool>.broadcast();
   final playingC = StreamController<bool>.broadcast();
   final errorC = StreamController<String>.broadcast();
+  final tracksC = StreamController<MediaTracks>.broadcast();
+
+  /// What the select methods were asked: 'audio:<id>', 'sub:<id>', 'sub:off'.
+  final selections = <String>[];
+
+  /// The preferences handed over before each [open].
+  final preferences = <TrackPreferences>[];
+
+  /// The tracks the next [emitTracks] marks selection on.
+  MediaTracks current = MediaTracks.none;
+
+  /// Publishes [t] as the media's tracks.
+  void emitTracks(MediaTracks t) {
+    current = t;
+    tracksC.add(t);
+  }
 
   @override
   Future<void> open(MediaSpec spec) async {
@@ -57,6 +73,39 @@ class FakeEngine implements PlayerEngine {
   Stream<bool> get playing => playingC.stream;
   @override
   Stream<String> get error => errorC.stream;
+
+  @override
+  Stream<MediaTracks> get tracks => tracksC.stream;
+
+  @override
+  Future<void> selectAudioTrack(String id) async {
+    selections.add('audio:$id');
+    emitTracks(
+      MediaTracks(
+        audio: [
+          for (final t in current.audio) t.copyWith(selected: t.id == id),
+        ],
+        subtitles: current.subtitles,
+      ),
+    );
+  }
+
+  @override
+  Future<void> selectSubtitleTrack(String? id) async {
+    selections.add('sub:${id ?? 'off'}');
+    emitTracks(
+      MediaTracks(
+        audio: current.audio,
+        subtitles: [
+          for (final t in current.subtitles) t.copyWith(selected: t.id == id),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Future<void> setTrackPreferences(TrackPreferences p) async =>
+      preferences.add(p);
 
   @override
   Widget get view => const SizedBox.expand();

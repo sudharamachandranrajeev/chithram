@@ -26,6 +26,10 @@ Future<void> _key(WidgetTester t, LogicalKeyboardKey key) async {
   await t.pump();
 }
 
+/// Brings the display back if it faded: the key that wakes it does nothing
+/// else. Up without a channel list never acts, so it is safe either way.
+Future<void> _wake(WidgetTester t) => _key(t, LogicalKeyboardKey.arrowUp);
+
 Future<void> _back(WidgetTester t) async {
   await t.binding.handlePopRoute();
   await t.pumpAndSettle();
@@ -47,6 +51,7 @@ void playerE2e() {
       expect(watch.elapsed, lessThan(const Duration(seconds: 10)), reason: 'open to 2 s');
 
       // Center pauses and resumes.
+      await _wake(t);
       await _key(t, LogicalKeyboardKey.enter);
       await settle(t, const Duration(seconds: 1));
       final paused = playerPosition(t);
@@ -56,6 +61,7 @@ void playerE2e() {
       await waitForPlayback(t, atLeast: paused + const Duration(seconds: 1));
 
       // Right seeks ahead by 10 s.
+      await _wake(t);
       await _key(t, LogicalKeyboardKey.arrowRight);
       await waitForPlayback(t, atLeast: const Duration(seconds: 10));
 
@@ -93,6 +99,7 @@ void playerE2e() {
       unawaited(openPlayer(context, _fixture('url:e2e-resume')));
       await t.pump();
       await waitForPlayback(t);
+      await _wake(t);
       for (var i = 0; i < 4; i++) {
         await _key(t, LogicalKeyboardKey.arrowRight);
         await settle(t, const Duration(milliseconds: 500));

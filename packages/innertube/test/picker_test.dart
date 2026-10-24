@@ -79,4 +79,14 @@ void main() {
         tier: Tier.visionos, userAgent: visionAgent, now: DateTime.utc(2026, 10, 20));
     expect(pickFormats(live, const DeviceCaps()).isEmpty, isTrue);
   });
+
+  test('audio tracks: the best format of each language, the original first', () {
+    final tracks = pickAudioTracks(streams, const DeviceCaps());
+    expect(tracks.map((f) => f.itag), [251, 251]);
+    expect(tracks.first.isDefaultTrack, isTrue);
+    expect(tracks.first.audioTrackId, isNull);
+    expect(tracks.last.audioTrackId, 'hi.4');
+    expect(tracks.last.audioLanguage, 'hi');
+    expect(tracks.last.audioTrackName, 'Hindi');
+  });
 }

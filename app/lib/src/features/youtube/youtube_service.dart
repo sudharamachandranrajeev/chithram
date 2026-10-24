@@ -221,10 +221,26 @@ class YouTubeService {
         'YouTube offered no playable stream for this video.',
       );
     final audio = picked.isAdaptive ? picked.audio : null;
+    // A dubbed video: one choice per language, for the player's audio menu.
+    final tracks = audio == null
+        ? const <StreamFormat>[]
+        : pickAudioTracks(streams, deviceCaps(caps));
     return MediaSpec(
       videoUrl: video.url.toString(),
       audioUrl: audio?.url.toString(),
       headers: headers,
+      audioChoices: [
+        if (tracks.length > 1)
+          for (final t in tracks)
+            AudioChoice(
+              url: t.audioTrackId == audio!.audioTrackId
+                  ? audio.url.toString()
+                  : t.url.toString(),
+              language: normalizeLanguage(t.audioLanguage),
+              label: t.audioTrackName,
+              isDefault: t.isDefaultTrack,
+            ),
+      ],
     );
   }
 

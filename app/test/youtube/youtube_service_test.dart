@@ -49,6 +49,8 @@ StreamFormat fmt(
   int? h,
   bool hdr = false,
   int bitrate = 1000,
+  String? track,
+  bool original = true,
 }) => StreamFormat(
   itag: itag,
   url: Uri.parse('https://gv.example/$itag'),
@@ -58,6 +60,9 @@ StreamFormat fmt(
   height: h,
   hdr: hdr,
   bitrate: bitrate,
+  audioTrackId: track,
+  audioTrackName: track == null ? null : 'Name $track',
+  isDefaultTrack: original,
 );
 
 VideoStreams streams({
@@ -146,6 +151,36 @@ void main() {
       expect(spec.audioUrl, 'https://gv.example/3');
       expect(spec.headers, {'User-Agent': 'UA/1', 'Range': 'bytes=0-'});
       expect(spec.isLive, isFalse);
+    });
+
+    test('a dubbed video lists one audio choice per language', () {
+      final spec = YouTubeService.mediaSpecFor(
+        streams(
+          video: [fmt(1, v: VideoCodec.h264, h: 720)],
+          audio: [
+            fmt(3, a: AudioCodec.opus, track: 'en-US.4'),
+            fmt(4, a: AudioCodec.opus, track: 'ml.3', original: false),
+            fmt(5, a: AudioCodec.opus, track: 'ta.3', original: false),
+          ],
+        ),
+        caps,
+      );
+      expect(spec.audioUrl, 'https://gv.example/3');
+      expect(spec.audioChoices.map((c) => c.language), ['en', 'ml', 'ta']);
+      expect(spec.audioChoices.first.url, spec.audioUrl);
+      expect(spec.audioChoices.first.isDefault, isTrue);
+      expect(spec.audioChoices[1].label, 'Name ml.3');
+    });
+
+    test('a single audio track lists no choices', () {
+      final spec = YouTubeService.mediaSpecFor(
+        streams(
+          video: [fmt(1, v: VideoCodec.h264, h: 720)],
+          audio: [fmt(3, a: AudioCodec.opus), fmt(6, a: AudioCodec.aac)],
+        ),
+        caps,
+      );
+      expect(spec.audioChoices, isEmpty);
     });
 
     test('live: the HLS manifest, no Range header', () {

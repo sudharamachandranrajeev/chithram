@@ -72,6 +72,18 @@ class ChithramPlayerPlugin : FlutterPlugin, ActivityAware, MethodChannel.MethodC
                             )
                             result.success(null)
                         }
+                        "selectTrack" -> {
+                            host.selectTrack(call.argument<String>("kind") ?: "audio", call.argument<String>("trackId"))
+                            result.success(null)
+                        }
+                        "trackPreferences" -> {
+                            host.setPreferences(
+                                audioLanguage = call.argument<String>("audioLanguage"),
+                                textLanguage = call.argument<String>("textLanguage"),
+                                text = call.argument<Boolean>("text") ?: false,
+                            )
+                            result.success(null)
+                        }
                         "play" -> { host.play(); result.success(null) }
                         "pause" -> { host.pause(); result.success(null) }
                         "seek" -> {

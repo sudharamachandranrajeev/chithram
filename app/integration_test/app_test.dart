@@ -106,7 +106,8 @@ void main() {
       }
     } else {
       await press(t, LogicalKeyboardKey.arrowDown); // Search
-      await press(t, LogicalKeyboardKey.arrowRight); // into the keyboard
+      await press(t, LogicalKeyboardKey.arrowRight); // the search bar
+      await press(t, LogicalKeyboardKey.select); // drops the keyboard down
       for (final c in 'sintel'.split('')) {
         await dpadTo(t, find.byKey(ValueKey('key-$c')));
         await press(t, LogicalKeyboardKey.select);

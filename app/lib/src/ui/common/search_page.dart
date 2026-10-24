@@ -15,25 +15,21 @@ import 'dims.dart';
 import '../phone/phone_search_page.dart';
 import '../tv/focus_card.dart';
 import '../tv/focus_rail.dart';
-import '../tv/keyboard.dart';
+import '../tv/search_keyboard.dart';
 import 'form_factor.dart';
 import 'text_entry.dart';
 
-/// Search with an on-screen D-pad keyboard on TV and desktop (a TextField is
+/// Search on TV and desktop: the search bar opens an on-screen D-pad keyboard
+/// that drops down under it, with suggestions as you type (a TextField is
 /// avoided on TV: flutter/flutter#147772). On desktop, typing on a hardware
-/// keyboard also works: letters, digits and Backspace. A phone uses a real
-/// TextField, so the system keyboard appears.
+/// keyboard also works. A phone uses a real TextField, so the system keyboard
+/// appears.
 ///
 /// Pressing Search looks up YouTube videos and, on the global page, matching
 /// Live TV channels. Nothing is searched while typing. [youtubeOnly] gives the
 /// YouTube section: same keyboard and results, without the channel rail.
 class SearchPage extends StatelessWidget {
-  const SearchPage({
-    super.key,
-    required this.focus,
-    this.youtubeOnly = false,
-    this.initialQuery,
-  });
+  const SearchPage({super.key, required this.focus, this.youtubeOnly = false, this.initialQuery});
 
   final SectionFocus focus;
   final bool youtubeOnly;
@@ -60,30 +56,25 @@ class _TvSearchPage extends StatefulWidget {
 }
 
 class _SearchPageState extends State<_TvSearchPage> {
-  String _query = '';
+  late final _query = ValueNotifier(widget.initialQuery ?? '');
+  final _bar = GlobalKey();
   late final _field = TextEditingController(text: widget.initialQuery);
   YouTubeSearchController? _results;
   List<StoredChannel> _channels = const [];
 
   @override
-  void initState() {
-    super.initState();
-    _query = widget.initialQuery ?? '';
-  }
-
-  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_results == null) {
-      _results = YouTubeSearchController(AppServices.of(context).youtube)
-        ..addListener(_changed);
-      if (_query.trim().isNotEmpty) Future.microtask(_search);
+      _results = YouTubeSearchController(AppServices.of(context).youtube)..addListener(_changed);
+      if (_query.value.trim().isNotEmpty) Future.microtask(_search);
     }
   }
 
   @override
   void dispose() {
     _field.dispose();
+    _query.dispose();
     _results?.dispose();
     super.dispose();
   }
@@ -93,7 +84,7 @@ class _SearchPageState extends State<_TvSearchPage> {
   }
 
   Future<void> _search() async {
-    final q = _query;
+    final q = _query.value;
     final results = _results!;
     final iptv = AppServices.of(context).iptv;
     final run = results.search(q);
@@ -115,22 +106,28 @@ class _SearchPageState extends State<_TvSearchPage> {
   }
 
   Future<void> _openLink() async {
-    final text = await askText(
-      context,
-      title: 'Open link',
-      hint: 'YouTube link, playlist, magnet or media URL',
-    );
+    final text = await askText(context, title: 'Open link', hint: 'YouTube link, playlist, magnet or media URL');
     if (text == null || text.isEmpty || !mounted) return;
     await handleIntake(context, TextPayload(text));
   }
 
-  void _add(String c) => setState(() => _query += c);
+  void _add(String c) => _query.value += c;
   void _backspace() {
-    if (_query.isNotEmpty)
-      setState(() => _query = _query.substring(0, _query.length - 1));
+    final q = _query.value;
+    if (q.isNotEmpty) _query.value = q.substring(0, q.length - 1);
   }
 
-  void _clear() => setState(() => _query = '');
+  Future<void> _openKeyboard() async {
+    final box = _bar.currentContext?.findRenderObject() as RenderBox?;
+    if (box == null) return;
+    await showSearchKeyboard(
+      context,
+      anchor: box.localToGlobal(Offset.zero) & box.size,
+      query: _query,
+      suggest: AppServices.of(context).youtube.suggest,
+      onSubmit: _search,
+    );
+  }
 
   KeyEventResult _onKey(FocusNode node, KeyEvent event) {
     if (Dims.of(context).phone) return KeyEventResult.ignored;
@@ -140,7 +137,7 @@ class _SearchPageState extends State<_TvSearchPage> {
       return KeyEventResult.handled;
     }
     final ch = event.character;
-    if (ch != null && RegExp(r'^[a-zA-Z0-9]$').hasMatch(ch)) {
+    if (ch != null && RegExp(r'^[a-zA-Z0-9 ]$').hasMatch(ch)) {
       _add(ch.toLowerCase());
       return KeyEventResult.handled;
     }
@@ -153,9 +150,7 @@ class _SearchPageState extends State<_TvSearchPage> {
     final pad = d.phone ? 12.0 : 28.0;
     final results = _results!;
     final title = widget.youtubeOnly ? 'YouTube' : 'Search';
-    final subtitle = widget.youtubeOnly
-        ? 'Search YouTube.'
-        : 'Unified search across your sources.';
+    final subtitle = widget.youtubeOnly ? 'Search YouTube.' : 'Unified search across your sources.';
     return Focus(
       canRequestFocus: false,
       skipTraversal: true,
@@ -163,9 +158,7 @@ class _SearchPageState extends State<_TvSearchPage> {
       child: CustomScrollView(
         // The first row of results is built (and reachable by D-pad) at once.
         scrollCacheExtent: const ScrollCacheExtent.pixels(600),
-        key: PageStorageKey<String>(
-          '${widget.youtubeOnly ? 'youtube' : 'search'}-scroll',
-        ),
+        key: PageStorageKey<String>('${widget.youtubeOnly ? 'youtube' : 'search'}-scroll'),
         slivers: [
           SliverPadding(
             padding: EdgeInsets.fromLTRB(pad, 16, pad, 0),
@@ -175,113 +168,100 @@ class _SearchPageState extends State<_TvSearchPage> {
                 children: [
                   Text(
                     title,
-                    style: TextStyle(
-                      fontSize: d.t(32),
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: TextStyle(fontSize: d.t(32), fontWeight: FontWeight.w700),
                   ),
                   Text(
                     subtitle,
-                    style: TextStyle(
-                      color: ChithramColors.textDim,
-                      fontSize: d.t(14),
-                    ),
+                    style: TextStyle(color: ChithramColors.textDim, fontSize: d.t(14)),
                   ),
                   const SizedBox(height: 14),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      color: ChithramColors.surface,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: ChithramColors.surfaceHigh),
-                    ),
-                    child: d.phone
-                        ? TextField(
-                            key: const ValueKey('search-field'),
-                            controller: _field,
-                            autofocus: true,
-                            textInputAction: TextInputAction.search,
-                            keyboardType: TextInputType.text,
-                            style: TextStyle(fontSize: d.t(18)),
-                            decoration: InputDecoration.collapsed(
-                              hintText: 'Type a title',
-                              hintStyle: TextStyle(
-                                color: ChithramColors.textDim,
-                                fontSize: d.t(18),
-                              ),
-                            ),
-                            onChanged: (v) => _query = v,
-                            onSubmitted: (v) {
-                              _query = v;
-                              _search();
-                            },
-                          )
-                        : Stack(
+                  if (d.phone)
+                    _BarBox(
+                      child: TextField(
+                        key: const ValueKey('search-field'),
+                        controller: _field,
+                        autofocus: true,
+                        textInputAction: TextInputAction.search,
+                        keyboardType: TextInputType.text,
+                        style: TextStyle(fontSize: d.t(18)),
+                        decoration: InputDecoration.collapsed(
+                          hintText: 'Type a title',
+                          hintStyle: TextStyle(color: ChithramColors.textDim, fontSize: d.t(18)),
+                        ),
+                        onChanged: (v) => _query.value = v,
+                        onSubmitted: (v) {
+                          _query.value = v;
+                          _search();
+                        },
+                      ),
+                    )
+                  else
+                    KeyedSubtree(
+                      key: _bar,
+                      child: FocusCard(
+                        key: const ValueKey('search-bar'),
+                        focusNode: widget.focus.entry,
+                        section: widget.focus,
+                        radius: 14,
+                        onActivate: _openKeyboard,
+                        child: _BarBox(
+                          child: Row(
                             children: [
-                              if (_query.isEmpty)
-                                Text(
-                                  'Type a title',
-                                  style: TextStyle(
-                                    color: ChithramColors.textDim,
-                                    fontSize: d.t(18),
+                              Icon(Icons.search_rounded, size: d.t(22), color: ChithramColors.textDim),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: ValueListenableBuilder<String>(
+                                  valueListenable: _query,
+                                  builder: (context, q, _) => Stack(
+                                    children: [
+                                      if (q.isEmpty)
+                                        Text(
+                                          'Type a title',
+                                          style: TextStyle(color: ChithramColors.textDim, fontSize: d.t(18)),
+                                        ),
+                                      Text(
+                                        q,
+                                        key: const ValueKey('search-query'),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(fontSize: d.t(18), fontWeight: FontWeight.w500),
+                                      ),
+                                    ],
                                   ),
-                                ),
-                              Text(
-                                _query,
-                                key: const ValueKey('search-query'),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: d.t(18),
-                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
                             ],
                           ),
-                  ),
-                  const SizedBox(height: 14),
-                  if (!d.phone)
-                    OnScreenKeyboard(
-                      focus: widget.focus,
-                      onChar: _add,
-                      onBackspace: _backspace,
-                      onClear: _clear,
-                    ),
-                  const SizedBox(height: 6),
-                  Wrap(
-                    spacing: 12,
-                    runSpacing: 10,
-                    children: [
-                      _ActionCard(
-                        key: const ValueKey('search-go'),
-                        focus: widget.focus,
-                        icon: Icons.search_rounded,
-                        label: 'Search',
-                        onActivate: _search,
-                      ),
-                      if (!widget.youtubeOnly) ...[
-                        _ActionCard(
-                          key: const ValueKey('search-open-link'),
-                          focus: widget.focus,
-                          icon: Icons.link_rounded,
-                          label: 'Open link',
-                          onActivate: _openLink,
                         ),
-                        if (_query.trim().isNotEmpty)
+                      ),
+                    ),
+                  const SizedBox(height: 14),
+                  // Search itself is the keyboard's Search key.
+                  if (!widget.youtubeOnly)
+                    ValueListenableBuilder<String>(
+                      valueListenable: _query,
+                      builder: (context, query, _) => Wrap(
+                        spacing: 12,
+                        runSpacing: 10,
+                        children: [
                           _ActionCard(
-                            key: const ValueKey('search-find-sources'),
+                            key: const ValueKey('search-open-link'),
                             focus: widget.focus,
-                            icon: Icons.travel_explore_rounded,
-                            label: "Find sources for '${_query.trim()}'",
-                            onActivate: () => openFindSources(context, TextQuery(_query.trim())),
+                            icon: Icons.link_rounded,
+                            label: 'Open link',
+                            onActivate: _openLink,
                           ),
-                      ],
-                    ],
-                  ),
+                          if (query.trim().isNotEmpty)
+                            _ActionCard(
+                              key: const ValueKey('search-find-sources'),
+                              focus: widget.focus,
+                              icon: Icons.travel_explore_rounded,
+                              label: "Find sources for '${query.trim()}'",
+                              onActivate: () => openFindSources(context, TextQuery(query.trim())),
+                            ),
+                        ],
+                      ),
+                    ),
                   const SizedBox(height: 10),
                   _status(d, results),
                 ],
@@ -295,8 +275,7 @@ class _SearchPageState extends State<_TvSearchPage> {
                 count: _channels.length,
                 section: widget.focus,
                 onSelect: _openChannel,
-                itemBuilder: (context, i) =>
-                    PosterTile(label: _channels[i].name, hue: 200.0 + i * 23),
+                itemBuilder: (context, i) => PosterTile(label: _channels[i].name, hue: 200.0 + i * 23),
               ),
             ),
           SliverPadding(
@@ -321,13 +300,10 @@ class _SearchPageState extends State<_TvSearchPage> {
       text = results.error;
     } else if (results.searched && results.items.isEmpty && _channels.isEmpty) {
       text = 'No results for "${results.query}".';
-    } else if (!results.searched) {
-      text = 'Choose Search to look up "$_query".';
     } else {
       text = null;
     }
-    if (text == null || (_query.isEmpty && !results.searched))
-      return const SizedBox.shrink();
+    if (text == null || (_query.value.isEmpty && !results.searched)) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Text(
@@ -337,6 +313,25 @@ class _SearchPageState extends State<_TvSearchPage> {
       ),
     );
   }
+}
+
+/// The search bar's frame.
+class _BarBox extends StatelessWidget {
+  const _BarBox({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: double.infinity,
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+    decoration: BoxDecoration(
+      color: ChithramColors.surface,
+      borderRadius: BorderRadius.circular(14),
+      border: Border.all(color: ChithramColors.surfaceHigh),
+    ),
+    child: child,
+  );
 }
 
 class _ActionCard extends StatelessWidget {
@@ -383,8 +378,7 @@ class _ActionCard extends StatelessWidget {
 /// Opens search with [text] already typed in and searched (the "Search for
 /// this text" action of the intake path).
 Future<void> openSearch(BuildContext context, String text) {
-  return Navigator.of(context)
-      .push(MaterialPageRoute<void>(builder: (_) => _SearchRoute(text: text)));
+  return Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => _SearchRoute(text: text)));
 }
 
 class _SearchRoute extends StatefulWidget {

@@ -29,6 +29,10 @@ class FixtureBrowse extends InnertubeBrowse {
       videos('r${videoId.substring(9)}', 8);
 
   @override
+  Future<List<String>> suggest(String prefix) async =>
+      prefix.trim().isEmpty ? const [] : ['${prefix.trim()} fixture', '${prefix.trim()} songs'];
+
+  @override
   Future<Page<VideoItem>> search(
     String query, {
     String? continuation,

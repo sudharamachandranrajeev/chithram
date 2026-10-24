@@ -139,4 +139,19 @@ void main() {
     expect(back.toJson(), v.toJson());
     expect(VideoItem.fromJson({'id': 'b', 'title': 'B'}).thumbnails, isEmpty);
   });
+  test('suggest: JSONP and plain JSON answers; nothing for an empty prefix', () async {
+    late Uri asked;
+    final client = MockClient((request) async {
+      asked = request.url;
+      return http.Response(
+          'window.google.ac.h(["mala",[["malayalam song",0,[512]],["malayalam news live",0,[512]]],{"k":1}])', 200);
+    });
+    final browse = InnertubeBrowse(client: client, region: 'IE');
+    expect(await browse.suggest(' mala '), ['malayalam song', 'malayalam news live']);
+    expect(asked.queryParameters, containsPair('q', 'mala'));
+    expect(asked.queryParameters, containsPair('gl', 'IE'));
+    expect(await browse.suggest('  '), isEmpty);
+    expect(parseSuggestions('["a",["ab","ac"],[],{}]'), ['ab', 'ac']);
+    expect(parseSuggestions('<html>'), isEmpty);
+  });
 }

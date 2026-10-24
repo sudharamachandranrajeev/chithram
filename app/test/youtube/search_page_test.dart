@@ -10,6 +10,13 @@ import 'package:iptv/iptv.dart' hide HttpStatusException;
 
 class _Browse extends yt.InnertubeBrowse {
   final queries = <String>[];
+  final suggested = <String>[];
+
+  @override
+  Future<List<String>> suggest(String prefix) async {
+    suggested.add(prefix);
+    return ['$prefix videos', '$prefix live'];
+  }
 
   @override
   Future<yt.Page<yt.VideoItem>> search(
@@ -86,7 +93,12 @@ Future<void> _pump(
   await t.pumpAndSettle();
 }
 
+/// Opens the keyboard from the search bar if it is closed, then types.
 Future<void> _type(WidgetTester t, String text) async {
+  if (find.byKey(const ValueKey('search-go')).evaluate().isEmpty) {
+    await t.tap(find.byKey(const ValueKey('search-bar')));
+    await t.pumpAndSettle();
+  }
   for (final c in text.split('')) {
     await t.tap(find.byKey(ValueKey('key-$c')));
     await t.pump();
@@ -128,6 +140,50 @@ void main() {
     expect(find.text('Live TV channels'), findsNothing);
     expect(find.byKey(const ValueKey('search-open-link')), findsNothing);
     expect(find.text('YouTube'), findsOneWidget);
+  });
+
+  testWidgets('the keyboard drops down from the search bar only when it is pressed', (t) async {
+    final (services, _) = await _services();
+    await _pump(t, services, youtubeOnly: true);
+    expect(find.byKey(const ValueKey('key-a')), findsNothing);
+    await t.tap(find.byKey(const ValueKey('search-bar')));
+    await t.pumpAndSettle();
+    expect(find.byKey(const ValueKey('key-a')), findsOneWidget);
+    // The panel sits under the bar and leaves the rest of the screen visible.
+    final bar = t.getRect(find.byKey(const ValueKey('search-bar')));
+    final keys = t.getRect(find.byKey(const ValueKey('key-q')));
+    expect(keys.top, greaterThan(bar.bottom));
+    expect(t.getRect(find.byKey(const ValueKey('search-go'))).bottom, lessThan(1080 * 0.75));
+
+    await _type(t, 'ab');
+    await t.tap(find.byKey(const ValueKey('key-mode')));
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const ValueKey('key-1')));
+    await t.pumpAndSettle();
+    expect(t.widget<Text>(find.byKey(const ValueKey('search-query'))).data, 'ab1');
+
+    // Back closes the panel and keeps the text.
+    await t.binding.handlePopRoute();
+    await t.pumpAndSettle();
+    expect(find.byKey(const ValueKey('key-a')), findsNothing);
+    expect(t.widget<Text>(find.byKey(const ValueKey('search-query'))).data, 'ab1');
+  });
+
+  testWidgets('suggestions follow the typing; picking one searches it', (t) async {
+    final (services, browse) = await _services();
+    await _pump(t, services, youtubeOnly: true);
+    await _type(t, 'ca');
+    await t.pump(const Duration(milliseconds: 100));
+    await _type(t, 't');
+    await t.pumpAndSettle();
+    expect(browse.suggested, ['cat'], reason: 'asked once, after the pause');
+    expect(find.text('cat videos'), findsOneWidget);
+
+    await t.tap(find.byKey(const ValueKey('suggestion-1')));
+    await t.pumpAndSettle();
+    expect(browse.queries, ['cat live']);
+    expect(find.byKey(const ValueKey('key-a')), findsNothing);
+    expect(find.text('Result 0 of cat live'), findsOneWidget);
   });
 
   testWidgets('a failing search shows the message', (t) async {

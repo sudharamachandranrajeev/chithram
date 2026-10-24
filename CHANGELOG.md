@@ -30,6 +30,10 @@ Release notes are taken from the section of the version being tagged.
   "Add a source". Lists are cached (3 h, 12 h, 24 h) and refreshed on open, pull to refresh and Retry. Search plugins
   join through a small `PopularSource` seam once the plugin registry lands.
 
+- Search on TV and desktop: the keyboard is hidden until you press the search bar, then drops down under it as a
+  compact frosted panel (letters, a symbols page, space, Clear and Search) with suggestions as you type. Keys tick,
+  click and chime on Android TV; Settings > "Keyboard sounds" turns the sounds off.
+
 ### Changed
 - The TV, phone and shared UI code now live in `ui/tv`, `ui/phone` and `ui/common`.
 

@@ -36,7 +36,7 @@ void main() {
     ));
     await t.pump();
 
-    expect(find.byType(OnScreenKeyboard), findsNothing);
+    expect(find.byKey(const ValueKey('search-bar')), findsNothing);
     final field = find.byKey(const ValueKey('search-field'));
     expect(field, findsOneWidget);
     expect(t.widget<TextField>(field).focusNode?.hasFocus ?? true, isTrue);

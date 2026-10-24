@@ -40,7 +40,8 @@ before=$(du -sk "$py" | cut -f1)
 find "$py" -type d \( -name test -o -name tests -o -name idlelib -o -name tkinter -o -name ensurepip -o -name pydoc_data \
   -o -name turtledemo -o -name __pycache__ -o -name 'config-3*' -o -name include -o -name share \) -prune -exec rm -rf {} +
 find "$py" -type d -name site-packages -exec sh -c 'rm -rf "$1"/*' _ {} \;
-rm -rf "$py"/lib/tcl* "$py"/lib/tk* "$py"/lib/itcl* "$py"/lib/thread* "$py"/lib/Tix* "$py"/tcl 2>/dev/null || true
+# Tcl/Tk. (On Windows lib/ is Lib/: only versioned Tcl folders, never Lib/threading.py.)
+rm -rf "$py"/lib/tcl[0-9]* "$py"/lib/tk[0-9]* "$py"/lib/itcl[0-9]* "$py"/lib/thread[0-9]* "$py"/lib/Tix[0-9]* "$py"/tcl 2>/dev/null || true
 find "$py" \( -name '_tkinter*' -o -name 'tcl*.dll' -o -name 'tk*.dll' -o -name '*.a' -o -name 'turtle.py' -o -name 'pydoc.py' \) -delete 2>/dev/null || true
 if [[ $os == linux ]]; then
   # The interpreter is statically linked; the shared libpython and the Tcl/Tk libraries are dead weight.

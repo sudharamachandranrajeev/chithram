@@ -40,16 +40,20 @@ Future<void> main(List<String> args) async {
   }
   // "Search for this text" in the intake prompt.
   IntakeHooks.search = openSearch;
-  runApp(ChithramApp(services: await AppServices.open(), formFactor: form));
+  final services = await AppServices.open();
+  runApp(ChithramApp(services: services, formFactor: form));
   // After the first frame: the cold-start mark, then the image cache budget
   // from the device's RAM. Nothing here runs before Home is on screen.
   WidgetsBinding.instance.addPostFrameCallback((_) {
     Perf.mark('first_frame');
     unawaited(AppChannel.reportFullyDrawn());
     unawaited(_sizeImageCache());
+    unawaited(services.plugins.start()); // loads plugins, then the daily repo check after 30 s
   });
   final smoke = smokeTarget(args);
   if (smoke != null) unawaited(runSmoke(smoke));
+  final novaSmoke = novaSmokeTarget(args);
+  if (novaSmoke != null) unawaited(runNovaSmoke(novaSmoke));
 }
 
 Future<void> _sizeImageCache() async {

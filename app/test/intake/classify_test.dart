@@ -31,6 +31,14 @@ void main() {
     ('magnet:?xt=urn:btih:abc', IntakeKind.text),
     ('magnet:?xt=urn:sha1:$_hex', IntakeKind.text),
     ('magnet:?dn=only-a-name', IntakeKind.text),
+    // Search plugins: a .py file starts the unsigned flow, a plugins.json the repo flow.
+    ('https://example.org/plugins/fx_site.py', IntakeKind.pluginFile),
+    ('https://example.org/plugins/Fx_Site.PY?raw=1', IntakeKind.pluginFile),
+    ('https://example.org/plugins/plugins.json', IntakeKind.pluginRepo),
+    ('http://192.168.1.5:8000/plugins.json', IntakeKind.pluginRepo),
+    ('https://example.org/myplugins.json', IntakeKind.text),
+    ('https://example.org/readme.py.txt', IntakeKind.text),
+    ('file:///home/me/plugin.py', IntakeKind.text),
     // Torrent files, playlists, media
     ('https://example.org/files/film.torrent', IntakeKind.torrentUrl),
     ('http://example.org/film.TORRENT?x=1', IntakeKind.torrentUrl),

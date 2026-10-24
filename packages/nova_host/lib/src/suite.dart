@@ -54,6 +54,12 @@ class FixtureServer {
               '<a class="r" href="http://example.test/t2.torrent" data-size="700 MB" data-s="3" data-l="1">Fixture item 2</a>'
               '<a class="r" href="magnet:?xt=urn:btih:${'b' * 40}" data-size="42 MiB" data-s="0" data-l="0">Fixture item 3</a>'
               '</body></html>');
+        case '/a.torrent':
+          res.headers.contentType = ContentType.binary;
+          res.add(utf8.encode('d4:infod4:name1:xee'));
+        case '/big.torrent':
+          res.headers.contentType = ContentType.binary;
+          res.add(List<int>.filled(3 * 1024 * 1024, 120));
         case '/redirect-foreign':
           res.statusCode = 302;
           res.headers.set('location', 'http://other.test:$port/steal');

@@ -21,6 +21,44 @@ class fx_bigprint(object):
         for _ in range(800):            # ~50 MB through the raw fd: host must cut it off
             os.write(1, chunk)
 ''',
+  'fx_dated': r'''# Test fixture engine: results with and without pub_date, local fixture server only.
+import re
+from helpers import retrieve_url, download_file
+from novaprinter import prettyPrinter
+
+
+class fx_dated(object):
+    url = "__BASE__"
+    name = "Fixture Dated"
+    supported_categories = {"all": "0", "movies": "1", "tv": "2"}
+
+    def search(self, what, cat="all"):
+        retrieve_url(self.url + "/search?q=" + what)
+        base = {"engine_url": self.url, "size": "1 GB", "seeds": 5, "leech": 1}
+        prettyPrinter(dict(base, link="magnet:?xt=urn:btih:" + "c" * 40, name="Dated item", pub_date=1760000000,
+                           desc_link=self.url + "/item/1"))
+        prettyPrinter(dict(base, link="magnet:?xt=urn:btih:" + "d" * 40, name="Undated item"))
+        prettyPrinter(dict(base, link="magnet:?xt=urn:btih:" + "e" * 40, name="Bad date item", pub_date="soon"))
+        prettyPrinter(dict(base, link="magnet:?xt=urn:btih:" + "f" * 40, name="Negative date item", pub_date=-5))
+
+    def download_torrent(self, info):
+        print(download_file(info))
+''',
+  'fx_dl': r'''# Test fixture engine: download_torrent through the host broker (local fixture server only).
+from helpers import download_file
+
+
+class fx_dl(object):
+    url = "__BASE__"
+    name = "Fixture Download"
+    supported_categories = {"all": "0"}
+
+    def search(self, what, cat="all"):
+        pass
+
+    def download_torrent(self, info):
+        print(download_file(info))
+''',
   'fx_flood': r'''from helpers import retrieve_url
 from novaprinter import prettyPrinter
 

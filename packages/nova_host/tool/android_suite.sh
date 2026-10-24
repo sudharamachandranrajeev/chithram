@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Runs on the Android TV emulator (called by spike-nova.yml): installs the debug
-# APK, opens the nova spike route (which auto-runs the acceptance suite), waits
+# Runs on the Android TV emulator (called by nova.yml): installs the debug APK,
+# starts the app with --smoke-nova-full (which runs the acceptance suite), waits
 # for SUITE_DONE in logcat and writes a summary.
 set -uo pipefail
 apk=$1
@@ -10,7 +10,7 @@ sum=${GITHUB_STEP_SUMMARY:-$out/summary.md}
 
 adb install -r -t "$apk" || { echo "install failed"; exit 1; }
 adb logcat -c
-adb shell am start -W -n dev.chithram.chithram/.MainActivity --es route /spike/nova
+adb shell am start -W -n dev.chithram.chithram/.MainActivity --esal dart_entrypoint_args --smoke-nova-full
 done_flag=0
 for _ in $(seq 1 160); do
   sleep 5

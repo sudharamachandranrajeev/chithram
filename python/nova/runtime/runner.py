@@ -7,11 +7,14 @@ All HTTP goes through the host broker (nova_broker); the process is expected to
 run inside the native sandbox (seccomp/Landlock, AppContainer, :nova service).
 
 Host -> runner:  {"op":"search","id":"x","src":"<py source>","query":"..","cat":"all"}
+                 {"op":"describe","module":"x","src":"<py source>"}   (meta only, no network)
+                 {"op":"download","module":"x","src":"<py source>","url":".."}
                  {"op":"http_resp","id":N,"status":200,"headers":{},"body_b64":"..","error":null}
                  {"op":"quit"}
 Runner -> host:  {"op":"meta",...} {"op":"http",...} {"op":"result","r":{..}}
                  {"op":"log","msg":".."} {"op":"error","msg":".."}
                  {"op":"done","count":n,"rejected":m,"truncated":bool}
+                 download: {"op":"dl","i":n,"b64":".."}* then {"op":"downloaded","size":n,"chunks":k}
 """
 import os
 import sys
@@ -21,6 +24,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 
 MAX_RESULTS = 500
 MAX_STR = 2048
+MAX_TORRENT = 2 * 1024 * 1024  # a downloaded .torrent file
+DL_CHUNK = 32 * 1024  # raw bytes per "dl" line (the host caps a line at 64 KiB)
 _SCHEMES = ("http://", "https://", "magnet:")
 
 
@@ -86,8 +91,12 @@ class Runner:
             out["desc_link"] = self._s(d["desc_link"])
             if not out["desc_link"].lower().startswith(_SCHEMES):
                 del out["desc_link"]
-        if isinstance(d.get("pub_date"), int):
-            out["pub_date"] = d["pub_date"]
+        pd = d.get("pub_date")
+        if isinstance(pd, str) and pd.strip().isdigit():
+            pd = int(pd)
+        # nova3: unix seconds. Anything else (or out of range) is dropped, not rejected.
+        if isinstance(pd, int) and not isinstance(pd, bool) and 0 < pd < 4102444800:
+            out["pub_date"] = pd
         return out
 
     def sink(self, d):
@@ -138,7 +147,7 @@ class Runner:
             nova_audit.install(roots)
 
     # -- commands --------------------------------------------------------------
-    def search(self, msg):
+    def _load(self, msg):
         name = msg.get("module") or msg.get("engine") or "engine"
         src = msg["src"]
         ns = {"__name__": "engines." + name, "__builtins__": __builtins__}
@@ -155,17 +164,33 @@ class Runner:
         self.t.send({"op": "meta", "uid": os.getuid() if hasattr(os, "getuid") else -1, "name": str(getattr(eng, "name", name))[:128],
                      "url": str(getattr(eng, "url", ""))[:512],
                      "categories": sorted(map(str, getattr(eng, "supported_categories", {}) or {}))[:32]})
+        return eng
+
+    def search(self, msg):
+        eng = self._load(msg)
         cat = msg.get("cat") or "all"
         eng.search(msg["query"], cat)
 
+    def describe(self, msg):
+        # Loads the plugin and reports its metadata. The host answers no http.
+        self._load(msg)
+
     def download(self, msg):
-        name = msg.get("module") or "engine"
-        ns = {"__name__": "engines." + name, "__builtins__": __builtins__}
-        exec(compile(msg["src"], "<engine:%s>" % name, "exec"), ns)
-        eng = ns[name]()
-        eng.download_torrent(msg["url"])
+        eng = self._load(msg)
         dl = self.helpers._downloads
-        self.t.send({"op": "downloaded", "keys": sorted(dl), "sizes": [len(v) for v in dl.values()]})
+        dl.clear()
+        eng.download_torrent(msg["url"])
+        if not dl:
+            raise RuntimeError("the plugin did not download a file")
+        data = dl[sorted(dl, key=lambda k: int(k.split(":")[1]))[-1]]
+        if len(data) > MAX_TORRENT:
+            raise ValueError("torrent-too-large")
+        import base64
+        n = 0
+        for i in range(0, len(data), DL_CHUNK):
+            self.t.send({"op": "dl", "i": n, "b64": base64.b64encode(data[i:i + DL_CHUNK]).decode("ascii")})
+            n += 1
+        self.t.send({"op": "downloaded", "size": len(data), "chunks": n})
 
     def serve(self):
         out_err = _Discard()
@@ -184,6 +209,9 @@ class Runner:
                     self.search(msg)
                     self.t.send({"op": "done", "count": self.count, "rejected": self.rejected,
                                  "truncated": self.truncated, "stdout_bytes": out_std.count})
+                elif op == "describe":
+                    self.describe(msg)
+                    self.t.send({"op": "done", "count": 0})
                 elif op == "download":
                     self.download(msg)
                     self.t.send({"op": "done", "count": 0})

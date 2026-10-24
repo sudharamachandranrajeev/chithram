@@ -1,0 +1,44 @@
+{
+ "name": "Test repo",
+ "plugins": [
+  {
+   "adult": false,
+   "file": "alpha.py",
+   "hosts": [
+    "cdn.alpha.example"
+   ],
+   "id": "alpha",
+   "name": "Alpha",
+   "sha256": "4a9540d845d38795d673b59f4eb20c77493ff03bab8524a661168475f6e00b98",
+   "version": "1.1"
+  },
+  {
+   "adult": false,
+   "file": "beta.py",
+   "hosts": [],
+   "id": "beta",
+   "name": "Beta",
+   "sha256": "0f834d688cdc48d8e9ad2aff0db3df5709c9e1871b5736069e3376e850e046ae",
+   "version": "1.1"
+  },
+  {
+   "adult": false,
+   "file": "gamma.py",
+   "hosts": [],
+   "id": "gamma",
+   "name": "Gamma",
+   "sha256": "dd95235501d0def4237aa51f4865b43e59b0cf863bb6b2db6a2bd352b9cc281a",
+   "version": "1.0"
+  },
+  {
+   "adult": true,
+   "file": "adulty.py",
+   "hosts": [],
+   "id": "adulty",
+   "name": "Adulty",
+   "sha256": "513fe25c4988cc428ffec7a2c32afb18c3ebea8581e64003c6421f3fbc3be2f2",
+   "version": "1.0"
+  }
+ ],
+ "version": 1
+}

@@ -142,6 +142,13 @@ jobs:
           flutter build windows --release \
             --build-name=${{ needs.version.outputs.version }} --build-number=${{ needs.version.outputs.build }} \
             --dart-define=TG_API_ID=${{ secrets.CHITHRAM_TG_API_ID }} --dart-define=TG_API_HASH=${{ secrets.CHITHRAM_TG_API_HASH }}
+      # Search plugins need Python and the sandbox launcher next to chithram.exe:
+      # python-build-standalone (pinned sha256, pruned), nova-sandbox, the runner.
+      - name: Plugin runtime (nova/)
+        run: |
+          bash ../.github/nova-runtime.sh windows build/windows/x64/runner/Release | tee ../nova-runtime-windows.txt
+          { echo '### Plugin runtime size (Windows)'; tail -1 ../nova-runtime-windows.txt; } >> "$GITHUB_STEP_SUMMARY"
+          test -f build/windows/x64/runner/Release/nova/nova-sandbox.exe
       - name: Bundle the Visual C++ runtime
         run: |
           # So the app runs on a fresh Windows without the VC++ redistributable.
@@ -196,6 +203,15 @@ jobs:
           Write-Output $torrent
           if ($torrent -ne 'CHITHRAM_SMOKE torrent health=200') { throw "bundled torrent library did not answer /health 200: $torrent" }
           if ($modules -notcontains 'libmpv-2.dll') { throw "Chithram is running but libmpv-2.dll isn't loaded" }
+          # The bundled plugin runtime: a good plugin runs, a raw-socket one is blocked.
+          $novaFile = Join-Path $env:RUNNER_TEMP 'nova-smoke.txt'
+          Remove-Item $novaFile -ErrorAction SilentlyContinue
+          $nova = Start-Process (Join-Path $dir 'chithram.exe') -ArgumentList "--smoke-nova=$novaFile" -PassThru
+          for ($i = 0; $i -lt 90 -and -not (Test-Path $novaFile); $i++) { Start-Sleep -Seconds 1 }
+          Stop-Process -Id $nova.Id -Force -ErrorAction SilentlyContinue
+          $novaResult = if (Test-Path $novaFile) { (Get-Content $novaFile -Raw).Trim() } else { 'no nova smoke result' }
+          Write-Output $novaResult
+          if ($novaResult -ne 'CHITHRAM_SMOKE nova good=ok socket=blocked') { throw "bundled plugin runtime failed its smoke test: $novaResult" }
           Start-Sleep -Seconds 2
           Start-Process (Join-Path $dir 'unins000.exe') -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART' -Wait
           for ($i = 0; $i -lt 30 -and (Test-Path (Join-Path $dir 'chithram.exe')); $i++) { Start-Sleep -Seconds 1 }
@@ -251,6 +267,13 @@ jobs:
           flutter build linux --release \
             --build-name=${{ needs.version.outputs.version }} --build-number=${{ needs.version.outputs.build }} \
             --dart-define=TG_API_ID=${{ secrets.CHITHRAM_TG_API_ID }} --dart-define=TG_API_HASH=${{ secrets.CHITHRAM_TG_API_HASH }}
+      # Search plugins need Python and the sandbox launcher in nova/ beside the
+      # app, so the tarball and the AppImage (which copies the bundle) carry them.
+      - name: Plugin runtime (nova/)
+        run: |
+          bash ../.github/nova-runtime.sh linux build/linux/x64/release/bundle | tee ../nova-runtime-linux.txt
+          { echo '### Plugin runtime size (Linux)'; tail -1 ../nova-runtime-linux.txt; } >> "$GITHUB_STEP_SUMMARY"
+          test -x build/linux/x64/release/bundle/nova/nova-sandbox
       - name: Tarball
         run: |
           version=${{ needs.version.outputs.version }}
@@ -451,9 +474,50 @@ jobs:
           smoke tarball.log "$(ls -d chithram-*-linux-x64)/chithram" --smoke || failed=1
           exit $failed
 
+  # The packaged plugin runtime runs a good plugin and blocks a raw-socket one,
+  # from the tarball and from the AppImage. On the runner itself (not a
+  # container), so Landlock is the host kernel's.
+  linux-nova-smoke:
+    name: Plugin runtime works in the Linux artifacts
+    needs: linux
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: linux
+          path: dist
+      - name: GTK, Mesa, Xvfb, mpv, libsecret
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libgtk-3-0t64 libgl1-mesa-dri libegl1 libgles2 libasound2t64 xvfb xauth libmpv2 libsecret-1-0 >/dev/null
+      - name: Smoke test
+        run: |
+          set -u
+          nova_smoke() {
+            local log=$1; shift
+            set +e
+            HOME=$PWD/home timeout 90 xvfb-run -a "$@" >"$log" 2>&1
+            set -e
+            cat "$log"
+            grep -q 'CHITHRAM_SMOKE nova good=ok socket=blocked' "$log" || { echo "::error::$* did not pass the plugin runtime smoke test"; return 1; }
+          }
+          mkdir -p home
+          failed=0
+          tar xzf dist/*.tar.gz
+          nova_smoke tarball-nova.log "$(ls -d chithram-*-linux-x64)/chithram" --smoke-nova || failed=1
+          appimage=$(ls dist/*.AppImage 2>/dev/null | head -n1 || true)
+          if [[ -n $appimage ]]; then
+            chmod +x "$appimage"
+            nova_smoke appimage-nova.log env APPIMAGE_EXTRACT_AND_RUN=1 "$appimage" --smoke-nova || failed=1
+          else
+            echo "::warning::no AppImage in this build"
+          fi
+          exit $failed
+
   publish:
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [version, android, android-smoke, windows, linux, linux-smoke]
+    needs: [version, android, android-smoke, windows, linux, linux-smoke, linux-nova-smoke]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:

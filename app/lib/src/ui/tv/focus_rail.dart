@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../common/dims.dart';
 import 'focus_card.dart';
@@ -18,6 +19,7 @@ class FocusRail extends StatefulWidget {
     required this.itemBuilder,
     required this.section,
     this.onSelect,
+    this.onMenu,
   });
 
   final String title;
@@ -25,6 +27,9 @@ class FocusRail extends StatefulWidget {
   final Widget Function(BuildContext context, int index) itemBuilder;
   final SectionFocus section;
   final void Function(int index)? onSelect;
+
+  /// The remote's Menu (context-menu) key on a focused tile.
+  final void Function(int index)? onMenu;
 
   @override
   State<FocusRail> createState() => _FocusRailState();
@@ -55,17 +60,31 @@ class _FocusRailState extends State<FocusRail> {
               for (var i = 0; i < widget.count; i++)
                 Padding(
                   padding: const EdgeInsets.only(right: 18),
-                  child: FocusCard(
-                    section: widget.section,
-                    onFocus: () => lastIndex = i,
-                    onActivate: () => widget.onSelect?.call(i),
-                    child: widget.itemBuilder(context, i),
+                  child: _menu(
+                    i,
+                    FocusCard(
+                      section: widget.section,
+                      onFocus: () => lastIndex = i,
+                      onActivate: () => widget.onSelect?.call(i),
+                      child: widget.itemBuilder(context, i),
+                    ),
                   ),
                 ),
             ],
           ),
         ),
       ],
+    );
+  }
+}
+
+extension on _FocusRailState {
+  Widget _menu(int i, Widget card) {
+    final onMenu = widget.onMenu;
+    if (onMenu == null) return card;
+    return CallbackShortcuts(
+      bindings: {const SingleActivator(LogicalKeyboardKey.contextMenu): () => onMenu(i)},
+      child: card,
     );
   }
 }

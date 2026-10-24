@@ -1,4 +1,7 @@
-/// Torznab client. Pure Dart. The implementation lands in 0.3.0 R1 (WP-D).
+/// Torznab client. Pure Dart: `caps` and `search` against an indexer the user
+/// added. Chithram ships no endpoints.
 library;
 
 export 'src/api.dart';
+export 'src/fetch.dart';
+export 'src/parse.dart';

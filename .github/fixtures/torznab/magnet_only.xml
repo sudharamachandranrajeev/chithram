@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:torznab="http://torznab.com/schemas/2015/feed">
+  <channel>
+    <item>
+      <title>Fixture Magnet Film 2026</title>
+      <link>magnet:?xt=urn:btih:0123456789abcdef0123456789abcdef01234567&amp;dn=Fixture+Magnet</link>
+      <pubDate>2026-10-24T10:00:00Z</pubDate>
+      <torznab:attr name="seeders" value="12"/>
+      <torznab:attr name="leechers" value="3"/>
+      <torznab:attr name="category" value="2000"/>
+      <torznab:attr name="category" value="100002"/>
+    </item>
+    <item>
+      <torznab:attr name="seeders" value="1"/>
+    </item>
+  </channel>
+</rss>

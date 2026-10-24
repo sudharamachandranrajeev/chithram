@@ -11,11 +11,15 @@ import '../data/database.dart';
 import '../features/livetv/iptv_service.dart';
 import '../features/receive/receive_service.dart';
 import '../features/telegram/telegram_service.dart';
+import '../features/torrents/home/popular_source.dart';
+import '../features/torrents/home/torrent_home_feed.dart';
 import '../features/torrents/torrent_service.dart';
 import '../features/youtube/feed/taste.dart';
 import '../features/youtube/feed/youtube_feed.dart';
 import '../features/youtube/youtube_service.dart';
 import '../find/find_api.dart';
+import '../find/torznab/torznab_provider.dart';
+import '../find/torznab/torznab_service.dart';
 import '../home/engine/home_engine.dart';
 import '../home/home_repository.dart';
 import '../home/snapshot.dart';
@@ -47,6 +51,8 @@ class AppServices {
     required this.home,
     required this.catalog,
     required this.findSources,
+    required this.torznab,
+    required this.torrentHome,
   });
 
   /// The real services: files under the app support directory. Reads only
@@ -63,7 +69,10 @@ class AppServices {
     final navigatorKey = GlobalKey<NavigatorState>();
     final plugins = PluginRegistry();
     final youtube = YouTubeService(taste: TasteStore(paths.supportFile('youtube_taste.json')));
+    final db = AppDatabase.open(paths); // opens on its first query
     final secrets = openSecretStore(paths);
+    final torrents = TorrentService(paths: paths, prefs: prefs);
+    final torznab = TorznabService(db: db, secrets: secrets, network: () => torrents.guard.choice);
     return AppServices(
       navigatorKey: navigatorKey,
       paths: paths,
@@ -72,15 +81,22 @@ class AppServices {
       youtube: youtube,
       feed: YouTubeFeed(youtube: youtube, cacheFile: File('${paths.cache.path}/youtube_feed.json')),
       iptv: IptvService(store: JsonFileIptvStore(Directory('${paths.support.path}/iptv'))),
-      torrents: TorrentService(paths: paths, prefs: prefs),
+      torrents: torrents,
       receive: ReceiveService(navigatorKey: navigatorKey, paths: paths, prefs: prefs),
       telegram: TelegramService(navigatorKey: navigatorKey, paths: paths, prefs: prefs, secrets: secrets),
       snapshots: snapshots,
-      db: AppDatabase.open(paths), // opens on its first query
+      db: db,
       secrets: secrets,
       home: HomeEngine(snapshot: snapshot),
       catalog: const TmdbCatalog(),
-      findSources: [plugins],
+      findSources: [plugins, TorznabProviders(torznab)],
+      torznab: torznab,
+      // Plugin sources join here when the plugin registry lands: a
+      // PluginPopularSources built from it, added to this list.
+      torrentHome: TorrentHomeFeed(
+        sources: TorznabPopularSources(torznab),
+        cacheFile: File('${paths.cache.path}/torrent_home.json'),
+      ),
     );
   }
 
@@ -101,6 +117,8 @@ class AppServices {
     HomeRepository? home,
     CatalogRepository? catalog,
     List<FindProviderSource>? findSources,
+    TorznabService? torznab,
+    TorrentHomeFeed? torrentHome,
   }) {
     // Tests build many; each database is lazy and in memory.
     driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
@@ -108,7 +126,11 @@ class AppServices {
     final paths = AppPaths.under('${Directory.systemTemp.path}/chithram-memory');
     final prefs0 = prefs ?? Prefs.memory();
     final youtube0 = youtube ?? YouTubeService();
+    final torrents0 = torrents ?? TorrentService(paths: paths, prefs: prefs0);
+    final db0 = db ?? AppDatabase(LazyDatabase(() async => NativeDatabase.memory()));
     final secrets0 = secrets ?? MemorySecretStore();
+    final torznab0 =
+        torznab ?? TorznabService(db: db0, secrets: secrets0, network: () => torrents0.guard.choice);
     return AppServices(
       navigatorKey: key,
       paths: paths,
@@ -117,15 +139,17 @@ class AppServices {
       youtube: youtube0,
       feed: feed ?? YouTubeFeed(youtube: youtube0),
       iptv: iptv ?? IptvService(store: InMemoryIptvStore()),
-      torrents: torrents ?? TorrentService(paths: paths, prefs: prefs0),
+      torrents: torrents0,
       receive: receive ?? ReceiveService(navigatorKey: key, paths: paths, prefs: prefs0),
       telegram: telegram ?? TelegramService(navigatorKey: key, paths: paths, prefs: prefs0, secrets: secrets0),
       snapshots: SnapshotStore(paths.supportFile('home_snapshot.json')),
-      db: db ?? AppDatabase(LazyDatabase(() async => NativeDatabase.memory())),
+      db: db0,
       secrets: secrets0,
       home: home ?? HomeEngine(),
       catalog: catalog ?? const TmdbCatalog(),
       findSources: findSources ?? [PluginRegistry()],
+      torznab: torznab0,
+      torrentHome: torrentHome ?? TorrentHomeFeed(sources: TorznabPopularSources(torznab0)),
     );
   }
 
@@ -158,6 +182,12 @@ class AppServices {
 
   /// Where Find sources gets its providers (plugins, Torznab, YouTube, IPTV).
   final List<FindProviderSource> findSources;
+
+  /// The user's Torznab endpoints (keys in [secrets]).
+  final TorznabService torznab;
+
+  /// Torrent Home's popular rails.
+  final TorrentHomeFeed torrentHome;
 
   static AppServices of(BuildContext context) {
     final scope = context.dependOnInheritedWidgetOfExactType<AppServicesScope>();

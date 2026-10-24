@@ -57,6 +57,14 @@ M3U
   phase "poster and backdrop fixtures"
   bash "$root/.github/fixtures/make_images.sh" "$dir" 40 >/dev/null
 
+  phase "torznab fixtures"
+  # serve.py answers `<path>?<q>` from `<path>@<q>` (query sorted by name).
+  mkdir -p "$dir/torznab"
+  local tz="$root/.github/fixtures/torznab"
+  cp "$tz/caps.xml" "$dir/torznab/api@t=caps"
+  cp "$tz/latest_movies.xml" "$dir/torznab/api@cat=2000&limit=100&t=search"
+  cp "$tz/latest_tv.xml" "$dir/torznab/api@cat=5000&limit=100&t=search"
+
   phase "serve fixtures on :8000"
   setsid nohup python3 "$root/packages/chithram_player/tool/serve.py" "$dir" 8000 >"$dir/serve.log" 2>&1 &
   for _ in $(seq 1 20); do curl -sfI "$BASE/movie.mkv" >/dev/null && break; sleep 0.5; done

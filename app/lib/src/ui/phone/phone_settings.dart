@@ -5,6 +5,7 @@ import '../../core/services.dart';
 import '../../features/receive/phone/phone_receive_settings.dart';
 import '../../features/telegram/phone/phone_telegram_settings.dart';
 import '../../features/torrents/phone/phone_torrent_settings.dart';
+import '../../find/torznab/torznab_settings.dart' show PhoneTorznabSettings;
 import 'phone_widgets.dart';
 
 /// Settings on a phone: Material 3 list tiles in titled groups.
@@ -42,6 +43,8 @@ class PhoneSettings extends StatelessWidget {
         const PhoneNote('Chithram ships no sources. You add your own.'),
         const PhoneSectionTitle('Torrents'),
         const PhoneTorrentSettings(),
+        const PhoneSectionTitle('Torznab'),
+        const PhoneTorznabSettings(),
         const PhoneSectionTitle('Receive'),
         const PhoneReceiveSettings(),
         const PhoneSectionTitle('YouTube'),

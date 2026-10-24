@@ -12,6 +12,7 @@ import 'e2e_plugins.dart';
 import 'e2e_receive.dart';
 import 'e2e_telegram.dart';
 import 'e2e_torrent.dart';
+import 'e2e_torrent_home.dart';
 import 'e2e_youtube.dart';
 
 void main() {
@@ -24,6 +25,7 @@ void main() {
   youtubeE2e();
   livetvE2e();
   torrentE2e();
+  torrentHomeE2e();
   receiveE2e();
   telegramE2e();
 }

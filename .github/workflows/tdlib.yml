@@ -133,7 +133,7 @@ jobs:
         run: |
           git clone -q https://github.com/tdlib/td.git td
           git -C td checkout -q "$TDLIB_COMMIT"
-      - name: Dependencies (vcpkg: OpenSSL and zlib static, gperf)
+      - name: Dependencies (vcpkg, OpenSSL and zlib static, gperf)
         run: |
           "$VCPKG_INSTALLATION_ROOT/vcpkg.exe" install gperf:x64-windows openssl:x64-windows-static-md zlib:x64-windows-static-md --clean-after-build
       - name: Build tdjson.dll

@@ -104,7 +104,7 @@ void pluginsE2e() {
       expect(find.textContaining('Fixture Film 1 2024 1080p'), findsOneWidget);
       await t.tap(find.text('OK'));
       await t.pumpAndSettle();
-      await _waitFor(t, find.descendant(of: find.byKey(PluginKeys.status('fx_fixture')), matching: find.text('Healthy')));
+      await _waitFor(t, find.byWidgetPredicate((w) => w is Text && w.key == PluginKeys.status('fx_fixture') && w.data == 'Healthy'));
 
       // What Torrent Home gets: typed hits with date, seeders and engine id, and a .torrent through the plugin.
       final fixture = registry.plugins.value.firstWhere((p) => p.engineId == 'fx_fixture');
@@ -144,7 +144,7 @@ void pluginsE2e() {
       expect(res.reason, 'url-changed');
       expect(res.hits, isEmpty);
       await t.pump(const Duration(milliseconds: 100));
-      expect(find.descendant(of: find.byKey(PluginKeys.status('fx_urlswap')), matching: find.text('Blocked')), findsOneWidget);
+      expect(t.widget<Text>(find.byKey(PluginKeys.status('fx_urlswap'))).data, 'Blocked');
       expect((await t.runAsync(registry.enabled))!.map((p) => p.engineId), isNot(contains('fx_urlswap')));
     });
   });

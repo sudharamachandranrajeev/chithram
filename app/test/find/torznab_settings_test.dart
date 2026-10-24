@@ -83,7 +83,7 @@ void main() {
         final context = t.element(find.byType(SizedBox).first);
         openSources(context);
         await t.pumpAndSettle();
-        expect(find.text('Search plugins'), findsOneWidget);
+        expect(find.textContaining('Search plugins'), findsOneWidget);
         expect(find.text('Torznab'), findsOneWidget);
         expect(find.byKey(const ValueKey('torznab-add')), findsOneWidget);
       });

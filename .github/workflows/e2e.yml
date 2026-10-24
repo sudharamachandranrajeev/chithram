@@ -67,6 +67,18 @@ jobs:
       - run: flutter pub get
       - name: TDLib (linux, pinned sha256)
         run: python3 packages/tdlib/tool/fetch_tdlib.py linux-x64
+      # Search plugins run in the sandbox; the Linux suite uses the same runtime
+      # the release builds bundle (python-build-standalone, nova-sandbox).
+      - name: Plugin runtime (nova/)
+        run: |
+          bash .github/nova-runtime.sh linux "$RUNNER_TEMP/novart"
+          n=$RUNNER_TEMP/novart/nova
+          {
+            echo "NOVA_PYTHON=$n/python/bin/python3"
+            echo "NOVA_PY_PREFIX=$n/python"
+            echo "NOVA_RUNNER_DIR=$n/runtime"
+            echo "NOVA_SANDBOX=$n/nova-sandbox"
+          } >> "$GITHUB_ENV"
       - name: Fixtures, servers and seeder
         run: bash .github/e2e.sh host-services "$RUNNER_TEMP/e2e"
       - name: End-to-end suite

@@ -137,4 +137,9 @@ Future<void> runNovaSmoke(NovaSmokeTarget target) async {
     if (target.full) say('SUITE_DONE passed=0 failed=-1');
   }
   if (target.file.isNotEmpty) File(target.file).writeAsStringSync('${lines.join('\n')}\n');
+  // Desktop smoke runs are one-shot; the app has nothing else to do.
+  if (!target.full && !Platform.isAndroid) {
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    exit(0);
+  }
 }

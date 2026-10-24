@@ -1,19 +1,27 @@
-name: Spike nova
+# The search-plugin runtime: runner unit tests, the sandbox acceptance suite on
+# Linux and Windows (three Pythons), the host operations (describe, pinned
+# allowlist, url-changed, download), and the same suite inside the Android TV
+# emulator's isolated-process service.
+name: Nova
 
 on:
   push:
-    branches: [spike/nova]
-    paths:
+    branches: [main]
+    paths: &paths
       - "packages/nova_host/**"
       - "native/sandbox/**"
       - "python/nova/**"
-      - "app/lib/src/spikes/nova_page.dart"
+      - "app/lib/src/smoke.dart"
+      - "app/lib/src/plugins/plugin_runtime.dart"
       - "app/android/settings.gradle.kts"
-      - ".github/workflows/spike-nova.yml"
+      - ".github/nova-runtime.sh"
+      - ".github/workflows/nova.yml"
+  pull_request:
+    paths: *paths
   workflow_dispatch:
 
 concurrency:
-  group: spike-nova-${{ github.ref }}
+  group: nova-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -120,9 +128,9 @@ jobs:
           (cd packages/nova_host && flutter analyze --no-fatal-infos)
           (cd app && flutter analyze --no-fatal-infos)
 
-      - name: Unit tests (crypto, repo, broker, SOCKS5)
+      - name: Unit tests (crypto, repo, broker, SOCKS5, describe/pinning/download)
         working-directory: packages/nova_host
-        run: flutter test --reporter expanded test/crypto_test.dart test/repo_test.dart test/broker_test.dart test/real_minisign_test.dart
+        run: flutter test --reporter expanded test/crypto_test.dart test/repo_test.dart test/broker_test.dart test/real_minisign_test.dart test/host_ops_test.dart
 
       - name: Acceptance, kernel/job layer plus audit hook
         working-directory: packages/nova_host
@@ -132,6 +140,10 @@ jobs:
           export NOVA_SUMMARY_FILE="$GITHUB_STEP_SUMMARY"
           echo "### ${{ matrix.os }} python ${{ matrix.py }}" >> "$GITHUB_STEP_SUMMARY"
           flutter test --reporter expanded test/acceptance_test.dart
+
+      - name: Plugin registry against the real sandbox (app tests)
+        working-directory: app
+        run: flutter test --reporter expanded test/plugins/real_runtime_test.dart
 
       - name: Acceptance, kernel/job layer ONLY (audit hook off)
         if: always()
@@ -231,7 +243,7 @@ jobs:
           {
             echo "### APK size delta (release, split per ABI, debug-signed) branch vs main"
             echo
-            echo "| ABI | merge-base | spike/nova | delta |"
+            echo "| ABI | merge-base | branch | delta |"
             echo "|---|---|---|---|"
             for abi in arm64-v8a armeabi-v7a x86_64; do
               m=$(stat -c %s main/app/build/app/outputs/flutter-apk/app-$abi-release.apk)

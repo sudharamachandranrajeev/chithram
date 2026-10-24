@@ -115,14 +115,14 @@ class InstalledPlugin {
   /// plugin lists it, otherwise `all`.
   String categoryFor(String wanted) => supportsCategory(wanted) ? wanted : 'all';
 
-  InstalledPlugin copyWith({PluginHealth? health, bool? enabled}) => InstalledPlugin(
+  InstalledPlugin copyWith({PluginHealth? health, bool? enabled, List<String>? allowedHosts}) => InstalledPlugin(
         id: id,
         engineId: engineId,
         name: name,
         sha256: sha256,
         sourceUrl: sourceUrl,
         declaredUrl: declaredUrl,
-        allowedHosts: allowedHosts,
+        allowedHosts: allowedHosts ?? this.allowedHosts,
         signed: signed,
         enabled: enabled ?? this.enabled,
         installedAt: installedAt,

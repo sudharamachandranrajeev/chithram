@@ -17,7 +17,7 @@ class MetadataSettings extends StatelessWidget {
         children: [
           Text('Metadata', style: TextStyle(fontSize: d.t(20), fontWeight: FontWeight.w600)),
           const SizedBox(height: 4),
-          Text('Films and TV details come from TMDB with your own key.', style: TextStyle(color: ChithramColors.textDim, fontSize: d.t(14))),
+          Text('Films and TV details come from TMDB with your own key.', style: TextStyle(color: ChithramColors.of(context).textDim, fontSize: d.t(14))),
         ],
       ),
     );

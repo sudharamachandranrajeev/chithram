@@ -165,7 +165,7 @@ class _Empty extends StatelessWidget {
         ListTile(
           key: LiveTvKeys.addPlaylist,
           minTileHeight: 64,
-          leading: const Icon(Icons.link_rounded, color: ChithramColors.accent),
+          leading: Icon(Icons.link_rounded, color: ChithramColors.of(context).accent),
           title: const Text('Add playlist'),
           subtitle: const Text('An M3U link'),
           onTap: () => addPlaylistFromUrl(context, service),
@@ -174,7 +174,7 @@ class _Empty extends StatelessWidget {
           ListTile(
             key: LiveTvKeys.suggestion(s),
             minTileHeight: 64,
-            leading: const Icon(Icons.public_rounded, color: ChithramColors.accent),
+            leading: Icon(Icons.public_rounded, color: ChithramColors.of(context).accent),
             title: Text(s.name),
             subtitle: Text(s.blurb, maxLines: 3, overflow: TextOverflow.ellipsis),
             onTap: () => addSuggestionFlow(context, service, s),
@@ -244,7 +244,7 @@ class _SourceTile extends StatelessWidget {
       key: ValueKey('livetv-source-${source.id}'),
       minTileHeight: 64,
       selected: selected,
-      selectedTileColor: ChithramColors.accent.withValues(alpha: 0.18),
+      selectedTileColor: ChithramColors.of(context).accent.withValues(alpha: 0.18),
       leading: Icon(selected ? Icons.check_circle_rounded : Icons.list_alt_rounded),
       title: Text(source.name, maxLines: 1, overflow: TextOverflow.ellipsis),
       subtitle: Text(_detail(source, channels, busy), maxLines: 2, overflow: TextOverflow.ellipsis),
@@ -292,7 +292,7 @@ class _ChipsHeader extends SliverPersistentHeaderDelegate {
   @override
   Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
     return Material(
-      color: ChithramColors.background,
+      color: ChithramColors.of(context).background,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: phoneGutter, vertical: 6),
@@ -340,12 +340,12 @@ class _ChannelTile extends StatelessWidget {
           width: 48,
           height: 48,
           child: c.logo == null
-              ? const Icon(Icons.tv_rounded, color: ChithramColors.textDim)
+              ? Icon(Icons.tv_rounded, color: ChithramColors.of(context).textDim)
               : Image.network(
                   c.logo!,
                   cacheWidth: 96,
                   fit: BoxFit.contain,
-                  errorBuilder: (_, _, _) => const Icon(Icons.tv_rounded, color: ChithramColors.textDim),
+                  errorBuilder: (_, _, _) => Icon(Icons.tv_rounded, color: ChithramColors.of(context).textDim),
                 ),
         ),
         title: Text(c.name, maxLines: 1, overflow: TextOverflow.ellipsis),

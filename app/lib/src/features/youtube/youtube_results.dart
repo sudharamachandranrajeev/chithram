@@ -137,7 +137,7 @@ class VideoTileBody extends StatelessWidget {
         ? 'LIVE'
         : (duration == null ? null : VideoTile.clock(duration));
     return Container(
-      color: ChithramColors.surface,
+      color: ChithramColors.of(context).surface,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -148,7 +148,7 @@ class VideoTileBody extends StatelessWidget {
               fit: StackFit.expand,
               children: [
                 ColoredBox(
-                  color: ChithramColors.surfaceHigh,
+                  color: ChithramColors.of(context).surfaceHigh,
                   child: url == null
                       ? const Icon(Icons.smart_display_rounded, size: 40)
                       : Image.network(
@@ -202,7 +202,7 @@ class VideoTileBody extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   fontSize: d.t(12),
-                  color: ChithramColors.textDim,
+                  color: ChithramColors.of(context).textDim,
                 ),
               ),
             ),

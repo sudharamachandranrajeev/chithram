@@ -28,13 +28,13 @@ class TorrentTileBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final d = Dims.of(context);
-    final dim = TextStyle(color: ChithramColors.textDim, fontSize: d.t(13));
+    final dim = TextStyle(color: ChithramColors.of(context).textDim, fontSize: d.t(13));
     final age = ageText(item.published, now ?? DateTime.now());
     final facts = [if (item.sizeBytes != null) formatBytes(item.sizeBytes!), if (age.isNotEmpty) age].join(' · ');
     return Container(
       width: width ?? d.u(300),
       padding: EdgeInsets.all(d.u(12)),
-      color: ChithramColors.surface,
+      color: ChithramColors.of(context).surface,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
@@ -48,11 +48,11 @@ class TorrentTileBody extends StatelessWidget {
           SizedBox(height: d.u(8)),
           Row(
             children: [
-              Icon(Icons.arrow_upward_rounded, size: d.t(16), color: ChithramColors.accent),
+              Icon(Icons.arrow_upward_rounded, size: d.t(16), color: ChithramColors.of(context).accent),
               const SizedBox(width: 2),
               Text(
                 '${item.seeders ?? 0}',
-                style: TextStyle(color: ChithramColors.accent, fontSize: d.t(14), fontWeight: FontWeight.w600),
+                style: TextStyle(color: ChithramColors.of(context).accent, fontSize: d.t(14), fontWeight: FontWeight.w600),
               ),
               if (facts.isNotEmpty) ...[
                 const SizedBox(width: 10),

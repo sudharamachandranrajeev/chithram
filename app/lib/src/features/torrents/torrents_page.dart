@@ -92,13 +92,13 @@ class _TorrentsPageState extends State<_TvTorrentsPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Section.torrents.icon, size: d.u(48), color: ChithramColors.accent),
+                Icon(Section.torrents.icon, size: d.u(48), color: ChithramColors.of(context).accent),
                 const SizedBox(height: 16),
                 Text('Torrents', style: TextStyle(fontSize: d.t(32), fontWeight: FontWeight.w700)),
                 const SizedBox(height: 8),
                 Text(
                   'Stream a torrent while it downloads. It seeds only while you watch.',
-                  style: TextStyle(color: ChithramColors.textDim, fontSize: d.t(14)),
+                  style: TextStyle(color: ChithramColors.of(context).textDim, fontSize: d.t(14)),
                 ),
                 const SizedBox(height: 28),
                 Wrap(
@@ -142,7 +142,7 @@ class _TorrentsPageState extends State<_TvTorrentsPage> {
                 ),
                 if (active != null) ...[
                   const SizedBox(height: 24),
-                  Text('Downloads', style: TextStyle(color: ChithramColors.accent, fontSize: d.t(14), fontWeight: FontWeight.w600)),
+                  Text('Downloads', style: TextStyle(color: ChithramColors.of(context).accent, fontSize: d.t(14), fontWeight: FontWeight.w600)),
                   const SizedBox(height: 4),
                   Text(active.name ?? 'Torrent',
                       maxLines: 2,
@@ -152,7 +152,7 @@ class _TorrentsPageState extends State<_TvTorrentsPage> {
                   Text(
                     statusLine(service.stats),
                     key: TorrentKeys.stats,
-                    style: TextStyle(color: ChithramColors.textDim, fontSize: d.t(14)),
+                    style: TextStyle(color: ChithramColors.of(context).textDim, fontSize: d.t(14)),
                   ),
                   const SizedBox(height: 12),
                   TorrentFileList(

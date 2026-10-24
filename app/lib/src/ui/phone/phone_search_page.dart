@@ -117,7 +117,7 @@ class _PhoneSearchPageState extends State<PhoneSearchPage> {
                     child: Padding(
                       key: const ValueKey('search-status'),
                       padding: const EdgeInsets.symmetric(horizontal: phoneGutter, vertical: 8),
-                      child: Text(status, style: const TextStyle(color: ChithramColors.textDim)),
+                      child: Text(status, style: TextStyle(color: ChithramColors.of(context).textDim)),
                     ),
                   ),
                 if (!widget.youtubeOnly)

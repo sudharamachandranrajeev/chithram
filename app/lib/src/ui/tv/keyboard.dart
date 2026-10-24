@@ -53,7 +53,7 @@ class _UrlKeyboardState extends State<UrlKeyboard> {
             width: width ?? key,
             height: key,
             alignment: Alignment.center,
-            color: ChithramColors.surfaceHigh,
+            color: ChithramColors.of(context).surfaceHigh,
             child: child,
           ),
         );

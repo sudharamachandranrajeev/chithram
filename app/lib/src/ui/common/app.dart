@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../core/services.dart';
 import '../../spikes/registry.dart';
@@ -59,11 +60,21 @@ class _ChithramAppState extends State<ChithramApp> {
             });
           }
           _shown = form;
+          final look = ChithramTheme.fromPrefs(_services.prefs);
           final app = MaterialApp(
             navigatorKey: _services.navigatorKey,
             title: 'Chithram',
             debugShowCheckedModeBanner: false,
-            theme: buildChithramTheme(form: form ?? FormFactor.tv),
+            theme: buildChithramTheme(form: form ?? FormFactor.tv, colors: look),
+            // A new look fades in.
+            themeAnimationDuration: const Duration(milliseconds: 300),
+            // Phones: the status and navigation bars take the look's colours.
+            builder: form == FormFactor.phone
+                ? (context, child) => AnnotatedRegion<SystemUiOverlayStyle>(
+                      value: systemBars(look),
+                      child: child ?? const SizedBox.shrink(),
+                    )
+                : null,
             home: Shell(key: ValueKey(form)),
             // Debug-only spike pages (see spikes/registry.dart); null in release.
             initialRoute: spikeInitialRoute(),

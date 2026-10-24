@@ -302,7 +302,7 @@ class _Suggestions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final d = Dims.of(context);
-    final dim = TextStyle(color: ChithramColors.textDim, fontSize: d.t(14));
+    final dim = TextStyle(color: ChithramColors.of(context).textDim, fontSize: d.t(14));
     return SizedBox(
       height: height,
       child: AnimatedSwitcher(
@@ -328,7 +328,7 @@ class _Suggestions extends StatelessWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.search_rounded, size: d.t(16), color: ChithramColors.textDim),
+                        Icon(Icons.search_rounded, size: d.t(16), color: ChithramColors.of(context).textDim),
                         const SizedBox(width: 6),
                         Text(
                           items[i],
@@ -444,10 +444,10 @@ class _KeyState extends State<_Key> {
     final Color fill;
     final Color ink;
     if (_focused) {
-      fill = widget.accent ? ChithramColors.accent : Colors.white.withValues(alpha: 0.94);
+      fill = widget.accent ? ChithramColors.of(context).accent : Colors.white.withValues(alpha: 0.94);
       ink = const Color(0xFF111117);
     } else {
-      fill = widget.accent ? ChithramColors.accent.withValues(alpha: 0.28) : Colors.white.withValues(alpha: 0.07);
+      fill = widget.accent ? ChithramColors.of(context).accent.withValues(alpha: 0.28) : Colors.white.withValues(alpha: 0.07);
       ink = Colors.white.withValues(alpha: 0.9);
     }
     return FocusableActionDetector(
@@ -491,7 +491,7 @@ class _KeyState extends State<_Key> {
               boxShadow: _focused
                   ? [
                       BoxShadow(
-                        color: (widget.accent ? ChithramColors.accent : Colors.white).withValues(alpha: 0.35),
+                        color: (widget.accent ? ChithramColors.of(context).accent : Colors.white).withValues(alpha: 0.35),
                         blurRadius: 18,
                         spreadRadius: 1,
                       ),

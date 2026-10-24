@@ -29,11 +29,11 @@ class PlaceholderPage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(section.icon, size: d.u(48), color: ChithramColors.accent),
+          Icon(section.icon, size: d.u(48), color: ChithramColors.of(context).accent),
           const SizedBox(height: 16),
           Text(section.label, style: TextStyle(fontSize: d.t(32), fontWeight: FontWeight.w700)),
           const SizedBox(height: 8),
-          Text(_blurbs[section] ?? '', style: TextStyle(color: ChithramColors.textDim, fontSize: d.t(14))),
+          Text(_blurbs[section] ?? '', style: TextStyle(color: ChithramColors.of(context).textDim, fontSize: d.t(14))),
           const SizedBox(height: 28),
           Padding(
             padding: const EdgeInsets.all(8),

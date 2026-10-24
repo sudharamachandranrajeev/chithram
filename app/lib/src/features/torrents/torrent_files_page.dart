@@ -89,7 +89,7 @@ class _TorrentFilesPageState extends State<TorrentFilesPage> {
                     builder: (_, _) => Text(
                       statusLine(_service.stats),
                       key: TorrentKeys.stats,
-                      style: TextStyle(color: ChithramColors.textDim, fontSize: d.t(14)),
+                      style: TextStyle(color: ChithramColors.of(context).textDim, fontSize: d.t(14)),
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -152,14 +152,14 @@ class _FileRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final d = Dims.of(context);
-    final color = file.streamable ? Colors.white : ChithramColors.textDim;
+    final color = file.streamable ? Colors.white : ChithramColors.of(context).textDim;
     return Container(
-      color: ChithramColors.surfaceHigh,
+      color: ChithramColors.of(context).surfaceHigh,
       padding: EdgeInsets.symmetric(horizontal: d.u(20), vertical: d.u(12)),
       child: Row(
         children: [
           Icon(file.streamable ? Icons.play_arrow_rounded : Icons.insert_drive_file_outlined,
-              color: file.streamable ? ChithramColors.accent : ChithramColors.textDim, size: d.t(24)),
+              color: file.streamable ? ChithramColors.of(context).accent : ChithramColors.of(context).textDim, size: d.t(24)),
           const SizedBox(width: 12),
           Expanded(
             child: Text(file.path,
@@ -168,7 +168,7 @@ class _FileRow extends StatelessWidget {
                 style: TextStyle(color: color, fontSize: d.t(16), fontWeight: FontWeight.w600)),
           ),
           const SizedBox(width: 12),
-          Text(formatBytes(file.length), style: TextStyle(color: ChithramColors.textDim, fontSize: d.t(14))),
+          Text(formatBytes(file.length), style: TextStyle(color: ChithramColors.of(context).textDim, fontSize: d.t(14))),
         ],
       ),
     );

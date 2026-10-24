@@ -46,7 +46,7 @@ class PhoneSearchBar extends StatelessWidget {
                 decoration: InputDecoration(
                   hintText: hint,
                   filled: true,
-                  fillColor: ChithramColors.surface,
+                  fillColor: ChithramColors.of(context).surface,
                   prefixIcon: const Icon(Icons.search_rounded),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(28),
@@ -86,7 +86,7 @@ class PhoneSectionTitle extends StatelessWidget {
     padding: const EdgeInsets.fromLTRB(phoneGutter, 16, phoneGutter, 4),
     child: Semantics(
       header: true,
-      child: Text(text, style: Theme.of(context).textTheme.titleSmall?.copyWith(color: ChithramColors.accent)),
+      child: Text(text, style: Theme.of(context).textTheme.titleSmall?.copyWith(color: ChithramColors.of(context).accent)),
     ),
   );
 }
@@ -103,7 +103,7 @@ class PhoneNote extends StatelessWidget {
     padding: const EdgeInsets.symmetric(horizontal: phoneGutter, vertical: 8),
     child: Text(
       text,
-      style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: color ?? ChithramColors.textDim),
+      style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: color ?? ChithramColors.of(context).textDim),
     ),
   );
 }

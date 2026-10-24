@@ -24,7 +24,7 @@ class PhoneFileTiles extends StatelessWidget {
             minTileHeight: 56,
             leading: Icon(
               f.streamable ? Icons.play_arrow_rounded : Icons.insert_drive_file_outlined,
-              color: f.streamable ? ChithramColors.accent : ChithramColors.textDim,
+              color: f.streamable ? ChithramColors.of(context).accent : ChithramColors.of(context).textDim,
             ),
             title: Text(f.path, maxLines: 2, overflow: TextOverflow.ellipsis),
             subtitle: Text(f.streamable ? formatBytes(f.length) : '${formatBytes(f.length)}, not a media file'),
@@ -59,7 +59,7 @@ class PhoneTorrentFiles extends StatelessWidget {
                 child: Text(
                   statusLine(service.stats),
                   key: TorrentKeys.stats,
-                  style: const TextStyle(color: ChithramColors.textDim),
+                  style: TextStyle(color: ChithramColors.of(context).textDim),
                 ),
               ),
             ),

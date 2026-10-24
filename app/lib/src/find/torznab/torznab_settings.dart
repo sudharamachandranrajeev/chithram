@@ -49,7 +49,7 @@ class _TorznabSettingsState extends State<TorznabSettings> {
             const SizedBox(height: 4),
             Text(
               'Add your own Torznab indexers. Torrent Home ranks what they list.',
-              style: TextStyle(color: ChithramColors.textDim, fontSize: d.t(14)),
+              style: TextStyle(color: ChithramColors.of(context).textDim, fontSize: d.t(14)),
             ),
             const SizedBox(height: 12),
             for (final e in service.endpoints)

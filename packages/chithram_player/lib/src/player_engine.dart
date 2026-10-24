@@ -8,6 +8,30 @@ import 'tracks.dart';
 
 export 'tracks.dart';
 
+/// How the picture fills the screen. [fit] keeps the video's own shape; the
+/// others change it: [stretch] fills the screen, [zoom] fills it and crops
+/// the edges, the rest squeeze the picture into a fixed shape.
+enum VideoAspect {
+  fit('Original'),
+  stretch('Stretch'),
+  zoom('Zoom'),
+  r16x9('16:9', 16 / 9),
+  r4x3('4:3', 4 / 3),
+  r21x9('21:9', 21 / 9);
+
+  const VideoAspect(this.label, [this.ratio]);
+
+  final String label;
+
+  /// The fixed width over height, for the modes that have one.
+  final double? ratio;
+
+  VideoAspect get next => values[(index + 1) % values.length];
+
+  static VideoAspect byName(String? name) =>
+      values.firstWhere((a) => a.name == name, orElse: () => fit);
+}
+
 /// What to play. Two URLs mean separate video and audio (YouTube DASH): the
 /// engine merges them. Headers apply to both requests.
 class MediaSpec {
@@ -106,6 +130,9 @@ abstract interface class PlayerEngine {
   /// What the next [open] picks by itself. The current media keeps its
   /// tracks; use the select methods for those.
   Future<void> setTrackPreferences(TrackPreferences preferences);
+
+  /// Changes the picture shape for the current and later media.
+  Future<void> setAspect(VideoAspect aspect);
 
   /// The video surface. Put it in the tree before or after [open].
   Widget get view;

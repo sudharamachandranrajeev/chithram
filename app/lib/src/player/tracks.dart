@@ -14,6 +14,9 @@ abstract final class PlayerPrefs {
   /// Language code of the last subtitle track picked.
   static const subtitleLanguage = 'player.subtitle_language';
 
+  /// The picture shape, a `VideoAspect` name.
+  static const aspect = 'player.aspect';
+
   static TrackPreferences read(Prefs? p) => TrackPreferences(
     audioLanguage: p?.getString(audioLanguage),
     subtitleLanguage: p?.getString(subtitleLanguage),

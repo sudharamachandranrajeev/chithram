@@ -29,6 +29,9 @@ abstract final class PlayerKeys {
   static const upNextPlay = ValueKey('player-up-next-play');
   static const upNextCancel = ValueKey('player-up-next-cancel');
 
+  /// The OSD button that steps through the picture shapes.
+  static const aspect = ValueKey('player-aspect');
+
   /// The OSD button that opens [tracksMenu].
   static const tracks = ValueKey('player-tracks');
   static const tracksMenu = ValueKey('player-tracks-menu');

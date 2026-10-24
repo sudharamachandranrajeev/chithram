@@ -113,6 +113,10 @@ class _PlayerRouteState extends State<PlayerRoute> {
   final _previousFocus = FocusNode(debugLabel: 'player previous');
   final _nextFocus = FocusNode(debugLabel: 'player next');
   final _tracksFocus = FocusNode(debugLabel: 'player tracks');
+  final _aspectFocus = FocusNode(debugLabel: 'player aspect');
+
+  /// Where Down from the video lands when there is no queue.
+  FocusNode get _firstButton => _hasTrackChoice ? _tracksFocus : _aspectFocus;
   final _rippleKey = GlobalKey<DoubleTapRippleState>();
   PlayExtras _extras = PlayExtras.none;
   PlayRequest? _extrasFor;
@@ -158,6 +162,7 @@ class _PlayerRouteState extends State<PlayerRoute> {
         ?.services;
     _resume = services?.resume;
     _prefs = services?.prefs;
+    _aspect = VideoAspect.byName(_prefs?.getString(PlayerPrefs.aspect));
     _zapIndex = _request.zap?.initialIndex ?? 0;
     _saveTimer = Timer.periodic(_saveEvery, (_) => unawaited(_save()));
     unawaited(_start());
@@ -464,6 +469,7 @@ class _PlayerRouteState extends State<PlayerRoute> {
     _audioPicked = false;
     _subsPicked = false;
     await engine.setTrackPreferences(PlayerPrefs.read(_prefs));
+    await engine.setAspect(_aspect);
     await engine.open(opened);
     _set(() => _loading = false);
     _armHide();
@@ -574,7 +580,10 @@ class _PlayerRouteState extends State<PlayerRoute> {
   }
 
   bool get _controlsFocused =>
-      _previousFocus.hasFocus || _nextFocus.hasFocus || _tracksFocus.hasFocus;
+      _previousFocus.hasFocus ||
+      _nextFocus.hasFocus ||
+      _tracksFocus.hasFocus ||
+      _aspectFocus.hasFocus;
 
   // --- Tracks ---
 
@@ -588,6 +597,16 @@ class _PlayerRouteState extends State<PlayerRoute> {
 
   bool get _hasTrackChoice =>
       _audioItems.length > 1 || _tracks.subtitles.isNotEmpty;
+
+  VideoAspect _aspect = VideoAspect.fit;
+
+  Future<void> _nextAspect() async {
+    final next = _aspect.next;
+    _showOsd();
+    _set(() => _aspect = next);
+    unawaited(_remember({PlayerPrefs.aspect: next.name}));
+    await _engine?.setAspect(next);
+  }
 
   /// A dubbed YouTube video starts in the preferred language when it has it.
   MediaSpec _preferAudio(MediaSpec spec) {
@@ -771,6 +790,7 @@ class _PlayerRouteState extends State<PlayerRoute> {
     _previousFocus.dispose();
     _nextFocus.dispose();
     _tracksFocus.dispose();
+    _aspectFocus.dispose();
     _promptFocus.dispose();
     _errorFocus.dispose();
     _rootFocus.dispose();
@@ -891,7 +911,7 @@ class _PlayerRouteState extends State<PlayerRoute> {
       if (!_canScrub) {
         _showOsd();
         // A live channel has no seek bar: the sides reach the track button.
-        if (fresh && isArrow && _hasTrackChoice) _tracksFocus.requestFocus();
+        if (fresh && isArrow) _firstButton.requestFocus();
       } else {
         _showOsd();
         _scrubber.key(
@@ -913,14 +933,12 @@ class _PlayerRouteState extends State<PlayerRoute> {
     if (fresh && (up || down)) {
       if (widget.request.zap != null) {
         unawaited(_zap(up ? -1 : 1));
-      } else if (down &&
-          key == LogicalKeyboardKey.arrowDown &&
-          (_hasQueue || _hasTrackChoice)) {
+      } else if (down && key == LogicalKeyboardKey.arrowDown) {
         // Down from the video reaches the buttons.
         _showOsd();
         final queue = _hasQueue ? _request.queue : null;
         (queue == null
-                ? _tracksFocus
+                ? _firstButton
                 : (queue.hasPrevious ? _previousFocus : _nextFocus))
             .requestFocus();
       } else {
@@ -1035,6 +1053,9 @@ class _PlayerRouteState extends State<PlayerRoute> {
                     nextFocus: _nextFocus,
                     onTracks: _hasTrackChoice ? _openMenu : null,
                     tracksFocus: _tracksFocus,
+                    aspect: _aspect,
+                    onAspect: _nextAspect,
+                    aspectFocus: _aspectFocus,
                     sheetProvider: widget.sheetProvider,
                   ),
                   if (_menuOpen && !d.phone)

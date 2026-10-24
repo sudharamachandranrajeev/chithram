@@ -84,6 +84,13 @@ class ChithramPlayerPlugin : FlutterPlugin, ActivityAware, MethodChannel.MethodC
                             )
                             result.success(null)
                         }
+                        "aspect" -> {
+                            host.setAspect(
+                                call.argument<String>("mode") ?: "fit",
+                                call.argument<Double>("ratio"),
+                            )
+                            result.success(null)
+                        }
                         "play" -> { host.play(); result.success(null) }
                         "pause" -> { host.pause(); result.success(null) }
                         "seek" -> {

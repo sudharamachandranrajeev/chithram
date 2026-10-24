@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:chithram_player/chithram_player.dart';
 
 import '../theme.dart';
 import '../ui/common/dims.dart';
@@ -50,6 +51,9 @@ class PlayerOsd extends StatelessWidget {
     this.nextFocus,
     this.onTracks,
     this.tracksFocus,
+    this.aspect = VideoAspect.fit,
+    this.onAspect,
+    this.aspectFocus,
     this.sheetProvider = networkSheet,
   });
 
@@ -78,6 +82,12 @@ class PlayerOsd extends StatelessWidget {
   /// choose).
   final VoidCallback? onTracks;
   final FocusNode? tracksFocus;
+
+  /// The picture shape; the button next to the track button steps through
+  /// them. Null hides the button.
+  final VideoAspect aspect;
+  final VoidCallback? onAspect;
+  final FocusNode? aspectFocus;
   final SheetProvider sheetProvider;
 
   @override
@@ -97,6 +107,7 @@ class PlayerOsd extends StatelessWidget {
         d.form == FormFactor.desktop ||
         onPrevious != null ||
         onNext != null ||
+        onAspect != null ||
         onTracks != null;
     return IgnorePointer(
       ignoring: !visible,
@@ -186,6 +197,16 @@ class PlayerOsd extends StatelessWidget {
                           focusNode: tracksFocus,
                           onTap: onTracks!,
                         ),
+                      if (onTracks != null && onAspect != null)
+                        const SizedBox(width: 12),
+                      if (onAspect != null)
+                        _RoundButton(
+                          key: PlayerKeys.aspect,
+                          icon: Icons.aspect_ratio_rounded,
+                          label: aspect.label,
+                          focusNode: aspectFocus,
+                          onTap: onAspect!,
+                        ),
                     ],
                   ),
                 ),
@@ -251,9 +272,11 @@ class _RoundButton extends StatelessWidget {
     super.key,
     required this.icon,
     required this.onTap,
+    this.label,
     this.focusNode,
   });
 
+  final String? label;
   final IconData icon;
   final VoidCallback onTap;
   final FocusNode? focusNode;
@@ -268,7 +291,19 @@ class _RoundButton extends StatelessWidget {
       child: Container(
         color: ChithramColors.of(context).surfaceHigh,
         padding: EdgeInsets.all(d.u(8)),
-        child: Icon(icon, color: Colors.white, size: d.t(26)),
+        child: label == null
+            ? Icon(icon, color: Colors.white, size: d.t(26))
+            : Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(icon, color: Colors.white, size: d.t(26)),
+                  SizedBox(width: d.u(8)),
+                  Text(
+                    label!,
+                    style: TextStyle(color: Colors.white, fontSize: d.t(15)),
+                  ),
+                ],
+              ),
       ),
     );
   }

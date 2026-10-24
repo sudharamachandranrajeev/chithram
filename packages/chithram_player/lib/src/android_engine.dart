@@ -145,6 +145,10 @@ class AndroidPlayerEngine implements PlayerEngine {
       _call('selectTrack', {'kind': 'text', 'trackId': id});
 
   @override
+  Future<void> setAspect(VideoAspect aspect) =>
+      _call('aspect', {'mode': aspect.name, 'ratio': aspect.ratio});
+
+  @override
   Future<void> setTrackPreferences(TrackPreferences p) =>
       _call('trackPreferences', {
         'audioLanguage': p.audioLanguage,

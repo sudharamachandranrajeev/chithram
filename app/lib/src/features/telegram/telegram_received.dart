@@ -40,7 +40,7 @@ class TelegramReceiveSection extends StatelessWidget {
         final state = service.state.value;
         final gutter = d.phone ? phoneGutter : 8.0;
         final head = TextStyle(fontSize: d.t(16), fontWeight: FontWeight.w600, color: Colors.white);
-        final dim = TextStyle(color: ChithramColors.textDim, fontSize: d.t(14));
+        final dim = TextStyle(color: ChithramColors.of(context).textDim, fontSize: d.t(14));
         if (state.status != TelegramStatus.ready) {
           if (embedded) return const SizedBox.shrink();
           return Column(

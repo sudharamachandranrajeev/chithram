@@ -17,7 +17,7 @@ class CacheSettings extends StatelessWidget {
         children: [
           Text('Image cache', style: TextStyle(fontSize: d.t(20), fontWeight: FontWeight.w600)),
           const SizedBox(height: 4),
-          Text('Posters and backdrops are cached on this device.', style: TextStyle(color: ChithramColors.textDim, fontSize: d.t(14))),
+          Text('Posters and backdrops are cached on this device.', style: TextStyle(color: ChithramColors.of(context).textDim, fontSize: d.t(14))),
         ],
       ),
     );

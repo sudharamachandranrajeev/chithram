@@ -14,6 +14,7 @@ import 'dims.dart';
 import '../tv/focus_card.dart';
 import '../tv/home_page.dart' show ActionLabel;
 import 'interface_settings.dart';
+import 'theme_page.dart' show ThemeSettings;
 import '../phone/phone_settings.dart';
 
 class SettingsPage extends StatelessWidget {
@@ -36,7 +37,7 @@ class SettingsPage extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             'Chithram ships no sources. You add your own.',
-            style: TextStyle(color: ChithramColors.textDim, fontSize: d.t(14)),
+            style: TextStyle(color: ChithramColors.of(context).textDim, fontSize: d.t(14)),
           ),
           const SizedBox(height: 28),
           // The first section takes the page's entry node.
@@ -48,6 +49,7 @@ class SettingsPage extends StatelessWidget {
           const ReceiveSettings(),
           const YouTubeSettings(),
           const TelegramSettings(),
+          const ThemeSettings(),
           const InterfaceSettings(),
           const AboutSettings(),
         ],

@@ -83,7 +83,7 @@ class _TelegramPageState extends State<TelegramPage> {
   Widget _text(String text, {bool strong = false, bool error = false}) {
     final d = Dims.of(context);
     final style = TextStyle(
-      color: error ? Colors.redAccent : (strong ? Colors.white : ChithramColors.textDim),
+      color: error ? Colors.redAccent : (strong ? Colors.white : ChithramColors.of(context).textDim),
       fontSize: d.t(14),
     );
     return Padding(

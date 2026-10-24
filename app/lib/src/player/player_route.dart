@@ -440,7 +440,7 @@ class _PlayerRouteState extends State<PlayerRoute> {
               if (engine != null) engine.view,
               if (_loading || _buffering)
                 Center(
-                  child: CircularProgressIndicator(key: PlayerKeys.spinner, color: ChithramColors.accent),
+                  child: CircularProgressIndicator(key: PlayerKeys.spinner, color: ChithramColors.of(context).accent),
                 ),
               _Osd(
                 visible: _osd,
@@ -521,7 +521,7 @@ class _Panel extends StatelessWidget {
         constraints: const BoxConstraints(maxWidth: 560),
         margin: const EdgeInsets.all(24),
         padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(color: ChithramColors.surface.withValues(alpha: 0.94), borderRadius: BorderRadius.circular(20)),
+        decoration: BoxDecoration(color: ChithramColors.of(context).surface.withValues(alpha: 0.94), borderRadius: BorderRadius.circular(20)),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -594,7 +594,7 @@ class _Osd extends StatelessWidget {
                     key: PlayerKeys.status,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: d.t(14), color: ChithramColors.textDim)),
+                    style: TextStyle(fontSize: d.t(14), color: ChithramColors.of(context).textDim)),
               const SizedBox(height: 10),
               if (!live)
                 ClipRRect(
@@ -603,7 +603,7 @@ class _Osd extends StatelessWidget {
                     value: fraction,
                     minHeight: 5,
                     backgroundColor: Colors.white24,
-                    color: ChithramColors.accent,
+                    color: ChithramColors.of(context).accent,
                   ),
                 ),
               const SizedBox(height: 6),
@@ -617,7 +617,7 @@ class _Osd extends StatelessWidget {
                     Padding(
                       padding: const EdgeInsets.only(left: 12),
                       child: Text('LIVE',
-                          style: TextStyle(color: ChithramColors.accent, fontSize: d.t(14), fontWeight: FontWeight.w700)),
+                          style: TextStyle(color: ChithramColors.of(context).accent, fontSize: d.t(14), fontWeight: FontWeight.w700)),
                     )
                   else if (duration > Duration.zero)
                     Text(' / ${formatPlayerTime(duration)}',

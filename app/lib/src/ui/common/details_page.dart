@@ -59,8 +59,8 @@ class _DetailsPageState extends State<DetailsPage> {
               end: Alignment.bottomLeft,
               colors: [
                 HSLColor.fromAHSL(1, hue, 0.40, 0.28).toColor(),
-                ChithramColors.surface,
-                ChithramColors.background,
+                ChithramColors.of(context).surface,
+                ChithramColors.of(context).background,
               ],
             ),
           ),
@@ -76,7 +76,7 @@ class _DetailsPageState extends State<DetailsPage> {
                     Text(widget.title, style: TextStyle(fontSize: d.t(40), fontWeight: FontWeight.w700)),
                     const SizedBox(height: 8),
                     Text('2026  |  Placeholder  |  1 season',
-                        style: TextStyle(color: ChithramColors.textDim, fontSize: d.t(14))),
+                        style: TextStyle(color: ChithramColors.of(context).textDim, fontSize: d.t(14))),
                     const SizedBox(height: 12),
                     ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 720),

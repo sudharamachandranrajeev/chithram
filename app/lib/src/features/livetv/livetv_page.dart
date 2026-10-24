@@ -173,14 +173,14 @@ class _EmptyState extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(Section.liveTv.icon, size: d.u(48), color: ChithramColors.accent),
+            Icon(Section.liveTv.icon, size: d.u(48), color: ChithramColors.of(context).accent),
             const SizedBox(height: 16),
             Text('Live TV', style: TextStyle(fontSize: d.t(32), fontWeight: FontWeight.w700)),
             const SizedBox(height: 8),
             Text(
               'Add an M3U playlist you have, or choose a community catalogue. '
               'Nothing is downloaded until you choose one and confirm.',
-              style: TextStyle(color: ChithramColors.textDim, fontSize: d.t(14)),
+              style: TextStyle(color: ChithramColors.of(context).textDim, fontSize: d.t(14)),
             ),
             const SizedBox(height: 24),
             Wrap(
@@ -243,20 +243,20 @@ class _Card extends StatelessWidget {
         radius: 18,
         onActivate: onTap,
         child: Container(
-          color: ChithramColors.surfaceHigh,
+          color: ChithramColors.of(context).surfaceHigh,
           padding: EdgeInsets.all(d.u(16)),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, color: ChithramColors.accent, size: d.u(28)),
+              Icon(icon, color: ChithramColors.of(context).accent, size: d.u(28)),
               const SizedBox(height: 8),
               Text(title, style: TextStyle(fontSize: d.t(18), fontWeight: FontWeight.w700)),
               const SizedBox(height: 4),
               Text(detail,
                   maxLines: 4,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: d.t(13), color: ChithramColors.textDim)),
+                  style: TextStyle(fontSize: d.t(13), color: ChithramColors.of(context).textDim)),
             ],
           ),
         ),
@@ -312,7 +312,7 @@ class _Sources extends StatelessWidget {
                     onActivate: () => onSelect(s.id),
                     child: Container(
                       width: double.infinity,
-                      color: selected == s.id ? ChithramColors.accent.withValues(alpha: 0.25) : ChithramColors.surfaceHigh,
+                      color: selected == s.id ? ChithramColors.of(context).accent.withValues(alpha: 0.25) : ChithramColors.of(context).surfaceHigh,
                       padding: EdgeInsets.all(d.u(16)),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -323,7 +323,7 @@ class _Sources extends StatelessWidget {
                               style: TextStyle(fontSize: d.t(18), fontWeight: FontWeight.w700)),
                           const SizedBox(height: 4),
                           Text(_detail(s, snap.channels[s.id]?.length ?? 0, busy.contains(s.id)),
-                              style: TextStyle(fontSize: d.t(13), color: ChithramColors.textDim)),
+                              style: TextStyle(fontSize: d.t(13), color: ChithramColors.of(context).textDim)),
                         ],
                       ),
                     ),
@@ -409,12 +409,12 @@ class _Chip extends StatelessWidget {
         radius: 24,
         onActivate: onTap,
         child: Container(
-          color: selected ? ChithramColors.accent : ChithramColors.surfaceHigh,
+          color: selected ? ChithramColors.of(context).accent : ChithramColors.of(context).surfaceHigh,
           padding: EdgeInsets.symmetric(horizontal: d.u(18), vertical: d.u(8)),
           alignment: Alignment.center,
           child: Text(label,
               style: TextStyle(
-                  fontSize: d.t(14), color: selected ? Colors.black : Colors.white, fontWeight: FontWeight.w600)),
+                  fontSize: d.t(14), color: selected ? ChithramColors.of(context).onAccent : ChithramColors.of(context).text, fontWeight: FontWeight.w600)),
         ),
       ),
     );
@@ -442,7 +442,7 @@ class _ChannelRow extends StatelessWidget {
         child: Opacity(
           opacity: c.playable ? 1 : 0.5,
           child: Container(
-            color: ChithramColors.surface,
+            color: ChithramColors.of(context).surface,
             padding: EdgeInsets.symmetric(horizontal: d.u(12)),
             child: Row(
               children: [
@@ -450,11 +450,11 @@ class _ChannelRow extends StatelessWidget {
                   width: d.u(48),
                   height: d.u(48),
                   child: c.logo == null
-                      ? const Icon(Icons.tv_rounded, color: ChithramColors.textDim)
+                      ? Icon(Icons.tv_rounded, color: ChithramColors.of(context).textDim)
                       : Image.network(c.logo!,
                           cacheWidth: 96,
                           fit: BoxFit.contain,
-                          errorBuilder: (_, _, _) => const Icon(Icons.tv_rounded, color: ChithramColors.textDim)),
+                          errorBuilder: (_, _, _) => Icon(Icons.tv_rounded, color: ChithramColors.of(context).textDim)),
                 ),
                 SizedBox(width: d.u(16)),
                 Expanded(
@@ -467,7 +467,7 @@ class _ChannelRow extends StatelessWidget {
                         Text(note,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(fontSize: d.t(12), color: ChithramColors.textDim)),
+                            style: TextStyle(fontSize: d.t(12), color: ChithramColors.of(context).textDim)),
                     ],
                   ),
                 ),

@@ -100,9 +100,9 @@ class _Hero extends StatelessWidget {
           begin: Alignment.topRight,
           end: Alignment.bottomLeft,
           colors: [
-            ChithramColors.accent.withValues(alpha: 0.35),
-            ChithramColors.surface,
-            ChithramColors.background,
+            ChithramColors.of(context).heroTint,
+            ChithramColors.of(context).surface,
+            ChithramColors.of(context).background,
           ],
         ),
       ),
@@ -111,13 +111,16 @@ class _Hero extends StatelessWidget {
           if (video != null) ...[
             Positioned.fill(child: HeroImage(videoId: video.videoId)),
             // Keeps the text readable over any frame.
-            const Positioned.fill(
+            Positioned.fill(
               child: DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.centerRight,
                     end: Alignment.centerLeft,
-                    colors: [Color(0x330B0B10), Color(0xEE0B0B10)],
+                    colors: [
+                      ChithramColors.of(context).background.withAlpha(0x33),
+                      ChithramColors.of(context).background.withAlpha(0xEE),
+                    ],
                   ),
                 ),
               ),
@@ -133,7 +136,7 @@ class _Hero extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(label,
-                      style: TextStyle(color: ChithramColors.accent, fontSize: d.t(14), fontWeight: FontWeight.w600)),
+                      style: TextStyle(color: ChithramColors.of(context).accent, fontSize: d.t(14), fontWeight: FontWeight.w600)),
                   const SizedBox(height: 4),
                   ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 900),
@@ -147,7 +150,7 @@ class _Hero extends StatelessWidget {
                     Text(line,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(color: ChithramColors.textDim, fontSize: d.t(14))),
+                        style: TextStyle(color: ChithramColors.of(context).textDim, fontSize: d.t(14))),
                   ],
                   const SizedBox(height: 18),
                   FocusCard(
@@ -185,9 +188,10 @@ class ActionLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final d = Dims.of(context);
-    final color = primary ? Colors.black : Colors.white;
+    final c = ChithramColors.of(context);
+    final color = primary ? c.onAccent : c.text;
     return Container(
-      color: primary ? ChithramColors.accent : ChithramColors.surfaceHigh,
+      color: primary ? ChithramColors.of(context).accent : ChithramColors.of(context).surfaceHigh,
       padding: EdgeInsets.symmetric(horizontal: d.u(24), vertical: d.u(11)),
       child: Row(
         mainAxisSize: MainAxisSize.min,

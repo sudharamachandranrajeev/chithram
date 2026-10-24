@@ -69,7 +69,7 @@ class _FindPageState extends State<FindPage> {
           ? Center(
               child: Text(
                 _providers == 0 ? 'No search providers added yet.' : 'Searching...',
-                style: TextStyle(color: ChithramColors.textDim, fontSize: d.t(16)),
+                style: TextStyle(color: ChithramColors.of(context).textDim, fontSize: d.t(16)),
               ),
             )
           : ListView.builder(

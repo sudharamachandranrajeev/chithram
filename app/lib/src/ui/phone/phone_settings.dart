@@ -7,6 +7,7 @@ import '../../features/telegram/phone/phone_telegram_settings.dart';
 import '../../features/torrents/phone/phone_torrent_settings.dart';
 import '../../find/torznab/torznab_settings.dart' show PhoneTorznabSettings;
 import '../../plugins/ui/plugins_settings.dart';
+import '../common/theme_page.dart' show PhoneThemeTile;
 import 'phone_widgets.dart';
 
 /// Settings on a phone: Material 3 list tiles in titled groups.
@@ -48,6 +49,8 @@ class PhoneSettings extends StatelessWidget {
         const PhoneTorznabSettings(),
         const PhoneSectionTitle('Search plugins'),
         const _PhonePluginsTile(),
+        const PhoneSectionTitle('Appearance'),
+        const PhoneThemeTile(),
         const PhoneSectionTitle('Receive'),
         const PhoneReceiveSettings(),
         const PhoneSectionTitle('YouTube'),

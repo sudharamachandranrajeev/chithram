@@ -89,7 +89,7 @@ class _PluginsPageState extends State<PluginsPage> {
               Text(
                 'Plugins in the qBittorrent-compatible format (nova3). Chithram ships none: you add repositories or links you trust. '
                 'Each plugin runs in a sandbox and can only reach the sites you approve.',
-                style: TextStyle(color: ChithramColors.textDim, fontSize: d.t(14)),
+                style: TextStyle(color: ChithramColors.of(context).textDim, fontSize: d.t(14)),
               ),
               const SizedBox(height: 12),
               if (registry.unavailableReason != null)
@@ -126,7 +126,7 @@ class _PluginsPageState extends State<PluginsPage> {
               if (plugins.isEmpty)
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 12),
-                  child: Text('Nothing installed yet.', style: TextStyle(color: ChithramColors.textDim)),
+                  child: Text('Nothing installed yet.', style: TextStyle(color: ChithramColors.of(context).textDim)),
                 ),
               for (final p in plugins) _PluginTile(plugin: p),
             ],
@@ -205,7 +205,7 @@ Color _statusColor(PluginHealthStatus s) => switch (s) {
       PluginHealthStatus.healthy => const Color(0xFF3DDC84),
       PluginHealthStatus.degraded => const Color(0xFFFFC107),
       PluginHealthStatus.failing || PluginHealthStatus.blocked => const Color(0xFFFF5252),
-      _ => ChithramColors.textDim,
+      _ => ChithramColors.of(context).textDim,
     };
 
 class _PluginTile extends StatelessWidget {

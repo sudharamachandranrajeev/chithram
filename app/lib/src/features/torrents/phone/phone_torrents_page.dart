@@ -148,7 +148,7 @@ class _PhoneTorrentsPageState extends State<PhoneTorrentsPage> {
                 child: Text(
                   statusLine(service.stats),
                   key: TorrentKeys.stats,
-                  style: const TextStyle(color: ChithramColors.textDim),
+                  style: TextStyle(color: ChithramColors.of(context).textDim),
                 ),
               ),
               PhoneFileTiles(info: active, onPlay: (f) => unawaited(_play(active, f))),

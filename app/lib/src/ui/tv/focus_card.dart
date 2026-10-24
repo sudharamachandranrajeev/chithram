@@ -137,14 +137,14 @@ class _FocusCardState extends State<FocusCard> {
               borderRadius: radius,
               border: Border.all(
                 color: _focused
-                    ? ChithramColors.accent
-                    : (_hovered ? ChithramColors.accent.withValues(alpha: 0.6) : Colors.transparent),
+                    ? ChithramColors.of(context).accent
+                    : (_hovered ? ChithramColors.of(context).accent.withValues(alpha: 0.6) : Colors.transparent),
                 width: 2.5,
               ),
               boxShadow: _focused
                   ? [
                       BoxShadow(
-                        color: ChithramColors.accent.withValues(alpha: 0.45),
+                        color: ChithramColors.of(context).accent.withValues(alpha: 0.45),
                         blurRadius: 20,
                         spreadRadius: 1,
                       ),

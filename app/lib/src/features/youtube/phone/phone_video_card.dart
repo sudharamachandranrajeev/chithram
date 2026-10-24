@@ -28,7 +28,7 @@ class PhoneVideoCard extends StatelessWidget {
       label: 'Play ${item.title}$by${badge == null ? '' : ', $badge'}',
       onTap: onOpen,
       child: ColoredBox(
-        color: ChithramColors.surface,
+        color: ChithramColors.of(context).surface,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -38,7 +38,7 @@ class PhoneVideoCard extends StatelessWidget {
                 fit: StackFit.expand,
                 children: [
                   ColoredBox(
-                    color: ChithramColors.surfaceHigh,
+                    color: ChithramColors.of(context).surfaceHigh,
                     child: url == null
                         ? const Icon(Icons.smart_display_rounded, size: 40)
                         : Image.network(
@@ -80,7 +80,7 @@ class PhoneVideoCard extends StatelessWidget {
                   item.author,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 12, height: 1.4, color: ChithramColors.textDim),
+                  style: TextStyle(fontSize: 12, height: 1.4, color: ChithramColors.of(context).textDim),
                 ),
               ),
           ],

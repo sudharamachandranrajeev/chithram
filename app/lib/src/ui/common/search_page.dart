@@ -172,7 +172,7 @@ class _SearchPageState extends State<_TvSearchPage> {
                   ),
                   Text(
                     subtitle,
-                    style: TextStyle(color: ChithramColors.textDim, fontSize: d.t(14)),
+                    style: TextStyle(color: ChithramColors.of(context).textDim, fontSize: d.t(14)),
                   ),
                   const SizedBox(height: 14),
                   if (d.phone)
@@ -186,7 +186,7 @@ class _SearchPageState extends State<_TvSearchPage> {
                         style: TextStyle(fontSize: d.t(18)),
                         decoration: InputDecoration.collapsed(
                           hintText: 'Type a title',
-                          hintStyle: TextStyle(color: ChithramColors.textDim, fontSize: d.t(18)),
+                          hintStyle: TextStyle(color: ChithramColors.of(context).textDim, fontSize: d.t(18)),
                         ),
                         onChanged: (v) => _query.value = v,
                         onSubmitted: (v) {
@@ -207,7 +207,7 @@ class _SearchPageState extends State<_TvSearchPage> {
                         child: _BarBox(
                           child: Row(
                             children: [
-                              Icon(Icons.search_rounded, size: d.t(22), color: ChithramColors.textDim),
+                              Icon(Icons.search_rounded, size: d.t(22), color: ChithramColors.of(context).textDim),
                               const SizedBox(width: 10),
                               Expanded(
                                 child: ValueListenableBuilder<String>(
@@ -217,7 +217,7 @@ class _SearchPageState extends State<_TvSearchPage> {
                                       if (q.isEmpty)
                                         Text(
                                           'Type a title',
-                                          style: TextStyle(color: ChithramColors.textDim, fontSize: d.t(18)),
+                                          style: TextStyle(color: ChithramColors.of(context).textDim, fontSize: d.t(18)),
                                         ),
                                       Text(
                                         q,
@@ -309,7 +309,7 @@ class _SearchPageState extends State<_TvSearchPage> {
       child: Text(
         text,
         key: const ValueKey('search-status'),
-        style: TextStyle(color: ChithramColors.textDim, fontSize: d.t(14)),
+        style: TextStyle(color: ChithramColors.of(context).textDim, fontSize: d.t(14)),
       ),
     );
   }
@@ -326,9 +326,9 @@ class _BarBox extends StatelessWidget {
     width: double.infinity,
     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
     decoration: BoxDecoration(
-      color: ChithramColors.surface,
+      color: ChithramColors.of(context).surface,
       borderRadius: BorderRadius.circular(14),
-      border: Border.all(color: ChithramColors.surfaceHigh),
+      border: Border.all(color: ChithramColors.of(context).surfaceHigh),
     ),
     child: child,
   );
@@ -358,7 +358,7 @@ class _ActionCard extends StatelessWidget {
       child: Container(
         height: d.phone ? 44 : d.u(52),
         padding: const EdgeInsets.symmetric(horizontal: 18),
-        color: ChithramColors.surfaceHigh,
+        color: ChithramColors.of(context).surfaceHigh,
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [

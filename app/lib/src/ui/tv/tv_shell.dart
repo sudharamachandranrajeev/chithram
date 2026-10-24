@@ -201,10 +201,10 @@ class _RailItemState extends State<_RailItem> {
   Widget build(BuildContext context) {
     final active = _focused || widget.selected;
     final color = _focused
-        ? Colors.black
+        ? ChithramColors.of(context).onAccent
         : widget.selected
-            ? ChithramColors.accent
-            : ChithramColors.textDim;
+            ? ChithramColors.of(context).accent
+            : ChithramColors.of(context).textDim;
     return FocusableActionDetector(
       focusNode: widget.node,
       onFocusChange: (focused) {
@@ -248,10 +248,10 @@ class _RailItemState extends State<_RailItem> {
       margin: EdgeInsets.symmetric(vertical: d.tv ? 2 : 4),
       padding: EdgeInsets.symmetric(horizontal: d.tv ? 26 : 16),
       decoration: BoxDecoration(
-        color: _focused ? ChithramColors.accent : Colors.transparent,
+        color: _focused ? ChithramColors.of(context).accent : Colors.transparent,
         borderRadius: BorderRadius.circular(d.u(26)),
         boxShadow: _focused
-            ? [BoxShadow(color: ChithramColors.accent.withValues(alpha: 0.4), blurRadius: 16)]
+            ? [BoxShadow(color: ChithramColors.of(context).accent.withValues(alpha: 0.4), blurRadius: 16)]
             : const [],
       ),
       // Clipped and unconstrained, so the label can't overflow while the

@@ -5,6 +5,9 @@ Release notes are taken from the section of the version being tagged.
 ## 0.3.0 (in progress)
 
 ### Added
+- Themes: Settings > Theme (TV and phone) picks one of seven dark looks (Chithram, Ocean, Emerald, Rose, Violet, Sunset,
+  Graphite), an AMOLED black background for any look, or a custom accent from a 16-colour grid; text on the accent turns
+  black or white automatically. Changes fade in at once and are kept. On phones the status and navigation bars follow.
 - Foundations for Media Home: a local database (HTTP cache, plugins, Torznab, provider health), secret storage for
   API keys, skeletons of the TMDB, release-name and Torznab packages, and the home, catalogue and Find interfaces with
   fakes. Settings gains Metadata, Search plugins, Torznab and Image cache sections (placeholders until their work lands).

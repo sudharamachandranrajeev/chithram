@@ -52,7 +52,7 @@ class _ReceivePageState extends State<ReceivePage> {
   Widget build(BuildContext context) {
     final d = Dims.of(context);
     if (d.phone) return PhoneReceivePage(service: _service);
-    final dim = TextStyle(color: ChithramColors.textDim, fontSize: d.t(14));
+    final dim = TextStyle(color: ChithramColors.of(context).textDim, fontSize: d.t(14));
     final pin = AppServices.of(context).prefs.getString(ReceivePrefs.pin);
     return CallbackShortcuts(
       bindings: {

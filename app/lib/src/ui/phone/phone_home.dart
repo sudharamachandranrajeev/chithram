@@ -157,7 +157,7 @@ class _PhoneHeroState extends State<_PhoneHero> {
                         width: i == _page ? 18 : 6,
                         height: 6,
                         decoration: BoxDecoration(
-                          color: i == _page ? ChithramColors.accent : ChithramColors.textDim,
+                          color: i == _page ? ChithramColors.of(context).accent : ChithramColors.of(context).textDim,
                           borderRadius: BorderRadius.circular(3),
                         ),
                       ),
@@ -171,13 +171,16 @@ class _PhoneHeroState extends State<_PhoneHero> {
   }
 }
 
-const _heroBackground = BoxDecoration(
-  gradient: LinearGradient(
-    begin: Alignment.topRight,
-    end: Alignment.bottomLeft,
-    colors: [Color(0x59F5A300), ChithramColors.surface, ChithramColors.background],
-  ),
-);
+BoxDecoration _heroBackground(BuildContext context) {
+  final c = ChithramColors.of(context);
+  return BoxDecoration(
+    gradient: LinearGradient(
+      begin: Alignment.topRight,
+      end: Alignment.bottomLeft,
+      colors: [c.heroTint, c.surface, c.background],
+    ),
+  );
+}
 
 class _HeroPage extends StatelessWidget {
   const _HeroPage({required this.video, required this.suggested});
@@ -190,19 +193,22 @@ class _HeroPage extends StatelessWidget {
     final text = Theme.of(context).textTheme;
     final line = [video.author, video.viewsText].where((s) => s.isNotEmpty).join(' · ');
     return DecoratedBox(
-      decoration: _heroBackground,
+      decoration: _heroBackground(context),
       child: Stack(
         fit: StackFit.expand,
         children: [
           HeroImage(videoId: video.videoId),
           // Keeps the text readable over any frame.
-          const DecoratedBox(
+          DecoratedBox(
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [Color(0x000B0B10), Color(0xF00B0B10)],
-                stops: [0.3, 1],
+                colors: [
+                  ChithramColors.of(context).background.withAlpha(0x00),
+                  ChithramColors.of(context).background.withAlpha(0xF0),
+                ],
+                stops: const [0.3, 1],
               ),
             ),
           ),
@@ -213,7 +219,7 @@ class _HeroPage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(suggested ? 'Recommended for you' : 'Popular on YouTube',
-                    style: text.labelLarge?.copyWith(color: ChithramColors.accent, fontWeight: FontWeight.w600)),
+                    style: text.labelLarge?.copyWith(color: ChithramColors.of(context).accent, fontWeight: FontWeight.w600)),
                 const SizedBox(height: 4),
                 Text(video.title,
                     maxLines: 2,
@@ -224,7 +230,7 @@ class _HeroPage extends StatelessWidget {
                   Text(line,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: text.bodyMedium?.copyWith(color: ChithramColors.textDim)),
+                      style: text.bodyMedium?.copyWith(color: ChithramColors.of(context).textDim)),
                 ],
                 const SizedBox(height: 16),
                 FilledButton.icon(
@@ -253,14 +259,14 @@ class _StatusPage extends StatelessWidget {
     final text = Theme.of(context).textTheme;
     final failed = error;
     return DecoratedBox(
-      decoration: _heroBackground,
+      decoration: _heroBackground(context),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.end,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('YouTube', style: text.labelLarge?.copyWith(color: ChithramColors.accent, fontWeight: FontWeight.w600)),
+            Text('YouTube', style: text.labelLarge?.copyWith(color: ChithramColors.of(context).accent, fontWeight: FontWeight.w600)),
             const SizedBox(height: 4),
             Text(failed ?? 'Loading what is popular…',
                 style: text.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),

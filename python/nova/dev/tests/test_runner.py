@@ -9,7 +9,7 @@ PAGE = ('<a class="r" href="magnet:?xt=urn:btih:' + "a" * 40 + '" data-size="1.5
         '<a class="r" href="http://example.test/t2.torrent" data-size="700 MB" data-s="3" data-l="1">Fixture item 2</a>')
 
 
-def run(name, audit=True, limit_requests=20, timeout=60):
+def run(name, audit=True, limit_requests=20, timeout=60, op="search", extra=None):
     src = open(os.path.join(FIX, name + ".py")).read()
     for k, v in {"__BASE__": "http://example.test:9", "__PORT__": "9", "__HOME__": os.path.expanduser("~").replace("\\", "/"),
                  "__TMP__": tempfile.gettempdir().replace("\\", "/"), "__SECRET__": os.path.join(os.path.expanduser("~"), ".fake_secret_nova_test").replace("\\", "/")}.items():
@@ -17,9 +17,11 @@ def run(name, audit=True, limit_requests=20, timeout=60):
     env = dict(os.environ, NOVA_AUDIT="1" if audit else "0", PYTHONDONTWRITEBYTECODE="1")
     p = subprocess.Popen([sys.executable, "-I", RUNNER], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                          stderr=subprocess.DEVNULL, env=env)
-    p.stdin.write(json.dumps({"op": "search", "module": name, "src": src, "query": "sintel", "cat": "all"}).encode() + b"\n")
+    cmd = {"op": op, "module": name, "src": src, "query": "sintel", "cat": "all"}
+    cmd.update(extra or {})
+    p.stdin.write(json.dumps(cmd).encode() + b"\n")
     p.stdin.flush()
-    out = {"results": [], "http": [], "done": None, "error": None}
+    out = {"results": [], "http": [], "done": None, "error": None, "meta": None, "dl": [], "downloaded": None}
     n = 0
     while True:
         line = p.stdout.readline()
@@ -28,13 +30,21 @@ def run(name, audit=True, limit_requests=20, timeout=60):
         m = json.loads(line)
         if m["op"] == "result":
             out["results"].append(m["r"])
+        elif m["op"] == "meta":
+            out["meta"] = m
+        elif m["op"] == "dl":
+            out["dl"].append(m)
+        elif m["op"] == "downloaded":
+            out["downloaded"] = m
         elif m["op"] == "http":
             out["http"].append(m["url"])
             n += 1
             if n > limit_requests or "other.test" in m["url"] or "127.0.0.1" in m["url"] or m["url"].startswith("file:") or "redirect-foreign" in m["url"]:
                 resp = {"op": "http_resp", "id": m["id"], "error": "blocked by host"}
             else:
-                body = PAGE if "/search" in m["url"] else "hello"
+                body = PAGE if "/search" in m["url"] else ("d4:infod4:name1:xee" if m["url"].endswith(".torrent") else "hello")
+                if m["url"].endswith("/big.torrent"):
+                    body = "d" + "x" * (3 * 1024 * 1024)
                 resp = {"op": "http_resp", "id": m["id"], "status": 200, "headers": {"Content-Type": "text/html"},
                         "body_b64": base64.b64encode(body.encode()).decode()}
             p.stdin.write(json.dumps(resp).encode() + b"\n")
@@ -56,6 +66,32 @@ class T(unittest.TestCase):
         self.assertEqual([r["name"] for r in o["results"]], ["Fixture item 1", "Fixture item 2"])
         self.assertEqual(o["results"][0]["size"], int(1.5 * 2**30))
         self.assertEqual(o["done"]["count"], 2)
+
+    def test_describe_reports_meta_and_asks_for_no_network(self):
+        o = run("fx_good", op="describe")
+        self.assertEqual(o["meta"]["name"], "Fixture Good")
+        self.assertEqual(o["meta"]["url"], "http://example.test:9")
+        self.assertEqual(o["meta"]["categories"], ["all", "movies"])
+        self.assertEqual(o["http"], [])
+        self.assertEqual(o["results"], [])
+        self.assertIsNotNone(o["done"])
+
+    def test_pub_date_kept_only_when_a_sane_int(self):
+        o = run("fx_dated")
+        by = {r["name"]: r for r in o["results"]}
+        self.assertEqual(by["Dated item"]["pub_date"], 1760000000)
+        self.assertNotIn("pub_date", by["Undated item"])
+        self.assertNotIn("pub_date", by["Bad date item"])
+        self.assertNotIn("pub_date", by["Negative date item"])
+
+    def test_download_sends_the_bytes_in_small_chunks(self):
+        import base64
+        o = run("fx_dl", op="download", extra={"url": "http://example.test:9/a.torrent"})
+        self.assertEqual(o["downloaded"]["size"], 19)
+        self.assertEqual(base64.b64decode("".join(c["b64"] for c in o["dl"])), b"d4:infod4:name1:xee")
+        o = run("fx_dl", op="download", extra={"url": "http://example.test:9/big.torrent"})
+        self.assertIsNone(o["downloaded"])
+        self.assertIn("torrent-too-large", o["error"]["msg"])
 
     def test_urllib(self):
         o = run("fx_urllib")

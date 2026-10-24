@@ -443,4 +443,32 @@ void main() {
       expect(preferredTrack(const [], 'en'), isNull);
     });
   });
+
+  group('picture shape', () {
+    testWidgets('Down reaches the button; OK steps the shape and the engine '
+        'follows', (t) async {
+      final engine = await _open(t, _request());
+      expect(engine.aspects, [VideoAspect.fit]);
+      await _key(t, LogicalKeyboardKey.arrowDown);
+      expect(_focused(PlayerKeys.aspect), isTrue);
+      expect(find.text('Original'), findsOneWidget);
+      await _key(t, LogicalKeyboardKey.enter);
+      await t.pump();
+      expect(engine.aspects.last, VideoAspect.stretch);
+      expect(find.text('Stretch'), findsOneWidget);
+      await _closeRoute(t);
+    });
+
+    test('the cycle visits every shape and returns', () {
+      var a = VideoAspect.fit;
+      final seen = <VideoAspect>[];
+      do {
+        seen.add(a);
+        a = a.next;
+      } while (a != VideoAspect.fit);
+      expect(seen, VideoAspect.values);
+      expect(VideoAspect.byName('r4x3'), VideoAspect.r4x3);
+      expect(VideoAspect.byName('nope'), VideoAspect.fit);
+    });
+  });
 }

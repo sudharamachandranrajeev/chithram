@@ -208,8 +208,23 @@ class MediaKitPlayerEngine implements PlayerEngine {
   Future<void> setTrackPreferences(TrackPreferences preferences) async =>
       _prefs = preferences;
 
+  VideoAspect _aspect = VideoAspect.fit;
+
   @override
-  Widget get view => Video(controller: _controller, controls: NoVideoControls);
+  Future<void> setAspect(VideoAspect aspect) async => _aspect = aspect;
+
+  @override
+  Widget get view => Video(
+    controller: _controller,
+    controls: NoVideoControls,
+    fit: switch (_aspect) {
+      VideoAspect.fit => BoxFit.contain,
+      VideoAspect.zoom => BoxFit.cover,
+      VideoAspect.stretch => BoxFit.fill,
+      _ => BoxFit.contain,
+    },
+    aspectRatio: _aspect.ratio,
+  );
 
   @override
   Future<PlaybackCaps> capabilities() async => const PlaybackCaps();

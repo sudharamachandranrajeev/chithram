@@ -9,6 +9,7 @@ import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.annotation.OptIn
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.SubtitleView
 import io.flutter.plugin.common.StandardMessageCodec
 import io.flutter.plugin.platform.PlatformView
@@ -34,14 +35,18 @@ private class SurfacePlatformView(context: Context, private val host: PlayerHost
         setUserDefaultStyle()
         setUserDefaultTextSize()
     }
+    // Sized by PlayerHost.setAspect; centred in the platform view.
+    private val shape = AspectRatioFrameLayout(context).apply {
+        addView(surfaceView, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+    }
     private val root = FrameLayout(context).apply {
         val match = ViewGroup.LayoutParams.MATCH_PARENT
-        addView(surfaceView, FrameLayout.LayoutParams(match, match))
+        addView(shape, FrameLayout.LayoutParams(match, match, android.view.Gravity.CENTER))
         addView(subtitleView, FrameLayout.LayoutParams(match, match))
     }
 
     init {
-        host?.attach(surfaceView, subtitleView)
+        host?.attach(surfaceView, subtitleView, shape)
     }
 
     override fun getView(): View = root

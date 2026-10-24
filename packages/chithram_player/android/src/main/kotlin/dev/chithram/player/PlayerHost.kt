@@ -17,6 +17,7 @@ import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.common.Tracks
+import androidx.media3.common.VideoSize
 import androidx.media3.common.text.CueGroup
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DefaultDataSource
@@ -26,6 +27,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.exoplayer.source.MediaSource
 import androidx.media3.exoplayer.source.MergingMediaSource
+import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.SubtitleView
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.EventChannel
@@ -103,6 +105,13 @@ class PlayerHost(
                 val a = tracks.groups.count { it.type == C.TRACK_TYPE_AUDIO && it.isSelected }
                 Log.i(TAG, "CHITHRAM_TRACKS video=$v audio=$a")
                 sendTracks(tracks)
+            }
+
+            override fun onVideoSizeChanged(size: VideoSize) {
+                videoRatio = if (size.width > 0 && size.height > 0) {
+                    size.width * size.pixelWidthHeightRatio / size.height
+                } else 0f
+                applyAspect()
             }
 
             override fun onCues(cueGroup: CueGroup) {
@@ -277,8 +286,42 @@ class PlayerHost(
     fun pause() { player.playWhenReady = false }
     fun seek(ms: Long) { player.seekTo(ms) }
 
-    fun attach(view: SurfaceView, subtitles: SubtitleView) {
+    private var frame: AspectRatioFrameLayout? = null
+    private var aspectMode = "fit"
+    private var fixedRatio = 0f
+    private var videoRatio = 0f
+
+    fun setAspect(mode: String, ratio: Double?) {
+        aspectMode = mode
+        fixedRatio = ratio?.toFloat() ?: 0f
+        applyAspect()
+    }
+
+    // The surface fills its frame; the frame's shape is the picture's shape.
+    // Stretch: a ratio of 0 leaves the frame as big as the screen.
+    private fun applyAspect() {
+        val f = frame ?: return
+        when (aspectMode) {
+            "stretch" -> f.setAspectRatio(0f)
+            "zoom" -> {
+                f.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+                f.setAspectRatio(videoRatio)
+            }
+            "fit" -> {
+                f.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+                f.setAspectRatio(videoRatio)
+            }
+            else -> {
+                f.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+                f.setAspectRatio(fixedRatio)
+            }
+        }
+    }
+
+    fun attach(view: SurfaceView, subtitles: SubtitleView, shape: AspectRatioFrameLayout) {
         if (released) return
+        frame = shape
+        applyAspect()
         surfaceView = view
         subtitleView = subtitles
         subtitles.setCues(player.currentCues.cues)
@@ -290,6 +333,7 @@ class PlayerHost(
         if (surfaceView === view) {
             surfaceView = null
             subtitleView = null
+            frame = null
         }
         if (!released) player.clearVideoSurfaceView(view)
     }

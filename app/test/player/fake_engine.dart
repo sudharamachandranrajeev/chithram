@@ -107,6 +107,11 @@ class FakeEngine implements PlayerEngine {
   Future<void> setTrackPreferences(TrackPreferences p) async =>
       preferences.add(p);
 
+  final aspects = <VideoAspect>[];
+
+  @override
+  Future<void> setAspect(VideoAspect aspect) async => aspects.add(aspect);
+
   @override
   Widget get view => const SizedBox.expand();
 

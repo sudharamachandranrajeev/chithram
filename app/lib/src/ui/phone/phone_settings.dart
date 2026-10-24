@@ -6,6 +6,7 @@ import '../../features/receive/phone/phone_receive_settings.dart';
 import '../../features/telegram/phone/phone_telegram_settings.dart';
 import '../../features/torrents/phone/phone_torrent_settings.dart';
 import '../../find/torznab/torznab_settings.dart' show PhoneTorznabSettings;
+import '../../plugins/ui/plugins_settings.dart';
 import 'phone_widgets.dart';
 
 /// Settings on a phone: Material 3 list tiles in titled groups.
@@ -45,6 +46,8 @@ class PhoneSettings extends StatelessWidget {
         const PhoneTorrentSettings(),
         const PhoneSectionTitle('Torznab'),
         const PhoneTorznabSettings(),
+        const PhoneSectionTitle('Search plugins'),
+        const _PhonePluginsTile(),
         const PhoneSectionTitle('Receive'),
         const PhoneReceiveSettings(),
         const PhoneSectionTitle('YouTube'),
@@ -72,6 +75,29 @@ class PhoneSettings extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _PhonePluginsTile extends StatelessWidget {
+  const _PhonePluginsTile();
+
+  @override
+  Widget build(BuildContext context) {
+    final registry = AppServices.of(context).plugins;
+    return ListenableBuilder(
+      listenable: registry.plugins,
+      builder: (context, _) {
+        final n = registry.plugins.value.length;
+        return ListTile(
+          minTileHeight: 56,
+          leading: const Icon(Icons.extension_outlined),
+          title: const Text('Search plugins'),
+          subtitle: Text(n == 0 ? 'None added' : '$n installed'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => openPluginsPage(context),
+        );
+      },
     );
   }
 }

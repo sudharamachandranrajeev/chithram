@@ -8,6 +8,7 @@ import 'package:localsend_rx/localsend_rx.dart' show looksLikeTorrent, maxTorren
 import '../core/item_id.dart';
 import '../core/services.dart';
 import '../features/youtube/youtube_service.dart';
+import '../plugins/ui/plugin_flows.dart';
 import '../player/play_request.dart';
 import 'fetch.dart';
 import 'summary.dart';
@@ -33,7 +34,7 @@ final class TorrentFilePayload extends IntakePayload {
   final String? from;
 }
 
-enum IntakeKind { youtube, magnet, torrentUrl, playlistUrl, mediaUrl, ambiguousM3u8, text }
+enum IntakeKind { youtube, magnet, torrentUrl, playlistUrl, mediaUrl, ambiguousM3u8, pluginFile, pluginRepo, text }
 
 final _btih = RegExp(r'xt=urn:btih:([0-9a-fA-F]{40}|[A-Za-z2-7]{32})(&|$)');
 const _mediaExtensions = {
@@ -62,6 +63,9 @@ IntakeKind classify(String text) {
         ? IntakeKind.youtube
         : IntakeKind.text;
   }
+  // Search plugins: a nova3 .py file (unsigned flow), or a repo's plugins.json (signed flow).
+  if (path.endsWith('.py')) return IntakeKind.pluginFile;
+  if (path.endsWith('/plugins.json')) return IntakeKind.pluginRepo;
   if (path.endsWith('.torrent')) return IntakeKind.torrentUrl;
   if (path.endsWith('.m3u')) return IntakeKind.playlistUrl;
   if (path.endsWith('get.php') && (uri.queryParameters['type'] ?? '').startsWith('m3u')) {
@@ -86,6 +90,8 @@ String? intakeActionLabel(IntakeKind kind) => switch (kind) {
       IntakeKind.magnet || IntakeKind.torrentUrl => 'Open torrent',
       IntakeKind.playlistUrl => 'Add playlist',
       IntakeKind.mediaUrl || IntakeKind.ambiguousM3u8 => 'Play link',
+      IntakeKind.pluginFile => 'Add search plugin',
+      IntakeKind.pluginRepo => 'Add plugin repository',
       IntakeKind.text => IntakeHooks.search == null ? null : 'Search for this text',
     };
 
@@ -178,6 +184,10 @@ Future<void> _route(BuildContext context, AppServices services, IntakeKind kind,
   switch (kind) {
     case IntakeKind.playlistUrl:
       await services.iptv.openAddPlaylist(context, url: (p as TextPayload).text.trim());
+    case IntakeKind.pluginFile:
+      await addSingleFlow(context, url: (p as TextPayload).text.trim());
+    case IntakeKind.pluginRepo:
+      await addRepoFlow(context, url: (p as TextPayload).text.trim());
     case IntakeKind.mediaUrl:
       await _playLink(context, (p as TextPayload).text.trim());
     case IntakeKind.ambiguousM3u8:

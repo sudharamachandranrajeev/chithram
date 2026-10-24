@@ -10,10 +10,6 @@ name: TDLib
 
 on:
   workflow_dispatch:
-  # TEMPORARY while feat/telegram is open (dispatch needs the file on main).
-  push:
-    branches: [feat/telegram]
-    paths: [.github/workflows/tdlib.yml]
 
 permissions:
   contents: read

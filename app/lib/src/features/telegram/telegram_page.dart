@@ -48,7 +48,7 @@ class _TelegramPageState extends State<TelegramPage> {
   }
 
   Future<void> _ask(String title, String hint, TextEntryKind kind, Future<String?> Function(String) submit) async {
-    final text = await askText(context, title: title, hint: hint, kind: kind);
+    final text = await askText(context, title: title, hint: hint, kind: kind, acceptFromPhone: true);
     if (text == null || text.trim().isEmpty || !mounted) return;
     final error = await submit(text);
     if (error != null && mounted) {

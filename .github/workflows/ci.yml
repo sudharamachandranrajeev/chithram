@@ -53,6 +53,10 @@ jobs:
           cargo build --release --locked --lib --manifest-path native/torrent/Cargo.toml
           mkdir -p packages/torrent/prebuilt/linux-x64
           cp native/torrent/target/release/libchithram_torrent.so packages/torrent/prebuilt/linux-x64/
+      # TDLib's library (tdlib.yml), checked against the pinned sha256: packages/tdlib's
+      # native test runs the real FFI path against it.
+      - name: TDLib (linux)
+        run: python3 packages/tdlib/tool/fetch_tdlib.py linux-x64
       # flutter_secure_storage on Linux (the keyring); the Linux builds need it too.
       - name: libsecret
         run: sudo apt-get update -qq && sudo apt-get install -y -qq libsecret-1-dev >/dev/null
@@ -94,6 +98,7 @@ jobs:
       - name: Test
         env:
           CHITHRAM_TORRENT_LIB: ${{ github.workspace }}/packages/torrent/prebuilt/linux-x64/libchithram_torrent.so
+          CHITHRAM_TDLIB_LIB: ${{ github.workspace }}/packages/tdlib/prebuilt/linux-x64/libtdjson.so
         run: |
           for d in app packages/*/; do
             d=${d%/}

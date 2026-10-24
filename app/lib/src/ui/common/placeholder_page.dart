@@ -23,7 +23,7 @@ class PlaceholderPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final d = Dims.of(context);
     return Padding(
-      padding: EdgeInsets.all(d.phone ? 16 : 32),
+      padding: EdgeInsets.all(d.gutter),
       child: SingleChildScrollView(
         child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

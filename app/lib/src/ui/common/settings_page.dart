@@ -27,7 +27,7 @@ class SettingsPage extends StatelessWidget {
     final d = Dims.of(context);
     if (d.phone) return const PhoneSettings();
     return Padding(
-      padding: EdgeInsets.all(d.phone ? 16 : 32),
+      padding: EdgeInsets.all(d.gutter),
       child: SingleChildScrollView(
         child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

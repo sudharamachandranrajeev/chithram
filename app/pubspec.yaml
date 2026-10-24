@@ -20,6 +20,8 @@ dependencies:
   path_provider: ^2.1.5
   package_info_plus: ^10.2.2
   crypto: ^3.0.6
+  # The Telegram sign-in QR code.
+  qr_flutter: ^4.1.0
 
   # Local database (HTTP cache, plugin registry, provider health) and secrets
   # (TMDB and Torznab keys). Opened after the first frame, never before.
@@ -45,6 +47,8 @@ dependencies:
     path: ../packages/media_names
   torznab:
     path: ../packages/torznab
+  tdlib:
+    path: ../packages/tdlib
   # Debug-only spike page (see lib/src/spikes/).
   nova_host:
     path: ../packages/nova_host

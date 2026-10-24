@@ -11,20 +11,31 @@ import 'receive_keys.dart';
 /// take (which counts as accepting) or Reject. Reject is focused first, so a
 /// stray press never accepts. Gives up as a rejection after 60 s, or when
 /// [dismiss] fires (the receiver stopped).
-Future<bool> showReceivePrompt(BuildContext context, LsOffer offer, {required Listenable dismiss}) async {
+///
+/// [title] and [acceptLabel] replace the LocalSend wording (Telegram uses it
+/// for "New from Telegram" / "Play").
+Future<bool> showReceivePrompt(
+  BuildContext context,
+  LsOffer offer, {
+  required Listenable dismiss,
+  String? title,
+  String? acceptLabel,
+}) async {
   final result = await showDialog<bool>(
     context: context,
     barrierDismissible: false,
-    builder: (_) => _ReceivePrompt(offer: offer, dismiss: dismiss),
+    builder: (_) => _ReceivePrompt(offer: offer, dismiss: dismiss, title: title, acceptLabel: acceptLabel),
   );
   return result ?? false;
 }
 
 class _ReceivePrompt extends StatefulWidget {
-  const _ReceivePrompt({required this.offer, required this.dismiss});
+  const _ReceivePrompt({required this.offer, required this.dismiss, this.title, this.acceptLabel});
 
   final LsOffer offer;
   final Listenable dismiss;
+  final String? title;
+  final String? acceptLabel;
 
   @override
   State<_ReceivePrompt> createState() => _ReceivePromptState();
@@ -74,7 +85,7 @@ class _ReceivePromptState extends State<_ReceivePrompt> {
       return ('Open torrent', Text('${single.name} (${_size(single.size)})'));
     }
     return (
-      'Accept',
+      widget.acceptLabel ?? 'Accept',
       Text([for (final f in files) '${f.name} (${_size(f.size)})'].join('\n')),
     );
   }
@@ -92,7 +103,7 @@ class _ReceivePromptState extends State<_ReceivePrompt> {
     final who = [o.senderAlias, if (o.senderModel != null) o.senderModel!, o.senderAddress].join(' · ');
     return AlertDialog(
       key: ReceiveKeys.prompt,
-      title: const Text('Incoming from a phone'),
+      title: Text(widget.title ?? 'Incoming from a phone'),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,

@@ -31,6 +31,7 @@ play DRM-protected services.
 | `packages/innertube/` | YouTube InnerTube client (pure Dart; placeholder) |
 | `packages/iptv/` | M3U / Xtream / XMLTV parsers (placeholder) |
 | `packages/localsend_rx/` | LocalSend receiver (skeleton) |
+| `packages/tdlib/` | Telegram client: TDLib's JSON interface over FFI, typed objects, a fake for tests |
 | `packages/chithram_player/` | Player engine interface (placeholder) |
 | `native/torrent/` | Rust torrent engine over librqbit (placeholder) |
 | `docs/` | Research and decisions |

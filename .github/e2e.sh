@@ -112,6 +112,8 @@ android() {
   phase "torrent library (x86_64)"
   (cd "$root/native/torrent" && cargo ndk -P 24 -t x86_64 \
     -o ../../packages/torrent/android/src/main/jniLibs build --release --locked --lib)
+  phase "TDLib (x86_64, pinned sha256)"
+  python3 "$root/packages/tdlib/tool/fetch_tdlib.py" android-x86_64
   phase "build the e2e APK"
   (cd "$root/app" && flutter build apk --debug --target-platform android-x64 \
     --target=integration_test/$TARGET "${defines[@]}")

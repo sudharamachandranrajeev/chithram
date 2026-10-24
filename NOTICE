@@ -15,3 +15,13 @@ TMDB logo (app/assets/attribution/tmdb_logo.png)
 
 Poppins font (app/assets/fonts)
   SIL Open Font License 1.1, see app/assets/fonts/OFL.txt.
+
+TDLib (packages/tdlib; libtdjson downloaded at build time)
+  Copyright Aliaksei Levin (levlam@telegram.org) and Arseny Smirnov
+  (arseny30@gmail.com), Boost Software License 1.0
+  (https://www.boost.org/LICENSE_1_0.txt), source at https://github.com/tdlib/td.
+  Chithram builds it from a pinned commit (.github/workflows/tdlib.yml) and
+  statically links OpenSSL (Apache-2.0 / OpenSSL licence) and zlib into it.
+  Telegram is a trademark of its owner; Chithram is not affiliated with or
+  endorsed by Telegram. It signs in with the user's own account and the app id
+  the project registered at my.telegram.org.

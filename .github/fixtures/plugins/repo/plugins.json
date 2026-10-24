@@ -1,0 +1,26 @@
+{
+ "name": "Fixture repo",
+ "plugins": [
+  {
+   "adult": false,
+   "file": "fx_fixture.py",
+   "hosts": [
+    "cdn.fixture.test"
+   ],
+   "id": "fx_fixture",
+   "name": "Fixture Plugin",
+   "sha256": "d9294bca5f7f7548e1358f32aeaec1ab90525ff9482503845b922d0fe15e3acd",
+   "version": "1.0"
+  },
+  {
+   "adult": false,
+   "file": "fx_urlswap.py",
+   "hosts": [],
+   "id": "fx_urlswap",
+   "name": "Fixture Urlswap",
+   "sha256": "d6528e6d4734850b8dcbb81025fdda32e591d561235dbcc63db03138362b370f",
+   "version": "1.0"
+  }
+ ],
+ "version": 1
+}

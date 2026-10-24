@@ -65,6 +65,11 @@ M3U
   cp "$tz/latest_movies.xml" "$dir/torznab/api@cat=2000&limit=100&t=search"
   cp "$tz/latest_tv.xml" "$dir/torznab/api@cat=5000&limit=100&t=search"
 
+  # Synthetic search plugins (signed repo, a single .py, the site they search).
+  mkdir -p "$dir/plugins"
+  cp -r "$root/.github/fixtures/plugins/repo/." "$dir/plugins/"
+  cp -r "$root/.github/fixtures/plugins/single" "$root/.github/fixtures/plugins/site" "$dir/plugins/"
+
   phase "serve fixtures on :8000"
   setsid nohup python3 "$root/packages/chithram_player/tool/serve.py" "$dir" 8000 >"$dir/serve.log" 2>&1 &
   for _ in $(seq 1 20); do curl -sfI "$BASE/movie.mkv" >/dev/null && break; sleep 0.5; done

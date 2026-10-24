@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
-import 'nova_page.dart';
 import 'player_page.dart';
 import 'torrent_page.dart';
 
@@ -18,7 +17,6 @@ const String _spikeDefine = String.fromEnvironment('SPIKE');
 final Map<String, WidgetBuilder> _spikes = {
   'torrent': (_) => const TorrentSpikePage(),
   'player': (_) => const PlayerSpikePage(),
-  'nova': (_) => const NovaSpikePage(),
 };
 
 /// Initial route override for desktop (`--dart-define=SPIKE=name`), else null.

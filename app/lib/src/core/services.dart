@@ -24,6 +24,7 @@ import '../home/engine/home_engine.dart';
 import '../home/home_repository.dart';
 import '../home/snapshot.dart';
 import '../plugins/plugin_registry.dart';
+import '../plugins/plugin_wiring.dart';
 import 'paths.dart';
 import 'prefs.dart';
 import 'resume_store.dart';
@@ -53,7 +54,8 @@ class AppServices {
     required this.findSources,
     required this.torznab,
     required this.torrentHome,
-  });
+    PluginRegistry? plugins,
+  }) : plugins = plugins ?? PluginRegistry();
 
   /// The real services: files under the app support directory. Reads only
   /// `prefs.json` and `home_snapshot.json` (in parallel); the database, the
@@ -67,9 +69,9 @@ class AppServices {
       snapshots.load(),
     ).wait;
     final navigatorKey = GlobalKey<NavigatorState>();
-    final plugins = PluginRegistry();
     final youtube = YouTubeService(taste: TasteStore(paths.supportFile('youtube_taste.json')));
     final db = AppDatabase.open(paths); // opens on its first query
+    final plugins = openPluginRegistry(db: db, paths: paths);
     final secrets = openSecretStore(paths);
     final torrents = TorrentService(paths: paths, prefs: prefs);
     final torznab = TorznabService(db: db, secrets: secrets, network: () => torrents.guard.choice);
@@ -91,12 +93,11 @@ class AppServices {
       catalog: const TmdbCatalog(),
       findSources: [plugins, TorznabProviders(torznab)],
       torznab: torznab,
-      // Plugin sources join here when the plugin registry lands: a
-      // PluginPopularSources built from it, added to this list.
       torrentHome: TorrentHomeFeed(
         sources: TorznabPopularSources(torznab),
         cacheFile: File('${paths.cache.path}/torrent_home.json'),
       ),
+      plugins: plugins,
     );
   }
 
@@ -119,6 +120,7 @@ class AppServices {
     List<FindProviderSource>? findSources,
     TorznabService? torznab,
     TorrentHomeFeed? torrentHome,
+    PluginRegistry? plugins,
   }) {
     // Tests build many; each database is lazy and in memory.
     driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
@@ -147,9 +149,10 @@ class AppServices {
       secrets: secrets0,
       home: home ?? HomeEngine(),
       catalog: catalog ?? const TmdbCatalog(),
-      findSources: findSources ?? [PluginRegistry()],
+      findSources: findSources ?? [plugins ?? PluginRegistry()],
       torznab: torznab0,
       torrentHome: torrentHome ?? TorrentHomeFeed(sources: TorznabPopularSources(torznab0)),
+      plugins: plugins,
     );
   }
 
@@ -188,6 +191,10 @@ class AppServices {
 
   /// Torrent Home's popular rails.
   final TorrentHomeFeed torrentHome;
+
+  /// Search plugins: install, update, health, and `search` for Torrent Home.
+  /// Inert (no plugins) in [AppServices.memory] unless a test passes one.
+  final PluginRegistry plugins;
 
   static AppServices of(BuildContext context) {
     final scope = context.dependOnInheritedWidgetOfExactType<AppServicesScope>();

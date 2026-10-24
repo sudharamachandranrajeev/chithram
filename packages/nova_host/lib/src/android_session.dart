@@ -23,7 +23,7 @@ class AndroidStartReport {
   String get line => 'NOVA_ISOLATED=${isolated ? 'yes' : 'no'} detail="$detail"';
 }
 
-/// A runner inside the Android isolated-process service (CPython from python.org,
+/// A runner inside the Android isolated-process service (CPython's Android build,
 /// embedded through JNI). Same NDJSON as the desktop process, carried over a
 /// Messenger (chunked, to stay under the Binder limit) instead of pipes.
 class AndroidNovaSession implements NovaSession {
@@ -36,7 +36,7 @@ class AndroidNovaSession implements NovaSession {
   static AndroidStartReport? lastReport;
   static bool _wired = false;
 
-  /// Set when the platform cannot run plugins (e.g. armeabi-v7a, or the isolated
+  /// Set when the platform cannot run plugins (e.g. an ABI without CPython, or the isolated
   /// service failed to start). Cached: we do not retry into a weaker mode.
   static String? disabledReason;
 

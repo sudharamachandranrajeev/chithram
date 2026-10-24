@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.18)
 project(nova_jni C)
 
-# CPython's official Android build (python.org). Headers are per ABI (pyconfig.h);
+# CPython's Android build (python.org; armeabi-v7a self-built). Headers are per ABI (pyconfig.h);
 # the shared library is the one packaged in jniLibs (see tool/fetch_cpython_android.py).
 set(PY_INC ${CMAKE_CURRENT_SOURCE_DIR}/../../../cpython/${ANDROID_ABI}/include/python3.14)
 set(PY_LIB ${CMAKE_CURRENT_SOURCE_DIR}/../jniLibs/${ANDROID_ABI}/libpython3.14.so)

@@ -39,7 +39,7 @@ List<Widget> phoneTorrentHomeChildren(BuildContext context, TorrentHomeState sta
           itemCount: rail.items.length,
           separatorBuilder: (_, _) => const SizedBox(width: 12),
           itemBuilder: (context, i) => Material(
-            color: ChithramColors.surface,
+            color: ChithramColors.of(context).surface,
             borderRadius: BorderRadius.circular(12),
             clipBehavior: Clip.antiAlias,
             child: InkWell(

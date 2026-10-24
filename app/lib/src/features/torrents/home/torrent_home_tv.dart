@@ -64,7 +64,7 @@ class _TorrentHomeRailsState extends State<TorrentHomeRails> {
                   if (state.loading)
                     Text(
                       'Updating…',
-                      style: TextStyle(color: ChithramColors.textDim, fontSize: d.t(14)),
+                      style: TextStyle(color: ChithramColors.of(context).textDim, fontSize: d.t(14)),
                     ),
                   if (state.sourceErrors.isNotEmpty)
                     Flexible(
@@ -72,7 +72,7 @@ class _TorrentHomeRailsState extends State<TorrentHomeRails> {
                         'Could not read ${state.sourceErrors.keys.join(', ')}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(color: ChithramColors.textDim, fontSize: d.t(14)),
+                        style: TextStyle(color: ChithramColors.of(context).textDim, fontSize: d.t(14)),
                       ),
                     ),
                 ],
@@ -96,7 +96,7 @@ class _Status extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final d = Dims.of(context);
-    final dim = TextStyle(color: ChithramColors.textDim, fontSize: d.t(14));
+    final dim = TextStyle(color: ChithramColors.of(context).textDim, fontSize: d.t(14));
     final Widget body;
     if (state.hasSources == false) {
       body = Column(

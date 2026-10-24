@@ -201,7 +201,7 @@ class _RepoTile extends StatelessWidget {
   }
 }
 
-Color _statusColor(PluginHealthStatus s) => switch (s) {
+Color _statusColor(BuildContext context, PluginHealthStatus s) => switch (s) {
       PluginHealthStatus.healthy => const Color(0xFF3DDC84),
       PluginHealthStatus.degraded => const Color(0xFFFFC107),
       PluginHealthStatus.failing || PluginHealthStatus.blocked => const Color(0xFFFF5252),
@@ -230,7 +230,7 @@ class _PluginTile extends StatelessWidget {
         trailing: Text(
           p.health.status.label,
           key: PluginKeys.status(p.engineId),
-          style: TextStyle(color: _statusColor(p.health.status), fontWeight: FontWeight.w700),
+          style: TextStyle(color: _statusColor(context, p.health.status), fontWeight: FontWeight.w700),
         ),
         onTap: () => _showDetails(context, p),
       ),

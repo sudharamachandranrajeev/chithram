@@ -142,7 +142,7 @@ class _TorrentsPageState extends State<_TvTorrentsPage> {
                 ),
                 if (active != null) ...[
                   const SizedBox(height: 24),
-                  Text('Downloads', style: TextStyle(color: ChithramColors.accent, fontSize: d.t(14), fontWeight: FontWeight.w600)),
+                  Text('Downloads', style: TextStyle(color: ChithramColors.of(context).accent, fontSize: d.t(14), fontWeight: FontWeight.w600)),
                   const SizedBox(height: 4),
                   Text(active.name ?? 'Torrent',
                       maxLines: 2,

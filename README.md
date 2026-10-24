@@ -15,6 +15,36 @@ for decisions, [docs/roadmap.md](docs/roadmap.md) for the plan and [docs/researc
   (per-ABI: arm64-v8a, armeabi-v7a, x86_64).
 - Windows (installer and portable zip) and Linux (AppImage and tarball).
 
+## Install on Linux
+
+One command, for Arch, Omarchy, Ubuntu, Debian and Fedora (x86_64):
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/sudharamachandranrajeev/chithram/main/install-linux.sh | bash
+```
+
+On **Arch and Omarchy** this is all you need. Step by step, the script:
+
+1. installs the runtime libraries with `sudo pacman -S --needed mpv libsecret gtk3`
+   (`apt` and `dnf` equivalents are used on Debian/Ubuntu and Fedora);
+2. downloads the newest release's `linux-x64.tar.gz` from GitHub and checks it
+   against the release's `SHA256SUMS.txt`;
+3. unpacks it to `~/.local/share/chithram`, links `~/.local/bin/chithram` and adds
+   an app-launcher entry, so Chithram shows up in your menu (on Omarchy: `Super + Space`).
+
+Everything stays in your home directory; only step 1 needs `sudo`.
+
+- **Update:** run the same command again.
+- **Uninstall:** `curl -fsSL https://raw.githubusercontent.com/sudharamachandranrajeev/chithram/main/install-linux.sh | bash -s -- --uninstall`
+- **Libraries already installed?** Add `--no-deps`: `... | bash -s -- --no-deps`.
+- **Prefer to read it first?** The script is [install-linux.sh](install-linux.sh), about 90 lines.
+- **Prefer an AppImage?** Download `Chithram-<version>-linux-x86_64.AppImage` from the
+  [releases page](https://github.com/sudharamachandranrajeev/chithram/releases),
+  then `chmod +x` it and run it. It bundles its own libmpv.
+
+Chithram opens full screen on a TV; on a desktop, turn on *Settings > 10-foot TV mode*
+for the TV layout.
+
 ## Content-neutral
 
 Chithram ships **no** indexers, plugins or addon URLs, and no channel lists.

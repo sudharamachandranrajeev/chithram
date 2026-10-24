@@ -62,7 +62,8 @@ Future<String> readText(IptvResponse r, {int maxBytes = 32 * 1024 * 1024}) async
 class DartIoHttp implements IptvHttp {
   DartIoHttp({String userAgent = 'Chithram'}) : _client = HttpClient() {
     _client.userAgent = userAgent;
-    _client.autoUncompress = false; // we gunzip XMLTV ourselves
+    // Dart asks for gzip; decode Content-Encoding here. A .xml.gz file served
+    // as-is is not content-encoded; xmltv.dart gunzips that by its magic.
     _client.connectionTimeout = const Duration(seconds: 15);
   }
   final HttpClient _client;

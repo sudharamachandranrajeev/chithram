@@ -36,9 +36,34 @@ adb shell am force-stop "$PKG"
 adb shell am start -W -n "$PKG/.MainActivity" >/dev/null
 sleep 4
 
+# A loaded CI emulator sometimes shows "System UI isn't responding" over the
+# app; that dialog hides the app from uiautomator. Press its "Wait" button.
+dismiss_anr() {
+  adb shell uiautomator dump /sdcard/chithram-ui.xml >/dev/null
+  local xy
+  xy=$(adb exec-out cat /sdcard/chithram-ui.xml | python3 -I -c '
+import re, sys, xml.etree.ElementTree as ET
+nodes = list(ET.fromstring(sys.stdin.read()).iter("node"))
+if not any("isn’t responding" in n.get("text", "") or "isn'"'"'t responding" in n.get("text", "") for n in nodes):
+    sys.exit(1)
+for n in nodes:
+    if n.get("text", "") == "Wait":
+        x1, y1, x2, y2 = map(int, re.findall(r"\d+", n.get("bounds", "")))
+        print((x1 + x2) // 2, (y1 + y2) // 2)
+        break
+') || return 0
+  if [[ -n $xy ]]; then
+    echo "::notice::dismissed a System UI ANR dialog"
+    # shellcheck disable=SC2086
+    adb shell input tap $xy
+    sleep 1
+  fi
+}
+
 # Prints "x y" of the bottom-bar item labelled $1 (its description is the label
 # and "Tab n of m").
 find_tab() {
+  dismiss_anr
   adb shell uiautomator dump /sdcard/chithram-ui.xml >/dev/null
   adb exec-out cat /sdcard/chithram-ui.xml | python3 -I -c '
 import re, sys, xml.etree.ElementTree as ET

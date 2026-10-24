@@ -28,6 +28,7 @@ import '../plugins/plugin_wiring.dart';
 import 'paths.dart';
 import 'prefs.dart';
 import 'resume_store.dart';
+import 'update/app_update.dart';
 import 'resume_store_json.dart';
 import 'secrets.dart';
 
@@ -55,7 +56,9 @@ class AppServices {
     required this.torznab,
     required this.torrentHome,
     PluginRegistry? plugins,
-  }) : plugins = plugins ?? PluginRegistry();
+    AppUpdater? updates,
+  }) : plugins = plugins ?? PluginRegistry(),
+       updates = updates ?? AppUpdater(dir: paths.cacheDir('updates'));
 
   /// The real services: files under the app support directory. Reads only
   /// `prefs.json` and `home_snapshot.json` (in parallel); the database, the
@@ -196,6 +199,9 @@ class AppServices {
   /// Search plugins: install, update, health, and `search` for Torrent Home.
   /// Inert (no plugins) in [AppServices.memory] unless a test passes one.
   final PluginRegistry plugins;
+
+  /// Newer Chithram releases: the Settings entry and the daily check.
+  final AppUpdater updates;
 
   static AppServices of(BuildContext context) {
     final scope = context.dependOnInheritedWidgetOfExactType<AppServicesScope>();

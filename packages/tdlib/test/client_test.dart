@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -266,11 +267,7 @@ void main() {
     expect(f.covers(0, 10), isTrue);
   });
 
-  test('missing native library is reported, not thrown as an ArgumentError', () {
-    expect(
-      () => NativeTdTransport.open(),
-      // The test host has no TDLib unless CHITHRAM_TDLIB_LIB is set.
-      anyOf(throwsA(isA<TdUnavailable>()), returnsNormally),
-    );
-  });
+  test('a missing native library is reported, not thrown as an ArgumentError', () async {
+    await expectLater(NativeTdTransport.open(), throwsA(isA<TdUnavailable>()));
+  }, skip: (Platform.environment['CHITHRAM_TDLIB_LIB'] ?? '').isNotEmpty ? 'the library is present (native_test.dart covers it)' : null);
 }

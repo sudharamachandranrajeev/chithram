@@ -84,4 +84,59 @@ void main() {
     expect(d.title, 'Fixture Video');
     expect(d.duration, const Duration(seconds: 212));
   });
+
+  test('related: lockup videos from /next, no playlists, not the video itself', () async {
+    late http.Request sent;
+    final client = MockClient((request) async {
+      sent = request;
+      return http.Response(fixtureText('next_related.json'), 200);
+    });
+    final items = await InnertubeBrowse(client: client, region: 'GB').related('seedseed001');
+    final body = jsonDecode(sent.body) as Map<String, dynamic>;
+    expect(sent.url.path, '/youtubei/v1/next');
+    expect(body['videoId'], 'seedseed001');
+    expect(body['context']['client']['gl'], 'GB');
+    expect(items.map((v) => v.videoId), ['ccccccccc01', 'ccccccccc02']);
+    final first = items.first;
+    expect(first.title, 'Related One');
+    expect(first.author, 'Chan C');
+    expect(first.channelId, 'UC${'c' * 22}');
+    expect(first.duration, const Duration(minutes: 3, seconds: 24));
+    expect(first.viewsText, '208M views');
+    expect(first.isLive, isFalse);
+    expect(first.thumbnails.single.width, 336);
+    expect(items[1].isLive, isTrue);
+    expect(items[1].duration, isNull);
+    expect(items[1].viewsText, '1.2K watching');
+  });
+
+  test('channelHome: every shelf, lockups and video renderers; rejects a bad id', () async {
+    late Map<String, dynamic> sent;
+    final client = MockClient((request) async {
+      sent = jsonDecode(request.body) as Map<String, dynamic>;
+      return http.Response(fixtureText('channel_home.json'), 200);
+    });
+    final browse = InnertubeBrowse(client: client);
+    final items = await browse.channelHome('UC${'d' * 22}');
+    expect(sent['browseId'], 'UC${'d' * 22}');
+    expect(items.map((v) => v.title), ['Topic Lockup', 'Topic Video']);
+    expect(items.first.viewsText, '5K views');
+    expect(() => browse.channelHome('nope'), throwsA(isA<InnertubeException>()));
+  });
+
+  test('VideoItem survives JSON', () {
+    const v = VideoItem(
+      videoId: 'aaaaaaaaaa1',
+      title: 'T',
+      author: 'A',
+      channelId: 'UCx',
+      duration: Duration(seconds: 61),
+      viewsText: '3 views',
+      isLive: true,
+      thumbnails: [ThumbnailInfo('u', width: 1, height: 2)],
+    );
+    final back = VideoItem.fromJson(jsonDecode(jsonEncode(v.toJson())) as Map<String, Object?>);
+    expect(back.toJson(), v.toJson());
+    expect(VideoItem.fromJson({'id': 'b', 'title': 'B'}).thumbnails, isEmpty);
+  });
 }

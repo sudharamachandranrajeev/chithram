@@ -1,7 +1,7 @@
 // Plain widget tests (no device): focus rules at TV size and layout at phone size.
 // CI copies this and support.dart into test/_host/ and runs `flutter test test/_host`.
+import 'package:chithram/src/features/youtube/phone/phone_video_card.dart';
 import 'package:chithram/src/ui/common/app.dart';
-import 'package:chithram/src/ui/common/details_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -12,7 +12,7 @@ Future<void> pumpAt(WidgetTester t, Size size) async {
   t.view.physicalSize = size;
   t.view.devicePixelRatio = 1;
   addTearDown(t.view.reset);
-  await t.pumpWidget(const ChithramApp());
+  await t.pumpWidget(ChithramApp(services: fixtureServices()));
   await t.pumpAndSettle();
 }
 
@@ -36,18 +36,11 @@ void main() {
       expect(t.widget<TextField>(find.byKey(const ValueKey('search-field'))).controller!.text, 'sin');
     });
 
-    testWidgets('tile opens details, back returns', (t) async {
+    testWidgets('home: a YouTube billboard and rails of video cards', (t) async {
       await pumpAt(t, const Size(400, 800));
-      await t.tap(find.text('Title 1').first);
-      await t.pumpAndSettle();
-      expect(find.byType(DetailsPage), findsOneWidget);
-      expect(find.text('Play'), findsOneWidget);
-      expect(find.text('Trailer'), findsOneWidget);
-      expect(find.text('Add'), findsOneWidget);
-      expect(find.text('Episodes'), findsOneWidget);
-      Navigator.of(t.element(find.byType(DetailsPage))).pop();
-      await t.pumpAndSettle();
-      expect(find.byType(DetailsPage), findsNothing);
+      expect(find.text('Popular on YouTube'), findsWidgets);
+      expect(find.text('Popular music'), findsOneWidget);
+      expect(find.byType(PhoneVideoCard), findsWidgets);
     });
   });
 
@@ -67,8 +60,7 @@ void main() {
     await press(t, LogicalKeyboardKey.arrowUp);
     await press(t, LogicalKeyboardKey.arrowUp);
     await press(t, LogicalKeyboardKey.arrowRight);
-    await press(t, LogicalKeyboardKey.select);
-    expect(find.byType(DetailsPage), findsOneWidget);
+    expect(find.text('Play'), findsOneWidget);
     await press(t, LogicalKeyboardKey.arrowDown);
     await press(t, LogicalKeyboardKey.arrowDown);
     expectFocusInApp();
@@ -88,12 +80,20 @@ void main() {
       for (var i = 0; i < 3; i++) {
         await press(t, LogicalKeyboardKey.arrowRight);
       }
+      // Focus scrolls Home to centre the tile: compare page positions.
+      double scrolled() => t
+          .state<ScrollableState>(find
+              .descendant(of: find.byKey(const PageStorageKey<String>('home-scroll')), matching: find.byType(Scrollable))
+              .first)
+          .position
+          .pixels;
       final x = FocusManager.instance.primaryFocus!.rect.center.dx;
-      final y = FocusManager.instance.primaryFocus!.rect.center.dy;
+      final y = FocusManager.instance.primaryFocus!.rect.center.dy + scrolled();
       await press(t, LogicalKeyboardKey.arrowDown);
       final r = FocusManager.instance.primaryFocus!.rect;
-      expect(r.center.dy, greaterThan(y));
-      expect((r.center.dx - x).abs(), lessThan(40));
+      expect(r.center.dy + scrolled(), greaterThan(y));
+      // The nearest tile: within half a tile (the rails scroll on their own).
+      expect((r.center.dx - x).abs(), lessThan(r.width / 2));
       await press(t, LogicalKeyboardKey.arrowUp);
       expect((FocusManager.instance.primaryFocus!.rect.center.dx - x).abs(), lessThan(40));
       expectFocusInApp();
@@ -115,7 +115,7 @@ void main() {
       expect(focusLabel(), 'rail Home');
       final railScroll = find
           .descendant(
-              of: find.byKey(const PageStorageKey<String>('rail-Continue watching')),
+              of: find.byKey(const PageStorageKey<String>('rail-Popular music')),
               matching: find.byType(Scrollable))
           .first;
       await t.drag(railScroll, const Offset(-500, 0));
@@ -142,19 +142,6 @@ void main() {
       await t.sendKeyEvent(LogicalKeyboardKey.backspace);
       await t.pumpAndSettle();
       expect(_query(t), 's');
-    });
-
-    testWidgets('details opens from a tile and Back returns focus', (t) async {
-      await pumpAt(t, const Size(1920, 1080));
-      await press(t, LogicalKeyboardKey.arrowRight);
-      await press(t, LogicalKeyboardKey.arrowDown);
-      final tile = FocusManager.instance.primaryFocus;
-      await press(t, LogicalKeyboardKey.select);
-      expect(find.byType(DetailsPage), findsOneWidget);
-      expectFocusInApp();
-      Navigator.of(t.element(find.byType(DetailsPage))).pop();
-      await t.pumpAndSettle();
-      expect(FocusManager.instance.primaryFocus, tile);
     });
   });
 }

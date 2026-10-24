@@ -11,6 +11,8 @@ import '../data/database.dart';
 import '../features/livetv/iptv_service.dart';
 import '../features/receive/receive_service.dart';
 import '../features/torrents/torrent_service.dart';
+import '../features/youtube/feed/taste.dart';
+import '../features/youtube/feed/youtube_feed.dart';
 import '../features/youtube/youtube_service.dart';
 import '../find/find_api.dart';
 import '../home/engine/home_engine.dart';
@@ -33,6 +35,7 @@ class AppServices {
     required this.prefs,
     required this.resume,
     required this.youtube,
+    required this.feed,
     required this.iptv,
     required this.torrents,
     required this.receive,
@@ -57,12 +60,14 @@ class AppServices {
     ).wait;
     final navigatorKey = GlobalKey<NavigatorState>();
     final plugins = PluginRegistry();
+    final youtube = YouTubeService(taste: TasteStore(paths.supportFile('youtube_taste.json')));
     return AppServices(
       navigatorKey: navigatorKey,
       paths: paths,
       prefs: prefs,
       resume: await JsonResumeStore.load(paths.supportFile('resume.json')),
-      youtube: YouTubeService(),
+      youtube: youtube,
+      feed: YouTubeFeed(youtube: youtube, cacheFile: File('${paths.cache.path}/youtube_feed.json')),
       iptv: IptvService(store: JsonFileIptvStore(Directory('${paths.support.path}/iptv'))),
       torrents: TorrentService(paths: paths, prefs: prefs),
       receive: ReceiveService(navigatorKey: navigatorKey, paths: paths, prefs: prefs),
@@ -82,6 +87,7 @@ class AppServices {
     Prefs? prefs,
     ResumeStore? resume,
     YouTubeService? youtube,
+    YouTubeFeed? feed,
     IptvService? iptv,
     TorrentService? torrents,
     ReceiveService? receive,
@@ -96,12 +102,14 @@ class AppServices {
     final key = navigatorKey ?? GlobalKey<NavigatorState>();
     final paths = AppPaths.under('${Directory.systemTemp.path}/chithram-memory');
     final prefs0 = prefs ?? Prefs.memory();
+    final youtube0 = youtube ?? YouTubeService();
     return AppServices(
       navigatorKey: key,
       paths: paths,
       prefs: prefs0,
       resume: resume ?? MemoryResumeStore(),
-      youtube: youtube ?? YouTubeService(),
+      youtube: youtube0,
+      feed: feed ?? YouTubeFeed(youtube: youtube0),
       iptv: iptv ?? IptvService(store: InMemoryIptvStore()),
       torrents: torrents ?? TorrentService(paths: paths, prefs: prefs0),
       receive: receive ?? ReceiveService(navigatorKey: key, paths: paths, prefs: prefs0),
@@ -120,6 +128,9 @@ class AppServices {
   final Prefs prefs;
   final ResumeStore resume;
   final YouTubeService youtube;
+
+  /// Home's YouTube rails.
+  final YouTubeFeed feed;
   final IptvService iptv;
   final TorrentService torrents;
   final ReceiveService receive;

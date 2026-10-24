@@ -217,6 +217,34 @@ class VideoItem {
   final String viewsText;
   final bool isLive;
   final List<ThumbnailInfo> thumbnails;
+
+  /// For caches: [fromJson] reads it back.
+  Map<String, Object?> toJson() => {
+        'id': videoId,
+        'title': title,
+        if (author.isNotEmpty) 'author': author,
+        if (channelId.isNotEmpty) 'channel': channelId,
+        if (duration != null) 'secs': duration!.inSeconds,
+        if (viewsText.isNotEmpty) 'views': viewsText,
+        if (isLive) 'live': true,
+        'thumbs': [
+          for (final t in thumbnails) {'url': t.url, if (t.width != null) 'w': t.width, if (t.height != null) 'h': t.height},
+        ],
+      };
+
+  static VideoItem fromJson(Map<String, Object?> j) => VideoItem(
+        videoId: j['id'] as String,
+        title: j['title'] as String,
+        author: j['author'] as String? ?? '',
+        channelId: j['channel'] as String? ?? '',
+        duration: j['secs'] == null ? null : Duration(seconds: j['secs'] as int),
+        viewsText: j['views'] as String? ?? '',
+        isLive: j['live'] as bool? ?? false,
+        thumbnails: [
+          for (final t in j['thumbs'] as List? ?? const [])
+            ThumbnailInfo((t as Map)['url'] as String, width: t['w'] as int?, height: t['h'] as int?),
+        ],
+      );
 }
 
 /// One page of results and the token for the next one (null at the end).

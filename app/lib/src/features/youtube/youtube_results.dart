@@ -1,9 +1,41 @@
 import 'package:flutter/material.dart';
 import 'package:innertube/innertube.dart' hide Page;
 
+import '../../core/services.dart';
+import '../../player/play_request.dart';
 import '../../theme.dart';
 import '../../ui/common/dims.dart';
 import '../../ui/tv/focus_card.dart';
+
+/// Plays [v] in the fullscreen player. [source] is the Home rail it was
+/// picked from, if any.
+Future<void> playVideo(BuildContext context, VideoItem v, {String? source}) async {
+  final request = await AppServices.of(context).youtube.playRequest(v, source: source);
+  if (context.mounted) await openPlayer(context, request);
+}
+
+/// A video's 1280x720 frame for a billboard, falling back to the 480x360 one
+/// that every video has.
+class HeroImage extends StatelessWidget {
+  const HeroImage({super.key, required this.videoId});
+
+  final String videoId;
+
+  @override
+  Widget build(BuildContext context) {
+    return Image.network(
+      'https://i.ytimg.com/vi/$videoId/hq720.jpg',
+      fit: BoxFit.cover,
+      alignment: Alignment.topCenter,
+      cacheWidth: 1280,
+      errorBuilder: (_, _, _) => Image.network(
+        'https://i.ytimg.com/vi/$videoId/hqdefault.jpg',
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => const SizedBox.shrink(),
+      ),
+    );
+  }
+}
 
 /// A lazily built grid of video tiles (a sliver, so it lives inside the
 /// page's scroll view). Asks for the next page near the end.
@@ -81,92 +113,100 @@ class VideoTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final d = Dims.of(context);
-    final url = thumbnailUrl(item.thumbnails);
-    final duration = item.duration;
-    final badge = item.isLive
-        ? 'LIVE'
-        : (duration == null ? null : clock(duration));
     return FocusCard(
       section: section,
       onActivate: onActivate,
-      child: Container(
-        color: ChithramColors.surface,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(
-              height: thumbnailHeight(d),
-              width: double.infinity,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  ColoredBox(
-                    color: ChithramColors.surfaceHigh,
-                    child: url == null
-                        ? const Icon(Icons.smart_display_rounded, size: 40)
-                        : Image.network(
-                            url,
-                            fit: BoxFit.cover,
-                            cacheWidth: 320,
-                            errorBuilder: (_, _, _) => const Icon(
-                              Icons.smart_display_rounded,
-                              size: 40,
-                            ),
-                          ),
-                  ),
-                  if (badge != null)
-                    Positioned(
-                      right: 6,
-                      bottom: 6,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
+      child: VideoTileBody(item: item),
+    );
+  }
+}
+
+/// A video tile's look without the focus handling: thumbnail with the length
+/// (or LIVE), title and channel. Fills its width; [VideoTile.extent] tall.
+class VideoTileBody extends StatelessWidget {
+  const VideoTileBody({super.key, required this.item});
+
+  final VideoItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final d = Dims.of(context);
+    final url = VideoTile.thumbnailUrl(item.thumbnails);
+    final duration = item.duration;
+    final badge = item.isLive
+        ? 'LIVE'
+        : (duration == null ? null : VideoTile.clock(duration));
+    return Container(
+      color: ChithramColors.surface,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            height: VideoTile.thumbnailHeight(d),
+            width: double.infinity,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                ColoredBox(
+                  color: ChithramColors.surfaceHigh,
+                  child: url == null
+                      ? const Icon(Icons.smart_display_rounded, size: 40)
+                      : Image.network(
+                          url,
+                          fit: BoxFit.cover,
+                          cacheWidth: 320,
+                          errorBuilder: (_, _, _) =>
+                              const Icon(Icons.smart_display_rounded, size: 40),
                         ),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.75),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          badge,
-                          style: TextStyle(
-                            fontSize: d.t(12),
-                            fontWeight: FontWeight.w600,
-                          ),
+                ),
+                if (badge != null)
+                  Positioned(
+                    right: 6,
+                    bottom: 6,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.75),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        badge,
+                        style: TextStyle(
+                          fontSize: d.t(12),
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
-                ],
-              ),
+                  ),
+              ],
             ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(10, 8, 10, 0),
+            child: Text(
+              item.title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: d.t(14), fontWeight: FontWeight.w600),
+            ),
+          ),
+          if (item.author.isNotEmpty)
             Padding(
-              padding: const EdgeInsets.fromLTRB(10, 8, 10, 0),
+              padding: const EdgeInsets.fromLTRB(10, 2, 10, 0),
               child: Text(
-                item.title,
-                maxLines: 2,
+                item.author,
+                maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontSize: d.t(14),
-                  fontWeight: FontWeight.w600,
+                  fontSize: d.t(12),
+                  color: ChithramColors.textDim,
                 ),
               ),
             ),
-            if (item.author.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(10, 2, 10, 0),
-                child: Text(
-                  item.author,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: d.t(12),
-                    color: ChithramColors.textDim,
-                  ),
-                ),
-              ),
-          ],
-        ),
+        ],
       ),
     );
   }

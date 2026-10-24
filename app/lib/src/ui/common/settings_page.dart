@@ -5,6 +5,7 @@ import '../../core/images/cache_settings.dart';
 import '../../features/metadata/metadata_settings.dart';
 import '../../features/receive/receive_settings.dart';
 import '../../features/torrents/torrent_settings.dart';
+import '../../features/youtube/youtube_settings.dart';
 import '../../find/torznab/torznab_settings.dart';
 import '../../plugins/ui/plugins_settings.dart';
 import '../../theme.dart';
@@ -44,6 +45,7 @@ class SettingsPage extends StatelessWidget {
           const TorznabSettings(),
           const CacheSettings(),
           const ReceiveSettings(),
+          const YouTubeSettings(),
           const InterfaceSettings(),
           const AboutSettings(),
         ],

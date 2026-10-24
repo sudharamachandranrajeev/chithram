@@ -1,8 +1,12 @@
+import 'dart:async';
+import 'dart:ui' show PlatformDispatcher;
+
 import 'package:chithram_player/chithram_player.dart';
 import 'package:innertube/innertube.dart';
 
 import '../../core/item_id.dart';
 import '../../player/play_request.dart';
+import 'feed/taste.dart';
 import 'youtube_fixture.dart';
 
 // innertube's `Page` clashes with Flutter's: import it with a prefix or `hide`
@@ -33,13 +37,15 @@ class YouTubeUnavailable implements Exception {
   String toString() => message;
 }
 
-/// YouTube search and stream resolution.
+/// YouTube search and stream resolution. Every play and search also teaches
+/// [taste], which Home's suggestions come from.
 class YouTubeService {
   YouTubeService({
     InnertubeBrowse? browse,
     YouTubeResolver? resolver,
     this.caps = const PlaybackCaps(),
-  }) {
+    TasteStore? taste,
+  }) : taste = taste ?? TasteStore.memory() {
     if (_e2eBase.isNotEmpty && browse == null && resolver == null) {
       _browse = FixtureBrowse(_e2eBase);
       _resolver = FixtureResolver(_e2eBase);
@@ -52,22 +58,39 @@ class YouTubeService {
   InnertubeBrowse? _browse;
   YouTubeResolver? _resolver;
 
-  InnertubeBrowse get browse => _browse ??= InnertubeBrowse();
+  InnertubeBrowse get browse => _browse ??= InnertubeBrowse(region: deviceRegion());
   YouTubeResolver get resolver => _resolver ??= YouTubeResolver();
+
+  final TasteStore taste;
+
+  /// The device's country, for what is popular there; US when unknown.
+  static String deviceRegion() {
+    final code = PlatformDispatcher.instance.locale.countryCode?.toUpperCase();
+    return code != null && RegExp(r'^[A-Z]{2}$').hasMatch(code) ? code : 'US';
+  }
 
   /// What the playing device decodes. Engines report it; set it once known.
   PlaybackCaps caps;
 
-  Future<Page<VideoItem>> search(String q, {String? continuation}) =>
-      browse.search(q, continuation: continuation);
+  Future<Page<VideoItem>> search(String q, {String? continuation}) {
+    if (continuation == null) unawaited(taste.searched(q));
+    return browse.search(q, continuation: continuation);
+  }
 
-  Future<PlayRequest> playRequest(VideoItem v) async => PlayRequest(
+  /// [source] is the Home rail [v] was picked from, if any.
+  Future<PlayRequest> playRequest(VideoItem v, {String? source}) async => PlayRequest(
     itemId: ItemId.youtube(v.videoId),
     title: v.title,
     subtitle: v.author.isEmpty ? null : v.author,
     artwork: _artwork(v.thumbnails),
     isLive: v.isLive,
     resolve: () => resolveSpec(v.videoId),
+    onWatched: (position, duration) {
+      // Never started (an error, or backed out of the resume prompt).
+      if (position > Duration.zero) {
+        unawaited(taste.watched(v, position: position, duration: duration, source: source));
+      }
+    },
   );
 
   Future<PlayRequest> playRequestForId(String videoId) async => PlayRequest(

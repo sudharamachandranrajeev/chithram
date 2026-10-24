@@ -11,6 +11,11 @@ Release notes are taken from the section of the version being tagged.
 - "Find sources for ..." on the Search page, a first listing of provider results.
 - Text sent from a phone can fill the open text field (used for API keys and long tokens).
 - A performance run on the TV emulator (`perf.yml`, report mode).
+- Home is YouTube: a billboard and rails of what is popular now in the device's region (music, live, sports, news,
+  gaming, from YouTube's own topic channels). As you watch and search, Chithram learns on the device and adds
+  Continue watching, Recommended for you and Because you watched. Finished videos raise their channel and title words,
+  videos left within half a minute lower them, and old interest fades over a month. Lists are cached, so Home opens
+  with the last ones; pull down on a phone to refresh. Settings can clear the watch history.
 
 ### Changed
 - The TV, phone and shared UI code now live in `ui/tv`, `ui/phone` and `ui/common`.

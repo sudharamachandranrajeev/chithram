@@ -14,6 +14,7 @@ class PlayRequest {
     this.isLive = false,
     required this.resolve,
     this.onClose,
+    this.onWatched,
     this.status,
     this.zap,
   });
@@ -30,6 +31,10 @@ class PlayRequest {
 
   /// Called when the route closes, e.g. to stop a torrent.
   final Future<void> Function()? onClose;
+
+  /// Called once when the item stops (closed, or zapped away from) with the
+  /// last position and the length (zero for live), e.g. for watch history.
+  final void Function(Duration position, Duration duration)? onWatched;
 
   /// A status line for the OSD, e.g. torrent speed and peers.
   final Stream<String>? status;

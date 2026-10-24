@@ -1,3 +1,6 @@
+import 'package:chithram/src/core/services.dart';
+import 'package:chithram/src/features/youtube/youtube_fixture.dart';
+import 'package:chithram/src/features/youtube/youtube_service.dart';
 import 'package:chithram/src/ui/tv/focus_card.dart';
 import 'package:chithram/src/ui/tv/home_page.dart';
 import 'dart:io';
@@ -26,7 +29,10 @@ void main() {
 
     await tester.runAsync(_loadPoppins);
     // The TV Home page at a phone's width (no form scope: the size decides).
-    await tester.pumpWidget(MaterialApp(home: Scaffold(body: HomePage(focus: SectionFocus()))));
+    await tester.pumpWidget(AppServicesScope(
+      services: AppServices.memory(youtube: YouTubeService(browse: FixtureBrowse(''))),
+      child: MaterialApp(home: Scaffold(body: HomePage(focus: SectionFocus()))),
+    ));
     await tester.pumpAndSettle();
 
     final home = tester.getRect(find.byType(HomePage));

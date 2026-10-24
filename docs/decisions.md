@@ -111,6 +111,14 @@ Full plan in the project notes; what binds later versions:
 - Network etiquette for every background fetcher: token bucket, exponential backoff with +-20% jitter capped at 6 h,
   `Retry-After` honoured, conditional requests when the server sends validators; nothing on the startup critical path.
 - Hero tags are scoped to their rail (`'<railId>/<itemId>'`).
+- Home is YouTube (owner, 2026-10-24). Popular rails come from YouTube's topic channels (Music, Live, Sports, News,
+  Gaming) for the device's region, since YouTube dropped its trending list. Suggestions are learnt on the device only
+  (`youtube_taste.json`): each play adds a reward (finished +1, a third +0.5, left within 30 s -0.5) to the channel,
+  the title words and the Home rail it came from, with a 30-day half-life. "Recommended for you" ranks the related
+  lists of liked plays, new uploads of top channels and popular videos by that profile, at most two per channel.
+  Fetched lists live in the cache directory (`youtube_feed.json`, popular 3 h, related 3 days, uploads 6 h). Fetches
+  happen only when Home opens, after a play and on pull to refresh; a failure keeps the old lists and is not retried
+  on a timer. TMDB rails join Home below the YouTube ones when their work lands.
 - Text from the phone: while a field opened with `askText(..., acceptFromPhone: true)` is up, accepted LocalSend text goes
   into it (`ReceiveService.routeTextTo`) instead of the intake path.
 - UI folders: `ui/tv/` (D-pad widgets, TV shell and Home), `ui/phone/` (phone shell and widgets), `ui/common/` (shared

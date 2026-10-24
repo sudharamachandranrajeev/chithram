@@ -16,6 +16,12 @@ Release notes are taken from the section of the version being tagged.
   Continue watching, Recommended for you and Because you watched. Finished videos raise their channel and title words,
   videos left within half a minute lower them, and old interest fades over a month. Lists are cached, so Home opens
   with the last ones; pull down on a phone to refresh. Settings can clear the watch history.
+- Telegram receiver: sign in with your own Telegram account (QR code first, phone number and code as the
+  fallback, two-step password supported) and any video or audio file you send or forward to your Saved Messages
+  is downloaded and starts playing while it downloads (seeking works). If something is already playing, you
+  are asked first. Files are kept for 7 days or up to 4 GB; "Clear Telegram downloads" empties them; Sign out
+  wipes the local Telegram data. Only Saved Messages is read. Uses TDLib; builds made without the project's
+  Telegram app id show "This build has no Telegram app id" and nothing else changes.
 
 ### Changed
 - The TV, phone and shared UI code now live in `ui/tv`, `ui/phone` and `ui/common`.

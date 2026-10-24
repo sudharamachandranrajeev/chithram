@@ -1,0 +1,156 @@
+# Builds TDLib's JSON library (libtdjson) from a pinned upstream commit for
+# every platform Chithram ships on. Run by hand (workflow_dispatch); the
+# artifacts are then published as the assets of the `tdlib-<version>` GitHub
+# release, and packages/tdlib/tool/tdlib.lock.json pins their sha256. The app
+# builds (ci, e2e, release) download those assets with
+# packages/tdlib/tool/fetch_tdlib.py and verify the hash. TDLib is
+# BSL-1.0 licensed (NOTICE).
+
+name: TDLib
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  # "Update version to 1.8.69." on tdlib/td master. Change both together.
+  TDLIB_VERSION: 1.8.69
+  TDLIB_COMMIT: 0e88653dcbf4e44c73cb655a05b58cd749a91169
+  NDK_VERSION: 28.2.13676358
+
+jobs:
+  android:
+    name: Android (arm64-v8a, armeabi-v7a, x86_64)
+    runs-on: ubuntu-22.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq gperf cmake ninja-build php-cli perl make >/dev/null
+      - name: TDLib sources
+        run: |
+          git clone -q https://github.com/tdlib/td.git td
+          git -C td checkout -q "$TDLIB_COMMIT"
+          grep -m1 'project(TDLib' td/CMakeLists.txt
+      - name: Android NDK
+        run: |
+          sdk=${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}
+          echo "ANDROID_SDK=$sdk" >> "$GITHUB_ENV"
+          yes | "$sdk/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null 2>&1 || true
+          "$sdk/cmdline-tools/latest/bin/sdkmanager" --install "ndk;$NDK_VERSION" >/dev/null
+      - name: OpenSSL (static, per ABI)
+        working-directory: td/example/android
+        run: ./build-openssl.sh "$ANDROID_SDK" "$NDK_VERSION" third-party/openssl OpenSSL_1_1_1w
+      - name: TDLib JSON interface (per ABI, API 24)
+        working-directory: td/example/android
+        run: ./build-tdlib.sh "$ANDROID_SDK" "$NDK_VERSION" third-party/openssl c++_static JSON 24 "arm64-v8a armeabi-v7a x86_64"
+      - name: Collect
+        run: |
+          mkdir -p dist
+          for abi in arm64-v8a armeabi-v7a x86_64; do
+            cp "td/example/android/tdlib/libs/$abi/libtdjson.so" "dist/libtdjson-$TDLIB_VERSION-android-$abi.so"
+          done
+          ls -l dist
+          sha256sum dist/*
+          for abi in arm64-v8a armeabi-v7a x86_64; do
+            "$ANDROID_SDK/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-nm" -D --defined-only "dist/libtdjson-$TDLIB_VERSION-android-$abi.so" | grep -E 'td_(create_client_id|send|receive|execute)$' | wc -l
+          done
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: tdjson-android
+          retention-days: 2
+          path: dist/*
+
+  linux:
+    name: Linux x64
+    # The oldest supported Ubuntu, so the library runs on older distros too.
+    runs-on: ubuntu-22.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq gperf cmake ninja-build libssl-dev zlib1g-dev >/dev/null
+      - name: TDLib sources
+        run: |
+          git clone -q https://github.com/tdlib/td.git td
+          git -C td checkout -q "$TDLIB_COMMIT"
+      - name: Build libtdjson (OpenSSL, zlib and the C++ runtime linked statically)
+        run: |
+          cmake -S td -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+            -DOPENSSL_USE_STATIC_LIBS=ON -DZLIB_LIBRARY=/usr/lib/x86_64-linux-gnu/libz.a \
+            -DCMAKE_SHARED_LINKER_FLAGS="-static-libstdc++ -static-libgcc -Wl,--exclude-libs,ALL"
+          cmake --build build --target tdjson -j 3
+      - name: Collect and inspect
+        run: |
+          mkdir -p dist
+          lib=$(realpath build/libtdjson.so)
+          cp "$lib" "dist/libtdjson-$TDLIB_VERSION-linux-x64.so"
+          strip --strip-unneeded "dist/libtdjson-$TDLIB_VERSION-linux-x64.so"
+          cp td/LICENSE_1_0.txt dist/TDLib-LICENSE_1_0.txt
+          ls -l dist
+          readelf -d "dist/libtdjson-$TDLIB_VERSION-linux-x64.so" | grep NEEDED
+          nm -D --defined-only "dist/libtdjson-$TDLIB_VERSION-linux-x64.so" | grep -E 'td_(create_client_id|send|receive|execute)$'
+          # glibc symbol versions: must run on Ubuntu 22.04 and newer.
+          objdump -T "dist/libtdjson-$TDLIB_VERSION-linux-x64.so" | grep -o 'GLIBC_[0-9.]*' | sort -uV | tail -1
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          channel: stable
+          flutter-version: 3.47.7
+          cache: true
+      # The real FFI path: td_create_client_id, td_send, and td_receive in its own isolate.
+      - name: Dart smoke test against the library
+        env:
+          CHITHRAM_TDLIB_LIB: ${{ github.workspace }}/dist/libtdjson-${{ env.TDLIB_VERSION }}-linux-x64.so
+        run: |
+          flutter pub get
+          cd packages/tdlib && flutter test test/native_test.dart
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: tdjson-linux
+          retention-days: 2
+          path: dist/*
+
+  windows:
+    name: Windows x64
+    runs-on: windows-2022
+    timeout-minutes: 120
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: TDLib sources
+        run: |
+          git clone -q https://github.com/tdlib/td.git td
+          git -C td checkout -q "$TDLIB_COMMIT"
+      - name: Dependencies (vcpkg, OpenSSL and zlib static, gperf)
+        run: |
+          "$VCPKG_INSTALLATION_ROOT/vcpkg.exe" install gperf:x64-windows openssl:x64-windows-static-md zlib:x64-windows-static-md --clean-after-build
+      - name: Build tdjson.dll
+        run: |
+          gperf=$(find "$VCPKG_INSTALLATION_ROOT/installed" -name 'gperf.exe' | head -1)
+          echo "gperf: $gperf"
+          cmake -S td -B build -A x64 -DGPERF_EXECUTABLE:FILEPATH="$gperf" \
+            -DCMAKE_TOOLCHAIN_FILE="$VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" \
+            -DVCPKG_TARGET_TRIPLET=x64-windows-static-md
+          cmake --build build --target tdjson --config Release --parallel 3
+      - name: Collect and inspect
+        run: |
+          mkdir -p dist
+          cp build/Release/tdjson.dll "dist/tdjson-$TDLIB_VERSION-windows-x64.dll"
+          ls -l dist
+          dumpbin_exports() { "$(find "/c/Program Files/Microsoft Visual Studio" -name dumpbin.exe -path '*Hostx64/x64*' | head -1)" //exports "$1"; }
+          dumpbin_exports "dist/tdjson-$TDLIB_VERSION-windows-x64.dll" | grep -E 'td_(create_client_id|send|receive|execute)'
+          dumpbin_deps() { "$(find "/c/Program Files/Microsoft Visual Studio" -name dumpbin.exe -path '*Hostx64/x64*' | head -1)" //dependents "$1"; }
+          dumpbin_deps "dist/tdjson-$TDLIB_VERSION-windows-x64.dll"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: tdjson-windows
+          retention-days: 2
+          path: dist/*

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -26,6 +28,13 @@ class ChithramApp extends StatefulWidget {
 class _ChithramAppState extends State<ChithramApp> {
   late final AppServices _services = widget.services ?? AppServices.memory();
   FormFactor? _shown;
+
+  @override
+  void initState() {
+    super.initState();
+    // After the first frame: bring Telegram up when the user signed in before.
+    WidgetsBinding.instance.addPostFrameCallback((_) => unawaited(_services.telegram.resume()));
+  }
 
   /// Desktop in 10-foot mode is the TV design; everything else is as detected.
   FormFactor? _effective() {

@@ -8,6 +8,7 @@ import '../../theme.dart';
 import '../../ui/common/dims.dart';
 import '../../ui/tv/focus_card.dart';
 import '../../ui/tv/home_page.dart' show ActionLabel;
+import '../telegram/telegram_received.dart';
 import 'phone/phone_receive_page.dart';
 import 'receive_keys.dart';
 import 'receive_service.dart';
@@ -79,6 +80,7 @@ class _ReceivePageState extends State<ReceivePage> {
                       ),
                       const SizedBox(height: 16),
                       ..._status(state, dim, pin != null),
+                      const TelegramReceiveSection(),
                       const SizedBox(height: 28),
                       Padding(
                         padding: const EdgeInsets.all(8),

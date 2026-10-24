@@ -10,6 +10,7 @@ import 'e2e_livetv.dart';
 import 'e2e_player.dart';
 import 'e2e_plugins.dart';
 import 'e2e_receive.dart';
+import 'e2e_telegram.dart';
 import 'e2e_torrent.dart';
 import 'e2e_youtube.dart';
 
@@ -24,4 +25,5 @@ void main() {
   livetvE2e();
   torrentE2e();
   receiveE2e();
+  telegramE2e();
 }

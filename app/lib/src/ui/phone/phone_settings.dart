@@ -3,6 +3,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../core/services.dart';
 import '../../features/receive/phone/phone_receive_settings.dart';
+import '../../features/telegram/phone/phone_telegram_settings.dart';
 import '../../features/torrents/phone/phone_torrent_settings.dart';
 import 'phone_widgets.dart';
 
@@ -51,6 +52,7 @@ class PhoneSettings extends StatelessWidget {
           subtitle: const Text('Home suggests videos from what you watch and search. Kept on this device.'),
           onTap: () => _confirmClear(context),
         ),
+        const PhoneTelegramSettings(),
         const PhoneSectionTitle('About'),
         FutureBuilder<String>(
           future: _version(),

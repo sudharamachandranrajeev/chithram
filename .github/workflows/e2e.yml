@@ -65,6 +65,8 @@ jobs:
           mkdir -p packages/torrent/prebuilt/linux-x64
           cp native/torrent/target/release/libchithram_torrent.so packages/torrent/prebuilt/linux-x64/
       - run: flutter pub get
+      - name: TDLib (linux, pinned sha256)
+        run: python3 packages/tdlib/tool/fetch_tdlib.py linux-x64
       - name: Fixtures, servers and seeder
         run: bash .github/e2e.sh host-services "$RUNNER_TEMP/e2e"
       - name: End-to-end suite

@@ -71,6 +71,8 @@ jobs:
           cargo ndk -P 24 -t arm64-v8a -t armeabi-v7a -t x86_64 \
             -o ../../packages/torrent/android/src/main/jniLibs build --release --locked --lib
           ls -l ../../packages/torrent/android/src/main/jniLibs/*/
+      - name: TDLib (3 ABIs, pinned sha256)
+        run: python3 ../packages/tdlib/tool/fetch_tdlib.py android-arm64-v8a android-armeabi-v7a android-x86_64
       - name: Signing key
         env:
           KEYSTORE_BASE64: ${{ secrets.CHITHRAM_KEYSTORE_BASE64 }}
@@ -88,7 +90,8 @@ jobs:
           CHITHRAM_KEY_PASSWORD: ${{ secrets.CHITHRAM_KEY_PASSWORD }}
         run: |
           flutter build apk --release --split-per-abi \
-            --build-name=${{ needs.version.outputs.version }} --build-number=${{ needs.version.outputs.build }}
+            --build-name=${{ needs.version.outputs.version }} --build-number=${{ needs.version.outputs.build }} \
+            --dart-define=TG_API_ID=${{ secrets.CHITHRAM_TG_API_ID }} --dart-define=TG_API_HASH=${{ secrets.CHITHRAM_TG_API_HASH }}
           mkdir -p ../dist
           for abi in arm64-v8a armeabi-v7a x86_64; do
             cp build/app/outputs/flutter-apk/app-$abi-release.apk ../dist/Chithram-${{ needs.version.outputs.version }}-android-$abi.apk
@@ -96,6 +99,9 @@ jobs:
           ls -la ../dist
           for abi in arm64-v8a armeabi-v7a x86_64; do
             unzip -l ../dist/Chithram-${{ needs.version.outputs.version }}-android-$abi.apk | grep "lib/$abi/libchithram_torrent.so"
+            if python3 ../packages/tdlib/tool/fetch_tdlib.py --has android-$abi; then
+              unzip -l ../dist/Chithram-${{ needs.version.outputs.version }}-android-$abi.apk | grep "lib/$abi/libtdjson.so"
+            fi
           done
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
@@ -129,10 +135,13 @@ jobs:
           cargo build --release --locked --lib --manifest-path ../native/torrent/Cargo.toml
           mkdir -p ../packages/torrent/prebuilt/windows-x64
           cp ../native/torrent/target/release/chithram_torrent.dll ../packages/torrent/prebuilt/windows-x64/
+      - name: TDLib (pinned sha256)
+        run: python3 ../packages/tdlib/tool/fetch_tdlib.py windows-x64
       - name: Build
         run: |
           flutter build windows --release \
-            --build-name=${{ needs.version.outputs.version }} --build-number=${{ needs.version.outputs.build }}
+            --build-name=${{ needs.version.outputs.version }} --build-number=${{ needs.version.outputs.build }} \
+            --dart-define=TG_API_ID=${{ secrets.CHITHRAM_TG_API_ID }} --dart-define=TG_API_HASH=${{ secrets.CHITHRAM_TG_API_HASH }}
       - name: Bundle the Visual C++ runtime
         run: |
           # So the app runs on a fresh Windows without the VC++ redistributable.
@@ -168,6 +177,7 @@ jobs:
           Get-ChildItem $dir | Format-Table Name, Length
           # Up for 20 s with libmpv loaded means main() got past MediaKit.
           if (-not (Test-Path (Join-Path $dir 'chithram_torrent.dll'))) { throw 'chithram_torrent.dll was not installed' }
+          if ((Test-Path ..\packages\tdlib\prebuilt\windows-x64\tdjson.dll) -and -not (Test-Path (Join-Path $dir 'tdjson.dll'))) { throw 'tdjson.dll was not installed' }
           $smokeFile = Join-Path $env:RUNNER_TEMP 'torrent-smoke.txt'
           $app = Start-Process (Join-Path $dir 'chithram.exe') -ArgumentList "--smoke=$smokeFile" -PassThru
           Start-Sleep -Seconds 20
@@ -234,10 +244,13 @@ jobs:
           cargo build --release --locked --lib --manifest-path ../native/torrent/Cargo.toml
           mkdir -p ../packages/torrent/prebuilt/linux-x64
           cp ../native/torrent/target/release/libchithram_torrent.so ../packages/torrent/prebuilt/linux-x64/
+      - name: TDLib (pinned sha256)
+        run: python3 ../packages/tdlib/tool/fetch_tdlib.py linux-x64
       - name: Build
         run: |
           flutter build linux --release \
-            --build-name=${{ needs.version.outputs.version }} --build-number=${{ needs.version.outputs.build }}
+            --build-name=${{ needs.version.outputs.version }} --build-number=${{ needs.version.outputs.build }} \
+            --dart-define=TG_API_ID=${{ secrets.CHITHRAM_TG_API_ID }} --dart-define=TG_API_HASH=${{ secrets.CHITHRAM_TG_API_HASH }}
       - name: Tarball
         run: |
           version=${{ needs.version.outputs.version }}
@@ -254,6 +267,7 @@ jobs:
             fi
           done
           test -f "chithram-$version-linux-x64/lib/libchithram_torrent.so"
+          if python3 ../packages/tdlib/tool/fetch_tdlib.py --has linux-x64; then test -f "chithram-$version-linux-x64/lib/libtdjson.so"; fi
           ! readelf -d "chithram-$version-linux-x64/chithram" "chithram-$version-linux-x64"/lib/*.so | grep 'libmpv\.so\.1'
           cat > "chithram-$version-linux-x64/README.txt" <<'EOF'
           Chithram for Linux. Needs mpv's library (libmpv.so.2), GTK 3 and libsecret:

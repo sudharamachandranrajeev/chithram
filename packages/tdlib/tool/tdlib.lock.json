@@ -1,0 +1,27 @@
+{
+  "repo": "sudharamachandranrajeev/chithram",
+  "version": "1.8.69",
+  "commit": "0e88653dcbf4e44c73cb655a05b58cd749a91169",
+  "assets": {
+    "android-arm64-v8a": {
+      "name": "libtdjson-1.8.69-android-arm64-v8a.so",
+      "sha256": "c1ba4dad1c9d3fe21681c9e36b104a6a095397ba95f14dc44e0b9d5c6074c338"
+    },
+    "android-armeabi-v7a": {
+      "name": "libtdjson-1.8.69-android-armeabi-v7a.so",
+      "sha256": "eb76ed49aca67728f4bb6d63b67c3313ea4f57b0d0b65c81d59b68b3d3cb3adf"
+    },
+    "android-x86_64": {
+      "name": "libtdjson-1.8.69-android-x86_64.so",
+      "sha256": "9e472a6504eb589503873d9d8c03d32bffeeda85bd5090ef6e0757a8b895e2f2"
+    },
+    "linux-x64": {
+      "name": "libtdjson-1.8.69-linux-x64.so",
+      "sha256": "bcfdc9227a9afb5a5f457281ecedd575b11e8b4a33659fdf5b8c49c1bb9b51f4"
+    },
+    "windows-x64": {
+      "name": "tdjson-1.8.69-windows-x64.dll",
+      "sha256": "19e6288e403db70c72196e535ac89f06d3ff51d7a6abfe3e5b47ea79af22fadf"
+    }
+  }
+}

@@ -51,9 +51,20 @@ abstract interface class ZapList {
   PlayRequest requestAt(int i);
 }
 
+/// How many players are open (0 or 1). Telegram's auto-play waits for 0.
+abstract final class PlayerActivity {
+  static final open = ValueNotifier<int>(0);
+  static bool get idle => open.value == 0;
+}
+
 /// Pushes the fullscreen player. Completes when it closes.
-Future<void> openPlayer(BuildContext context, PlayRequest request) {
-  return Navigator.of(context).push(
-    MaterialPageRoute<void>(builder: (_) => PlayerRoute(request: request)),
-  );
+Future<void> openPlayer(BuildContext context, PlayRequest request) async {
+  PlayerActivity.open.value++;
+  try {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => PlayerRoute(request: request)),
+    );
+  } finally {
+    PlayerActivity.open.value--;
+  }
 }

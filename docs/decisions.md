@@ -131,3 +131,26 @@ Full plan in the project notes; what binds later versions:
   and x86_64). armeabi-v7a: python.org publishes no armv7 Android build; plugins stay off there with a clear reason
   unless CI can build one.
 
+## Telegram receiver (owner, 2026-10-24)
+- Reverses "leave Telegram out": the user's own account through TDLib. "Telegram" may appear in UI, docs and the
+  changelog as a compatibility statement, like LocalSend.
+- Only Saved Messages (chat id equal to the own user id) is read: no chat list, no channels. A video, audio or
+  document (mime video/* or audio/*, or a known media extension) that arrives while signed in and running is downloaded
+  (priority 32) and auto-played when the app is in front and the player is idle; otherwise the Receive prompt asks
+  ("New from Telegram"). Messages TDLib replays from before the app started, and the last 20 on start, are only listed.
+  This is the one exception to "nothing auto-plays".
+- `packages/tdlib`: own FFI over `td_json_client` (`td_create_client_id`, `td_send`, `td_execute`; `td_receive` loops in
+  its own isolate). `TelegramClient` is the interface (`TdClient` over a `TdTransport`, `FakeTelegramClient` for tests);
+  there is no live Telegram in CI.
+- libtdjson is built by `tdlib.yml` (workflow_dispatch) from a pinned upstream commit, published as the assets of the
+  `tdlib-<version>` release, and pinned by sha256 in `packages/tdlib/tool/tdlib.lock.json`. `fetch_tdlib.py` downloads and
+  verifies it for ci/e2e/release builds; a platform with no pin builds without TDLib and Telegram says so.
+- The app id and hash are `--dart-define` from the repo secrets `CHITHRAM_TG_API_ID` / `CHITHRAM_TG_API_HASH`; never
+  committed. Without them the build says "This build has no Telegram app id".
+- Play while downloading: a loopback HTTP server (127.0.0.1, random port, per-run token in the path) serves
+  `/<token>/tg/<fileId>/<name>` with Range. It moves TDLib's download to the requested offset when that is outside what is
+  being fetched (more than 4 MB past the frontier), waits on `updateFile`, then `readFilePart`.
+- TDLib database and files live in `<support>/telegram/`; the database key is random, kept in the secret store.
+  Retention: 7 days or 4 GB total, oldest first, via `deleteFile` (`planCleanup`). Sign out calls `logOut` and deletes the
+  directory.
+

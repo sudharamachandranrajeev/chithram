@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/services.dart';
 import '../../../ui/phone/phone_widgets.dart';
+import '../../telegram/telegram_received.dart';
 import '../receive_keys.dart';
 import '../receive_service.dart';
 
@@ -31,6 +32,7 @@ class PhoneReceivePage extends StatelessWidget {
                   '.torrent file. You are asked before anything is used, and nothing plays on its own.',
                 ),
                 ..._status(state, hasPin),
+                const TelegramReceiveSection(),
               ],
             );
           },

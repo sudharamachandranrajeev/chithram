@@ -10,6 +10,7 @@ import '../catalog/tmdb_catalog.dart';
 import '../data/database.dart';
 import '../features/livetv/iptv_service.dart';
 import '../features/receive/receive_service.dart';
+import '../features/telegram/telegram_service.dart';
 import '../features/torrents/torrent_service.dart';
 import '../features/youtube/feed/taste.dart';
 import '../features/youtube/feed/youtube_feed.dart';
@@ -39,6 +40,7 @@ class AppServices {
     required this.iptv,
     required this.torrents,
     required this.receive,
+    required this.telegram,
     required this.snapshots,
     required this.db,
     required this.secrets,
@@ -61,6 +63,7 @@ class AppServices {
     final navigatorKey = GlobalKey<NavigatorState>();
     final plugins = PluginRegistry();
     final youtube = YouTubeService(taste: TasteStore(paths.supportFile('youtube_taste.json')));
+    final secrets = openSecretStore(paths);
     return AppServices(
       navigatorKey: navigatorKey,
       paths: paths,
@@ -71,9 +74,10 @@ class AppServices {
       iptv: IptvService(store: JsonFileIptvStore(Directory('${paths.support.path}/iptv'))),
       torrents: TorrentService(paths: paths, prefs: prefs),
       receive: ReceiveService(navigatorKey: navigatorKey, paths: paths, prefs: prefs),
+      telegram: TelegramService(navigatorKey: navigatorKey, paths: paths, prefs: prefs, secrets: secrets),
       snapshots: snapshots,
       db: AppDatabase.open(paths), // opens on its first query
-      secrets: openSecretStore(paths),
+      secrets: secrets,
       home: HomeEngine(snapshot: snapshot),
       catalog: const TmdbCatalog(),
       findSources: [plugins],
@@ -91,6 +95,7 @@ class AppServices {
     IptvService? iptv,
     TorrentService? torrents,
     ReceiveService? receive,
+    TelegramService? telegram,
     AppDatabase? db,
     SecretStore? secrets,
     HomeRepository? home,
@@ -103,6 +108,7 @@ class AppServices {
     final paths = AppPaths.under('${Directory.systemTemp.path}/chithram-memory');
     final prefs0 = prefs ?? Prefs.memory();
     final youtube0 = youtube ?? YouTubeService();
+    final secrets0 = secrets ?? MemorySecretStore();
     return AppServices(
       navigatorKey: key,
       paths: paths,
@@ -113,9 +119,10 @@ class AppServices {
       iptv: iptv ?? IptvService(store: InMemoryIptvStore()),
       torrents: torrents ?? TorrentService(paths: paths, prefs: prefs0),
       receive: receive ?? ReceiveService(navigatorKey: key, paths: paths, prefs: prefs0),
+      telegram: telegram ?? TelegramService(navigatorKey: key, paths: paths, prefs: prefs0, secrets: secrets0),
       snapshots: SnapshotStore(paths.supportFile('home_snapshot.json')),
       db: db ?? AppDatabase(LazyDatabase(() async => NativeDatabase.memory())),
-      secrets: secrets ?? MemorySecretStore(),
+      secrets: secrets0,
       home: home ?? HomeEngine(),
       catalog: catalog ?? const TmdbCatalog(),
       findSources: findSources ?? [PluginRegistry()],
@@ -134,6 +141,9 @@ class AppServices {
   final IptvService iptv;
   final TorrentService torrents;
   final ReceiveService receive;
+
+  /// Files sent to the user's own Telegram Saved Messages (TDLib).
+  final TelegramService telegram;
 
   /// `home_snapshot.json`: Home's first frame.
   final SnapshotStore snapshots;

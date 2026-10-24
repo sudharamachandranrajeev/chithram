@@ -5,9 +5,12 @@ import 'package:chithram_player/chithram_player.dart';
 import 'package:innertube/innertube.dart';
 
 import '../../core/item_id.dart';
+import '../../core/prefs.dart';
 import '../../player/play_request.dart';
 import 'feed/taste.dart';
 import 'youtube_fixture.dart';
+import 'youtube_prefs.dart';
+import 'youtube_queue.dart';
 
 // innertube's `Page` clashes with Flutter's: import it with a prefix or `hide`
 // in files that also import material.
@@ -45,7 +48,10 @@ class YouTubeService {
     YouTubeResolver? resolver,
     this.caps = const PlaybackCaps(),
     TasteStore? taste,
-  }) : taste = taste ?? TasteStore.memory() {
+    this.prefs,
+    SponsorBlockClient? sponsorBlock,
+  }) : taste = taste ?? TasteStore.memory(),
+       _sponsorBlock = sponsorBlock {
     if (_e2eBase.isNotEmpty && browse == null && resolver == null) {
       _browse = FixtureBrowse(_e2eBase);
       _resolver = FixtureResolver(_e2eBase);
@@ -58,10 +64,31 @@ class YouTubeService {
   InnertubeBrowse? _browse;
   YouTubeResolver? _resolver;
 
-  InnertubeBrowse get browse => _browse ??= InnertubeBrowse(region: deviceRegion());
+  InnertubeBrowse get browse =>
+      _browse ??= InnertubeBrowse(region: deviceRegion());
   YouTubeResolver get resolver => _resolver ??= YouTubeResolver();
 
   final TasteStore taste;
+  final Prefs? prefs;
+  SponsorBlockClient? _sponsorBlock;
+  SponsorBlockClient get sponsorBlock => _sponsorBlock ??= SponsorBlockClient();
+
+  // /next answers, one call per video: the queue wants the related list and
+  // the seek bar the chapters. Kept for the last few videos only.
+  final _info = <String, Future<WatchInfo>>{};
+  final _storyboards = <String, String>{};
+
+  /// Related videos, chapters and heatmap of [videoId]; empty when YouTube
+  /// does not answer.
+  Future<WatchInfo> watchInfo(String videoId) {
+    final known = _info.remove(videoId);
+    if (known != null) return _info[videoId] = known;
+    if (_info.length >= 6) _info.remove(_info.keys.first);
+    return _info[videoId] = browse.watchInfo(videoId).catchError((Object _) {
+      _info.remove(videoId);
+      return const WatchInfo();
+    });
+  }
 
   /// The device's country, for what is popular there; US when unknown.
   static String deviceRegion() {
@@ -87,20 +114,68 @@ class YouTubeService {
   }
 
   /// [source] is the Home rail [v] was picked from, if any.
-  Future<PlayRequest> playRequest(VideoItem v, {String? source}) async => PlayRequest(
-    itemId: ItemId.youtube(v.videoId),
-    title: v.title,
-    subtitle: v.author.isEmpty ? null : v.author,
-    artwork: _artwork(v.thumbnails),
-    isLive: v.isLive,
-    resolve: () => resolveSpec(v.videoId),
-    onWatched: (position, duration) {
-      // Never started (an error, or backed out of the resume prompt).
-      if (position > Duration.zero) {
-        unawaited(taste.watched(v, position: position, duration: duration, source: source));
-      }
-    },
-  );
+  Future<PlayRequest> playRequest(VideoItem v, {String? source}) async =>
+      _request(v, source: source);
+
+  PlayRequest _request(VideoItem v, {String? source, PlayQueue? queue}) =>
+      PlayRequest(
+        itemId: ItemId.youtube(v.videoId),
+        title: v.title,
+        subtitle: v.author.isEmpty ? null : v.author,
+        artwork: _artwork(v.thumbnails),
+        isLive: v.isLive,
+        resolve: () => resolveSpec(v.videoId),
+        extras: v.isLive ? null : (duration) => _extras(v.videoId, duration),
+        queue: v.isLive ? null : queue ?? _newQueue(v),
+        onWatched: (position, duration) {
+          // Never started (an error, or backed out of the resume prompt).
+          if (position > Duration.zero) {
+            unawaited(
+              taste.watched(
+                v,
+                position: position,
+                duration: duration,
+                source: source,
+              ),
+            );
+          }
+        },
+      );
+
+  PlayQueue _newQueue(VideoItem first) {
+    unawaited(taste.load());
+    return YouTubeQueue(
+      first: first,
+      relatedOf: (id) async => (await watchInfo(id)).related,
+      profile: () => taste.profile,
+      build: (v, {required source, required queue}) =>
+          _request(v, source: source, queue: queue),
+      autoplayOn: () => YouTubePrefs.autoplayOn(prefs),
+    );
+  }
+
+  /// Chapters, heatmap, preview sprites and (when turned on) SponsorBlock
+  /// segments for the seek bar. Each part fails alone.
+  Future<PlayExtras> _extras(String videoId, Duration duration) async {
+    final sponsors = YouTubePrefs.sponsorBlockOn(prefs)
+        ? sponsorBlock
+              .segments(videoId)
+              .catchError((Object _) => <SponsorSegment>[])
+        : Future.value(<SponsorSegment>[]);
+    final info = await watchInfo(videoId);
+    final chapters = info.chapters
+        .where((c) => duration <= Duration.zero || c.start < duration)
+        .toList();
+    return PlayExtras(
+      chapters: chapters,
+      heatmap: info.heatmap,
+      segments: await sponsors,
+      storyboard: parseStoryboardSpec(
+        _storyboards.remove(videoId),
+        duration: duration,
+      ),
+    );
+  }
 
   Future<PlayRequest> playRequestForId(String videoId) async => PlayRequest(
     itemId: ItemId.youtube(videoId),
@@ -115,6 +190,12 @@ class YouTubeService {
       streams = await resolver.resolve(videoId);
     } on AllTiersFailed catch (failed) {
       throw YouTubeUnavailable.fromTiers(failed);
+    }
+    final sprites = streams.storyboardSpec;
+    if (sprites != null) {
+      if (_storyboards.length >= 4)
+        _storyboards.remove(_storyboards.keys.first);
+      _storyboards[videoId] = sprites;
     }
     return mediaSpecFor(streams, caps);
   }

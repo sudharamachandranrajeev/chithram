@@ -143,6 +143,8 @@ class PlayerHost(
                 "t" to "state",
                 "pos" to player.currentPosition,
                 "dur" to (if (player.duration == C.TIME_UNSET) 0L else player.duration),
+                "buf" to player.bufferedPosition,
+                "ended" to (player.playbackState == Player.STATE_ENDED),
                 "buffering" to (player.playbackState == Player.STATE_BUFFERING),
                 "playing" to player.playWhenReady,
             ),

@@ -32,6 +32,8 @@ class AndroidPlayerEngine implements PlayerEngine {
 
   final _position = StreamController<Duration>.broadcast();
   final _duration = StreamController<Duration>.broadcast();
+  final _buffered = StreamController<Duration>.broadcast();
+  final _completed = StreamController<bool>.broadcast();
   final _buffering = StreamController<bool>.broadcast();
   final _playing = StreamController<bool>.broadcast();
   final _error = StreamController<String>.broadcast();
@@ -42,6 +44,8 @@ class AndroidPlayerEngine implements PlayerEngine {
       case 'state':
         _position.add(Duration(milliseconds: (event['pos'] as num).toInt()));
         _duration.add(Duration(milliseconds: (event['dur'] as num).toInt()));
+        _buffered.add(Duration(milliseconds: (event['buf'] as num? ?? 0).toInt()));
+        _completed.add(event['ended'] as bool? ?? false);
         _buffering.add(event['buffering'] as bool);
         _playing.add(event['playing'] as bool);
       case 'error':
@@ -77,6 +81,10 @@ class AndroidPlayerEngine implements PlayerEngine {
   Stream<Duration> get position => _position.stream;
   @override
   Stream<Duration> get duration => _duration.stream;
+  @override
+  Stream<Duration> get buffered => _buffered.stream;
+  @override
+  Stream<bool> get completed => _completed.stream.distinct();
   @override
   Stream<bool> get buffering => _buffering.stream;
   @override
@@ -140,6 +148,8 @@ class AndroidPlayerEngine implements PlayerEngine {
       _position.close(),
       _duration.close(),
       _buffering.close(),
+      _buffered.close(),
+      _completed.close(),
       _playing.close(),
       _error.close(),
     ]);

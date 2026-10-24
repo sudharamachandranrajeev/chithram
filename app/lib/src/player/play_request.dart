@@ -1,5 +1,7 @@
 import 'package:chithram_player/chithram_player.dart';
 import 'package:flutter/material.dart';
+import 'package:innertube/innertube.dart'
+    show Chapter, HeatBin, SponsorSegment, StoryboardLevel;
 
 import 'player_route.dart';
 
@@ -17,6 +19,8 @@ class PlayRequest {
     this.onWatched,
     this.status,
     this.zap,
+    this.extras,
+    this.queue,
   });
 
   /// A stable id, see `core/item_id.dart`.
@@ -41,6 +45,56 @@ class PlayRequest {
 
   /// Set for live TV: Up and Down move through it.
   final ZapList? zap;
+
+  /// Seek-bar extras (chapters, preview sprites, ...), loaded after the media
+  /// opens. Must not throw; answer [PlayExtras.none] when there are none.
+  final Future<PlayExtras> Function(Duration duration)? extras;
+
+  /// Set for items that continue into another one when they end.
+  final PlayQueue? queue;
+}
+
+/// What decorates a seek bar beyond played and buffered.
+class PlayExtras {
+  const PlayExtras({
+    this.chapters = const [],
+    this.heatmap = const [],
+    this.segments = const [],
+    this.storyboard = const [],
+  });
+
+  static const none = PlayExtras();
+
+  final List<Chapter> chapters;
+
+  /// "Most replayed" bins.
+  final List<HeatBin> heatmap;
+
+  /// SponsorBlock segments.
+  final List<SponsorSegment> segments;
+
+  /// Preview sprite levels, smallest first; empty when the source has none.
+  final List<StoryboardLevel> storyboard;
+}
+
+/// What plays after an item ends, and before it. One queue serves a whole
+/// session: every request it hands out carries it.
+abstract interface class PlayQueue {
+  /// The "Autoplay next video" setting, read live.
+  bool get autoplay;
+
+  /// Picks (and remembers) the item after the current one; the same answer
+  /// until [takeNext]. Null when there is nothing to play next. Never throws.
+  Future<PlayRequest?> prepareNext();
+
+  /// Moves on to the prepared item and returns its request; null when there
+  /// is none.
+  PlayRequest? takeNext();
+
+  bool get hasPrevious;
+
+  /// Moves back one item and returns a fresh request for it.
+  PlayRequest? takePrevious();
 }
 
 /// A list of channels the player can step through.

@@ -6,7 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:iptv/iptv.dart' hide SecretStore;
 
 import '../catalog/catalog_repository.dart';
+import '../catalog/catalog_worker.dart';
 import '../catalog/tmdb_catalog.dart';
+import '../catalog/tmdb_home_source.dart';
 import '../data/database.dart';
 import '../features/livetv/iptv_service.dart';
 import '../features/receive/receive_service.dart';
@@ -57,6 +59,17 @@ class AppServices {
     ).wait;
     final navigatorKey = GlobalKey<NavigatorState>();
     final plugins = PluginRegistry();
+    final db = AppDatabase.open(paths);
+    final secrets = openSecretStore(paths);
+    final locale = WidgetsBinding.instance.platformDispatcher.locale;
+    final catalog = TmdbCatalog(
+      worker: CatalogWorker(),
+      cache: db.cacheDao,
+      secrets: secrets,
+      prefs: prefs,
+      language: locale.toLanguageTag(),
+      region: locale.countryCode ?? 'US',
+    );
     return AppServices(
       navigatorKey: navigatorKey,
       paths: paths,
@@ -67,10 +80,13 @@ class AppServices {
       torrents: TorrentService(paths: paths, prefs: prefs),
       receive: ReceiveService(navigatorKey: navigatorKey, paths: paths, prefs: prefs),
       snapshots: snapshots,
-      db: AppDatabase.open(paths), // opens on its first query
-      secrets: openSecretStore(paths),
-      home: HomeEngine(snapshot: snapshot),
-      catalog: const TmdbCatalog(),
+      db: db, // opens on its first query
+      secrets: secrets,
+      home: HomeEngine(
+        snapshot: snapshot,
+        source: TmdbHomeSource(catalog: catalog, prefs: prefs),
+      ),
+      catalog: catalog,
       findSources: [plugins],
     );
   }
@@ -109,7 +125,7 @@ class AppServices {
       db: db ?? AppDatabase(LazyDatabase(() async => NativeDatabase.memory())),
       secrets: secrets ?? MemorySecretStore(),
       home: home ?? HomeEngine(),
-      catalog: catalog ?? const TmdbCatalog(),
+      catalog: catalog ?? TmdbCatalog(),
       findSources: findSources ?? [PluginRegistry()],
     );
   }

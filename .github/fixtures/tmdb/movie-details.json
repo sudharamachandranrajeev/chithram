@@ -1,0 +1,56 @@
+{
+  "id": 1,
+  "title": "Fixture Film 1",
+  "original_title": "Fixture Film 1",
+  "release_date": "2026-01-02",
+  "adult": false,
+  "poster_path": "/fixture1.jpg",
+  "backdrop_path": "/fixture_backdrop.jpg",
+  "vote_average": 7.5,
+  "runtime": 110,
+  "overview": "A synthetic film for tests.",
+  "genres": [
+    {
+      "id": 12,
+      "name": "Fixture Adventure"
+    }
+  ],
+  "credits": {
+    "cast": [
+      {
+        "name": "Fixture Actor",
+        "character": "Fixture Role",
+        "profile_path": "/fixture_actor.jpg"
+      }
+    ]
+  },
+  "videos": {
+    "results": [
+      {
+        "site": "YouTube",
+        "type": "Trailer",
+        "key": "fixture1234",
+        "name": "Fixture Trailer",
+        "official": true,
+        "iso_639_1": "en"
+      }
+    ]
+  },
+  "recommendations": {
+    "results": [
+      {
+        "id": 5,
+        "title": "Fixture Film 5",
+        "original_title": "Fixture Film 1",
+        "release_date": "2026-01-02",
+        "adult": false,
+        "poster_path": "/fixture1.jpg",
+        "backdrop_path": "/fixture_backdrop.jpg",
+        "vote_average": 7.5
+      }
+    ]
+  },
+  "external_ids": {
+    "imdb_id": "tt0000001"
+  }
+}

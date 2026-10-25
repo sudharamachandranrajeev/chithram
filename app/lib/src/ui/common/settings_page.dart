@@ -3,6 +3,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../core/images/cache_settings.dart';
 import '../../features/metadata/metadata_settings.dart';
+import '../../features/metadata/attribution.dart';
 import '../../features/receive/receive_settings.dart';
 import '../../features/torrents/torrent_settings.dart';
 import '../../find/torznab/torznab_settings.dart';
@@ -69,12 +70,17 @@ class AboutSettings extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(8),
-      child: FocusCard(
-        radius: 24,
-        onActivate: () {},
-        child: FutureBuilder<String>(
-          future: _version(),
-          builder: (context, snap) => ActionLabel(text: 'About Chithram ${snap.data ?? ''}'.trim()),
+      child: FutureBuilder<String>(
+        future: _version(),
+        builder: (context, snap) => FocusCard(
+          radius: 24,
+          onActivate: () => showAboutDialog(
+            context: context,
+            applicationName: 'Chithram',
+            applicationVersion: snap.data,
+            children: const [MetadataAttribution()],
+          ),
+          child: ActionLabel(text: 'About Chithram ${snap.data ?? ''}'.trim()),
         ),
       ),
     );

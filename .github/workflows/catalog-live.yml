@@ -1,0 +1,25 @@
+name: Catalog live
+on:
+  schedule:
+    - cron: '15 7 * * 1'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  live:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
+        with:
+          flutter-version: 3.47.7
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: Optional live catalog check (host-only logs)
+        working-directory: packages/tmdb
+        env:
+          TMDB_TEST_KEY: ${{ secrets.TMDB_TEST_KEY }}
+        run: dart run tool/live.dart

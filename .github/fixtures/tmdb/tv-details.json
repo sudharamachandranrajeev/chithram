@@ -1,0 +1,35 @@
+{
+  "id": 2,
+  "name": "Fixture Series 2",
+  "original_name": "Fixture Series 2",
+  "first_air_date": "2026-02-03",
+  "adult": false,
+  "poster_path": "/fixture2.jpg",
+  "episode_run_time": [
+    45
+  ],
+  "overview": "A synthetic series for tests.",
+  "aggregate_credits": {
+    "cast": [
+      {
+        "name": "Fixture Actor",
+        "roles": [
+          {
+            "character": "Fixture Role"
+          }
+        ]
+      }
+    ]
+  },
+  "seasons": [
+    {
+      "season_number": 1,
+      "name": "Fixture Season 1",
+      "episode_count": 1
+    }
+  ],
+  "external_ids": {
+    "tvdb_id": 22,
+    "imdb_id": "tt0000002"
+  }
+}

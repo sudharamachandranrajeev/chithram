@@ -6,3 +6,5 @@ library;
 
 export 'src/images.dart';
 export 'src/models.dart';
+export 'src/client.dart';
+export 'src/parsing.dart';

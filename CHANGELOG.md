@@ -5,6 +5,7 @@ Release notes are taken from the section of the version being tagged.
 ## 0.3.0 (in progress)
 
 ### Added
+- TMDB metadata client and cached catalog, with an isolated HTTP/parser worker, bounded requests, and secure key setup and removal. Metadata settings are available on phones and desktops, and About includes TMDB attribution. The populated Home and details screens remain separate work packages.
 - Foundations for Media Home: a local database (HTTP cache, plugins, Torznab, provider health), secret storage for
   API keys, skeletons of the TMDB, release-name and Torznab packages, and the home, catalogue and Find interfaces with
   fakes. Settings gains Metadata, Search plugins, Torznab and Image cache sections (placeholders until their work lands).

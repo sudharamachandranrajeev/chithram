@@ -1,0 +1,16 @@
+{
+  "page": 1,
+  "results": [
+    {
+      "id": 1,
+      "title": "Fixture Film 1",
+      "original_title": "Fixture Film 1",
+      "release_date": "2026-01-02",
+      "adult": false,
+      "poster_path": "/fixture1.jpg",
+      "backdrop_path": "/fixture_backdrop.jpg",
+      "vote_average": 7.5
+    }
+  ],
+  "total_pages": 1
+}

@@ -1,0 +1,14 @@
+{
+  "page": 1,
+  "results": [
+    {
+      "id": 2,
+      "name": "Fixture Series 2",
+      "original_name": "Fixture Series 2",
+      "first_air_date": "2026-02-03",
+      "adult": false,
+      "poster_path": "/fixture2.jpg"
+    }
+  ],
+  "total_pages": 1
+}

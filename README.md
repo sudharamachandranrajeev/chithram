@@ -4,9 +4,11 @@
 a streaming-style, D-pad-first interface: YouTube without an account, live TV
 from IPTV playlists, and torrent streaming, with short start delays and no ads.
 
-**Status: Phase 0.** This is a runnable scaffold: the navigation rail, a Home
-page with a hero billboard and rails of placeholder tiles, and the CI and
-release pipeline. There are no features yet. See [docs/decisions.md](docs/decisions.md)
+**Status: 0.3.0 in progress.** The 0.2.1 release supports YouTube, user-added
+IPTV playlists, torrent playback, LocalSend intake, and separate phone and TV
+layouts. Metadata key setup and the cached TMDB catalog are implemented;
+the populated Home, details screens, and unified source search are still in
+development. See [docs/decisions.md](docs/decisions.md)
 for decisions, [docs/roadmap.md](docs/roadmap.md) for the plan and [docs/research.md](docs/research.md) for the research behind it.
 
 ## Platforms

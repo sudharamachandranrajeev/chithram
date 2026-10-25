@@ -1,0 +1,40 @@
+{
+  "page": 1,
+  "results": [
+    {
+      "id": 1,
+      "title": "Fixture Film 1",
+      "original_title": "Fixture Film 1",
+      "release_date": "2026-01-02",
+      "adult": false,
+      "poster_path": "/fixture1.jpg",
+      "backdrop_path": "/fixture_backdrop.jpg",
+      "vote_average": 7.5,
+      "media_type": "movie"
+    },
+    {
+      "id": 2,
+      "name": "Fixture Series 2",
+      "original_name": "Fixture Series 2",
+      "first_air_date": "2026-02-03",
+      "adult": false,
+      "poster_path": "/fixture2.jpg",
+      "media_type": "tv"
+    },
+    {
+      "id": 3,
+      "media_type": "person",
+      "name": "Fixture Person"
+    },
+    {
+      "id": 4,
+      "title": "Fixture Film 1",
+      "original_title": "Fixture Film 1",
+      "release_date": "2026-01-02",
+      "adult": true,
+      "poster_path": "/fixture1.jpg",
+      "backdrop_path": "/fixture_backdrop.jpg",
+      "vote_average": 7.5
+    }
+  ]
+}

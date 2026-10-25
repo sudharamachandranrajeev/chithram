@@ -55,7 +55,7 @@ Roadmap:
   Never DRM/paid OTT app reversing.
 - Metadata: TMDB with user's own free key; filename fallback.
 - Defaults set by main session (user didn't object yet): GitHub Releases + Obtainium; Stremio addons v1 user-pasted.
-- Model routing per user: Opus decides, Sonnet builds.
+- Model routing (2026-10-23): GPT-6.1 Sol at medium effort builds features; GPT-6 Astra at medium effort reviews architecture and difficult decisions. Use focused task context and increase effort only when evidence requires it.
 
 ## 0.2.0 "First light" (architect decisions, 2026-10-21)
 

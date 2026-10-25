@@ -1,0 +1,13 @@
+{
+  "season_number": 1,
+  "episodes": [
+    {
+      "episode_number": 1,
+      "name": "Fixture Episode 1",
+      "overview": "Synthetic episode.",
+      "still_path": "/fixture_still.jpg",
+      "air_date": "2026-01-01",
+      "runtime": 45
+    }
+  ]
+}

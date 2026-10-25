@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
+import '../../features/metadata/attribution.dart';
+import '../../features/metadata/metadata_settings.dart';
 import '../../features/receive/phone/phone_receive_settings.dart';
 import '../../features/torrents/phone/phone_torrent_settings.dart';
 import 'phone_widgets.dart';
@@ -25,6 +27,7 @@ class PhoneSettings extends StatelessWidget {
         const PhoneNote('Chithram ships no sources. You add your own.'),
         const PhoneSectionTitle('Torrents'),
         const PhoneTorrentSettings(),
+        const MetadataSettings(),
         const PhoneSectionTitle('Receive'),
         const PhoneReceiveSettings(),
         const PhoneSectionTitle('About'),
@@ -39,6 +42,7 @@ class PhoneSettings extends StatelessWidget {
               context: context,
               applicationName: 'Chithram',
               applicationVersion: snap.data,
+              children: const [MetadataAttribution()],
             ),
           ),
         ),

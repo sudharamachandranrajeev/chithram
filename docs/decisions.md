@@ -166,3 +166,15 @@ Full plan in the project notes; what binds later versions:
   the key). No conditional requests: Torznab answers carry no useful validators and callers cache for hours.
 - Select on a Torrent Home tile plays without asking only when the torrent has one video or one at least three times
   larger than the next; a pack opens the file list.
+
+## Websites (owner, 2026-10-24)
+
+- Owner: "add media playable websites; website link will be provided; ads should never be played".
+- Sites are added by the user; Chithram ships no site list, no site-specific scrapers, no mirror-domain hopping.
+- Pages are fetched and read as text (`packages/web_media`), never rendered and never run: no WebView, no JavaScript.
+  Packed (`eval(function(p,a,c,k,e,d)...)`) player scripts are unpacked as text only. This keeps every platform on
+  one code path and means page ads cannot load; the cost is that pages built entirely by scripts cannot be read.
+- Ads inside streams: HLS playlists are served through a loopback proxy (token, registered playlists only, no open
+  proxy) that removes marked ad breaks and ad-host segments. Segments themselves are not proxied. DRM is never touched.
+- Frames on the device's own network are not followed unless the site itself is there.
+

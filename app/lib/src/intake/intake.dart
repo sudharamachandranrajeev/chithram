@@ -7,6 +7,7 @@ import 'package:localsend_rx/localsend_rx.dart' show looksLikeTorrent, maxTorren
 
 import '../core/item_id.dart';
 import '../core/services.dart';
+import '../features/websites/websites_page.dart';
 import '../features/youtube/youtube_service.dart';
 import '../plugins/ui/plugin_flows.dart';
 import '../player/play_request.dart';
@@ -34,7 +35,7 @@ final class TorrentFilePayload extends IntakePayload {
   final String? from;
 }
 
-enum IntakeKind { youtube, magnet, torrentUrl, playlistUrl, mediaUrl, ambiguousM3u8, pluginFile, pluginRepo, text }
+enum IntakeKind { youtube, magnet, torrentUrl, playlistUrl, mediaUrl, ambiguousM3u8, pluginFile, pluginRepo, webPage, text }
 
 final _btih = RegExp(r'xt=urn:btih:([0-9a-fA-F]{40}|[A-Za-z2-7]{32})(&|$)');
 const _mediaExtensions = {
@@ -74,7 +75,8 @@ IntakeKind classify(String text) {
   if (path.endsWith('.m3u8')) return IntakeKind.ambiguousM3u8;
   final dot = path.lastIndexOf('.');
   if (dot >= 0 && _mediaExtensions.contains(path.substring(dot + 1))) return IntakeKind.mediaUrl;
-  return IntakeKind.text;
+  // Any other web page: Websites reads it for video.
+  return IntakeKind.webPage;
 }
 
 /// Features that live outside this package plug in here.
@@ -92,6 +94,7 @@ String? intakeActionLabel(IntakeKind kind) => switch (kind) {
       IntakeKind.mediaUrl || IntakeKind.ambiguousM3u8 => 'Play link',
       IntakeKind.pluginFile => 'Add search plugin',
       IntakeKind.pluginRepo => 'Add plugin repository',
+      IntakeKind.webPage => 'Find video on page',
       IntakeKind.text => IntakeHooks.search == null ? null : 'Search for this text',
     };
 
@@ -218,6 +221,8 @@ Future<void> _route(BuildContext context, AppServices services, IntakeKind kind,
       await _openTorrent(context, services, TorrentFilePayload(bytes, Uri.parse(url).pathSegments.last));
     case IntakeKind.magnet:
       await _openTorrent(context, services, p);
+    case IntakeKind.webPage:
+      await openWebPage(context, Uri.parse((p as TextPayload).text.trim()));
     case IntakeKind.text:
       final search = IntakeHooks.search;
       if (search != null) await search(context, (p as TextPayload).text.trim());

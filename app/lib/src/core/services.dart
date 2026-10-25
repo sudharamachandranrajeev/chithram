@@ -14,6 +14,7 @@ import '../features/telegram/telegram_service.dart';
 import '../features/torrents/home/popular_source.dart';
 import '../features/torrents/home/torrent_home_feed.dart';
 import '../features/torrents/torrent_service.dart';
+import '../features/websites/websites_service.dart';
 import '../features/youtube/feed/taste.dart';
 import '../features/youtube/feed/youtube_feed.dart';
 import '../features/youtube/youtube_service.dart';
@@ -54,6 +55,7 @@ class AppServices {
     required this.findSources,
     required this.torznab,
     required this.torrentHome,
+    required this.websites,
     PluginRegistry? plugins,
   }) : plugins = plugins ?? PluginRegistry();
 
@@ -97,6 +99,7 @@ class AppServices {
         sources: TorznabPopularSources(torznab),
         cacheFile: File('${paths.cache.path}/torrent_home.json'),
       ),
+      websites: WebsitesService(file: paths.supportFile('websites.json')),
       plugins: plugins,
     );
   }
@@ -120,6 +123,7 @@ class AppServices {
     List<FindProviderSource>? findSources,
     TorznabService? torznab,
     TorrentHomeFeed? torrentHome,
+    WebsitesService? websites,
     PluginRegistry? plugins,
   }) {
     // Tests build many; each database is lazy and in memory.
@@ -153,6 +157,7 @@ class AppServices {
       findSources: findSources ?? [pluginRegistry],
       torznab: torznab0,
       torrentHome: torrentHome ?? TorrentHomeFeed(sources: TorznabPopularSources(torznab0)),
+      websites: websites ?? WebsitesService(),
       plugins: pluginRegistry,
     );
   }
@@ -192,6 +197,9 @@ class AppServices {
 
   /// Torrent Home's popular rails.
   final TorrentHomeFeed torrentHome;
+
+  /// Sites the user added, read for video without their ads.
+  final WebsitesService websites;
 
   /// Search plugins: install, update, health, and `search` for Torrent Home.
   /// Inert (no plugins) in [AppServices.memory] unless a test passes one.

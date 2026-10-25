@@ -47,6 +47,8 @@ dependencies:
     path: ../packages/media_names
   torznab:
     path: ../packages/torznab
+  web_media:
+    path: ../packages/web_media
   tdlib:
     path: ../packages/tdlib
   # Debug-only spike page (see lib/src/spikes/).

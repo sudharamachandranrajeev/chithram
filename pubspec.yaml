@@ -16,3 +16,4 @@ workspace:
   - packages/media_names
   - packages/torznab
   - packages/tdlib
+  - packages/web_media

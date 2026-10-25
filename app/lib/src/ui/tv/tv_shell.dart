@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../features/livetv/livetv_page.dart';
 import '../../features/torrents/torrents_page.dart';
+import '../../features/websites/websites_page.dart';
 import '../../features/youtube/youtube_page.dart';
 import '../../theme.dart';
 import '../common/dims.dart';
@@ -102,6 +103,8 @@ class _TvShellState extends State<TvShell> {
         return TorrentsPage(focus: focus);
       case Section.youtube:
         return YouTubePage(focus: focus);
+      case Section.websites:
+        return WebsitesPage(focus: focus);
     }
   }
 

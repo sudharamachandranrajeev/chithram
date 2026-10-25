@@ -159,7 +159,7 @@ On **Arch and Omarchy** this is all you need. Step by step, the script:
 
 Everything stays in your home directory; only step 1 needs `sudo`.
 
-- **Update:** run the same command again.
+- **Update:** Settings → Check for updates, inside the app. Or run the same command again.
 - **Uninstall:** `curl -fsSL https://raw.githubusercontent.com/sudharamachandranrajeev/chithram/main/install-linux.sh | bash -s -- --uninstall`
 - **Libraries already installed?** Add `--no-deps`: `... | bash -s -- --no-deps`.
 - **Prefer to read it first?** The script is [install-linux.sh](install-linux.sh), about 90 lines.

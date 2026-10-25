@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../core/services.dart';
+import '../../core/update/update_settings.dart';
 import '../../features/receive/phone/phone_receive_settings.dart';
 import '../../features/youtube/youtube_prefs.dart';
 import '../../features/telegram/phone/phone_telegram_settings.dart';
@@ -88,6 +89,7 @@ class PhoneSettings extends StatelessWidget {
         ),
         const PhoneTelegramSettings(),
         const PhoneSectionTitle('About'),
+        const PhoneUpdateTile(),
         FutureBuilder<String>(
           future: _version(),
           builder: (context, snap) => ListTile(

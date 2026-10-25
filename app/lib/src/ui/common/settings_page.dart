@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../core/images/cache_settings.dart';
+import '../../core/update/update_settings.dart';
 import '../../features/metadata/metadata_settings.dart';
 import '../../features/receive/receive_settings.dart';
 import '../../features/telegram/telegram_settings.dart';
@@ -51,6 +52,7 @@ class SettingsPage extends StatelessWidget {
           const TelegramSettings(),
           const ThemeSettings(),
           const InterfaceSettings(),
+          const UpdateSettings(),
           const AboutSettings(),
         ],
       ),

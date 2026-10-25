@@ -127,9 +127,16 @@ Full plan in the project notes; what binds later versions:
   scroll frames, PSS and requests before the first frame against `.github/perf-budget.json` (report mode first).
   `.github/perf-device.sh` is for the owner's phone and TV box. The CI emulator renders in software, so raster time is
   report-only there.
-- The plugin Python runtime is bundled on every platform (Linux, Windows; Android already ships CPython for arm64-v8a
-  and x86_64). armeabi-v7a: python.org publishes no armv7 Android build; plugins stay off there with a clear reason
-  unless CI can build one.
+- The plugin Python runtime is bundled on every platform (Linux, Windows; Android ships CPython for arm64-v8a,
+  armeabi-v7a and x86_64).
+- armeabi-v7a (owner, 2026-10-24: "try self-built CPython"): python.org publishes no armv7 Android build, so
+  `cpython-android.yml` builds the same CPython tag as the python.org pins (3.14.8) for `arm-linux-androideabi`, API 24,
+  with CPython's own `Android/android.py` (`build`, then `package`), the tooling python.org uses for its Android
+  releases; its dependencies are the same pinned BeeWare `cpython-android-source-deps` builds. The tarball is published
+  as the asset of the `cpython-android-<version>` pre-release and pinned by sha256 in `fetch_cpython_android.py`, like
+  TDLib. It runs in the same isolated-process service as the other ABIs: no same-UID fallback. Any other ABI keeps the
+  "CPython for Android is bundled only for ..." reason. CPython's test suite is not run for armv7 (no armv7 emulator on
+  the x86_64 runners); the workflow checks the ELF class and machine and that every shipped extension module is there.
 
 ## Telegram receiver (owner, 2026-10-24)
 - Reverses "leave Telegram out": the user's own account through TDLib. "Telegram" may appear in UI, docs and the

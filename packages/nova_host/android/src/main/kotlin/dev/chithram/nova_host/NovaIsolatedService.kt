@@ -72,12 +72,15 @@ class NovaIsolatedService : Service() {
     }
 
     private fun boot(audit: Boolean) {
+        // The ABI this process runs as (a 32-bit APK on a 64-bit device runs 32-bit).
+        val abi = (if (android.os.Process.is64Bit()) Build.SUPPORTED_64_BIT_ABIS else Build.SUPPORTED_32_BIT_ABIS)
+            .firstOrNull() ?: Build.SUPPORTED_ABIS.firstOrNull()
         val id = "uid=${android.os.Process.myUid()} pid=${android.os.Process.myPid()} " +
-            "isolated=${android.os.Process.isIsolated()} abi=${Build.SUPPORTED_ABIS.firstOrNull()}"
+            "isolated=${android.os.Process.isIsolated()} abi=$abi"
         try {
-            val abi = Build.SUPPORTED_ABIS.firstOrNull()
-            if (abi != "arm64-v8a" && abi != "x86_64") {
-                send(NovaProtocol.MSG_STARTED, false, "python.org publishes CPython for Android only for arm64-v8a and x86_64, not $abi ($id)")
+            if (abi !in CPYTHON_ABIS) {
+                send(NovaProtocol.MSG_STARTED, false,
+                    "CPython for Android is bundled only for ${CPYTHON_ABIS.joinToString()}, not $abi ($id)")
                 return
             }
             val lib = applicationInfo.nativeLibraryDir
@@ -126,5 +129,8 @@ class NovaIsolatedService : Service() {
 
     companion object {
         const val TAG = "NovaService"
+
+        /** ABIs with a bundled CPython (tool/fetch_cpython_android.py). */
+        val CPYTHON_ABIS = listOf("arm64-v8a", "armeabi-v7a", "x86_64")
     }
 }

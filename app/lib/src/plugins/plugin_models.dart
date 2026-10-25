@@ -11,7 +11,7 @@ enum PluginHealthStatus {
   /// `url-changed`, a changed file, or a changed repo key: needs the user.
   blocked,
 
-  /// No runtime on this device (missing, armeabi-v7a, no Landlock).
+  /// No runtime on this device (missing, an ABI without CPython, no Landlock).
   unavailable;
 
   String get label => switch (this) {

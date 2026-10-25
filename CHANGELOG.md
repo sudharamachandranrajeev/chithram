@@ -48,6 +48,9 @@ Release notes are taken from the section of the version being tagged.
   (Down to the subtitles button, or the Menu / Info key; a sheet on a phone). The last language and subtitles on/off are
   remembered. The display now fades out slowly after a few seconds of playback and comes back on any key, touch or mouse
   move; the key that wakes it does nothing else. It stays up while paused or while a menu is open.
+- Search plugins on 32-bit Android (armeabi-v7a, e.g. older Android TV boxes): the app now bundles CPython 3.14 built
+  for armv7 from the official sources with CPython's own Android tooling, in the same isolated process as on other
+  devices. Before, adding a plugin there failed with "Plugins cannot run on this device".
 
 ### Changed
 - The TV, phone and shared UI code now live in `ui/tv`, `ui/phone` and `ui/common`.

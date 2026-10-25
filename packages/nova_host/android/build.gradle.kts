@@ -1,7 +1,8 @@
 group = "dev.chithram.nova_host"
 version = "1.0"
 
-// CPython's official Android build (python.org, PEP 738) is embedded through JNI.
+// CPython's official Android build (python.org, PEP 738) is embedded through JNI; armeabi-v7a,
+// which python.org does not publish, is built from the same tag by .github/workflows/cpython-android.yml.
 // tool/fetch_cpython_android.py lays out jniLibs and headers (git-ignored).
 plugins {
     id("com.android.library")
@@ -21,8 +22,9 @@ android {
         minSdk = 24
         consumerProguardFiles("consumer-rules.pro")
         ndk {
-            // python.org publishes aarch64 and x86_64 only: armeabi-v7a gets no plugins.
-            abiFilters += listOf("arm64-v8a", "x86_64")
+            // arm64-v8a and x86_64 from python.org; armeabi-v7a self-built from the same tag
+            // (.github/workflows/cpython-android.yml).
+            abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64")
         }
     }
 

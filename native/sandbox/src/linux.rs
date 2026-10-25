@@ -52,8 +52,15 @@ pub fn run(o: Opts) -> i32 {
 }
 
 fn die(msg: &str) -> ! {
-    eprintln!("nova-sandbox: {msg}");
+    note(msg);
     unsafe { libc::_exit(111) }
+}
+
+/// Best-effort stderr line for the child: under RLIMIT_FSIZE 0 a file-backed
+/// stderr fails with EFBIG, and eprintln! would panic on that.
+fn note(msg: &str) {
+    use std::io::Write;
+    let _ = writeln!(std::io::stderr(), "nova-sandbox: {msg}");
 }
 
 fn child(o: &Opts, parent: libc::pid_t) -> ! {
@@ -65,6 +72,10 @@ fn child(o: &Opts, parent: libc::pid_t) -> ! {
             libc::_exit(111); // parent already gone
         }
         libc::setsid();
+        // With RLIMIT_FSIZE 0 a write to a regular file raises SIGXFSZ, which
+        // would kill us when stderr is redirected to a file. Ignored (kept
+        // across execve), such writes fail with EFBIG instead.
+        libc::signal(libc::SIGXFSZ, libc::SIG_IGN);
         set_limit(libc::RLIMIT_AS, o.mem_mib * 1024 * 1024);
         set_limit(libc::RLIMIT_CPU, o.cpu_s);
         set_limit(libc::RLIMIT_NOFILE, 64);
@@ -99,11 +110,11 @@ fn child(o: &Opts, parent: libc::pid_t) -> ! {
     envp.push(std::ptr::null());
 
     seccomp(prog.as_ptr() as u64);
-    eprintln!("nova-sandbox: layers landlock_abi={abi} seccomp=on rlimits=on pdeathsig=on");
+    note(&format!("layers landlock_abi={abi} seccomp=on rlimits=on pdeathsig=on"));
     unsafe {
         libc::execve(prog.as_ptr(), argv.as_ptr(), envp.as_ptr());
         let e = *libc::__errno_location();
-        eprintln!("nova-sandbox: execve failed errno={e}");
+        note(&format!("execve failed errno={e}"));
         libc::_exit(111)
     }
 }
@@ -133,7 +144,7 @@ fn landlock(o: &Opts) -> i64 {
         let abi = libc::syscall(SYS_LL_CREATE, std::ptr::null::<u8>(), 0usize, 1u32);
         if abi < 1 {
             if o.allow_no_landlock {
-                eprintln!("nova-sandbox: WARNING Landlock unavailable, continuing without it");
+                note("WARNING Landlock unavailable, continuing without it");
                 return 0;
             }
             die("Landlock unavailable (use --allow-no-landlock to run without it)");

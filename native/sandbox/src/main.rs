@@ -10,6 +10,9 @@
 //!
 //! Exit code: the child's, 128+signal if it was killed, 124 on wall timeout,
 //! 111 if a sandbox layer could not be set up (the child never runs).
+//!
+//! Linux: the child runs with RLIMIT_FSIZE 0 and SIGXFSZ ignored, so writes to
+//! a stdout/stderr redirected to a regular file fail with EFBIG; give it pipes.
 
 use std::ffi::OsString;
 use std::path::PathBuf;

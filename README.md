@@ -6,201 +6,291 @@
   <br>
 </h1>
 
-<h4 align="center">A bring-your-own-sources video app: YouTube without an account, live TV from IPTV playlists and torrent streaming, with no ads. Android TV first, then Android phones, Windows and Linux.</h4>
+<h4 align="center">Watch YouTube, live TV and torrents in one ad-free app, on your TV, phone and computer.</h4>
 
 <p align="center">
-  <a href="https://github.com/sudharamachandranrajeev/chithram/releases"><img src="https://img.shields.io/github/v/release/sudharamachandranrajeev/chithram?include_prereleases&color=f5a300" alt="Release"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/github/license/sudharamachandranrajeev/chithram?color=555" alt="License"></a>
-  <img src="https://img.shields.io/badge/platforms-Android%20TV%20%7C%20Android%20%7C%20Windows%20%7C%20Linux-555" alt="Platforms">
-  <img src="https://img.shields.io/badge/Flutter-3.47-02569B?logo=flutter" alt="Flutter">
+  <a href="https://github.com/sudharamachandranrajeev/chithram/releases"><img src="https://img.shields.io/github/v/release/sudharamachandranrajeev/chithram?include_prereleases&color=f5a300&label=download" alt="Latest release"></a>
+  <img src="https://img.shields.io/badge/works%20on-Android%20TV%20%7C%20Android%20%7C%20Windows%20%7C%20Linux-555" alt="Works on Android TV, Android, Windows and Linux">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/licence-MIT-2e7d32" alt="MIT licence"></a>
 </p>
 
 <p align="center">
-  <a href="#key-features">Key Features</a> •
-  <a href="#how-to-use">How To Use</a> •
-  <a href="#download">Download</a> •
-  <a href="#credits">Credits</a> •
-  <a href="#related">Related</a> •
-  <a href="#license">License</a>
+  <a href="#-what-it-does">What it does</a> •
+  <a href="#-get-started">Get started</a> •
+  <a href="#-how-it-works">How it works</a> •
+  <a href="#-faq-and-troubleshooting">FAQ</a> •
+  <a href="#%EF%B8%8F-for-developers">For developers</a>
 </p>
 
 <p align="center">
   <img src="docs/screenshots/hero.png" alt="Chithram on a TV and a phone" width="100%">
 </p>
 
-*Chithram* is Malayalam for "picture". It has a streaming-style interface built for the D-pad first,
-and a separate touch design for phones.
+Chithram (Malayalam for "picture") is a video app for people who want to watch from many places
+without ads or an account. It is built for a TV remote first, with a separate touch design for
+phones. You bring your own sources: Chithram ships no channel lists, indexers or plugins. Status:
+**alpha**. It works, but expect rough edges and changes between versions.
 
-## Key Features
+## ✨ What it does
 
-* **YouTube without an account** – Home is YouTube: a billboard and rails of what is popular in your
-  region (music, live, sports, news, gaming). It learns on the device from what you watch and search
-  and adds Continue watching, Recommended for you and Because you watched. Playback is ad-free.
-* **Live TV** – add M3U playlists by link, with refresh, group chips and a fast channel list (10,000
-  channels); dead channels are dimmed and skipped. iptv-org and Free-TV are offered as opt-in
-  suggestions: nothing is fetched until you confirm.
-* **Torrent streaming** – paste a magnet, pick a file and stream it while it downloads. You choose
-  SOCKS5 or a direct connection first; one torrent at a time, removed with its files when the player
-  closes, so it seeds only while you watch.
-* **Torrent Home and Find** – popular rails ("today", "this week", "this month", "most seeded") built
-  from your own Torznab indexers and search plugins, ranked by seeders.
-* **Search plugins** – signed repositories, pinned domains, health checks and automatic updates of
-  plugins you have already installed; plugins run in a sandbox.
-* **Receive** – links, magnets and `.torrent` files sent from the LocalSend phone app on the same
-  Wi-Fi. Private networks only, optional PIN, every transfer asks first.
-* **Telegram receiver** – sign in with your own account and video or audio sent to your Saved
-  Messages plays while it downloads. Only Saved Messages is read.
-* **A player that stays out of the way** – audio and subtitle tracks, Up Next autoplay, a seek bar
-  with thumbnails, resume where you stopped, and a display that fades out.
-* **Two designs** – a D-pad TV and desktop design, and a touch design for phones with the system
-  keyboard. The form is detected once from the device; desktop has a "10-foot TV mode".
-* **Themes** – seven dark looks, an AMOLED black background and a custom accent colour.
+- ▶️ **YouTube without an account** – search and play videos with no ads and no sign-in. In the
+  next release, Home shows what is popular and learns what you like, on the device only.
+- 📺 **Live TV** – add a TV playlist link (M3U) and flick through channels, fast even with 10,000
+  of them. Dead channels are dimmed and skipped. Two free community catalogues are offered, never
+  forced.
+- 🧲 **Torrent streaming** – paste a magnet link, pick a file and watch while it downloads. It
+  shares only while you watch, then deletes the files.
+- 📲 **Send from your phone** – send a link, magnet or `.torrent` file from the LocalSend phone app
+  on the same Wi-Fi. Every transfer asks first.
+- ⏯️ **Pick up where you left off** – Chithram remembers your place in each video. Next release:
+  audio and subtitle choice, Up Next autoplay and a seek bar with picture previews.
+- 🛋️ **Made for the sofa and the pocket** – a remote-friendly TV design and a touch design for
+  phones. Computers can switch to the TV look.
+- 🔎 **Find torrents from your own sources** (next release) – popular lists and search from indexers
+  you add (Torznab) and search plugins you install. Plugins run locked away from your files.
+- ✈️ **Telegram Saved Messages** (next release) – sign in with your own account. Videos you save
+  there start playing while they download.
+- 🎨 **Themes** (next release) – seven dark looks, a pure black mode for OLED screens and your own
+  accent colour.
 
-## Screenshots
-
-All screenshots are rendered from the app with made-up titles, channels and torrents, and generated
-placeholder thumbnails (see `app/test/screenshots_test.dart`).
+## 📸 Screenshots
 
 <table>
   <tr>
-    <td align="center"><img src="docs/screenshots/tv-livetv.png" width="380"><br><sub>Live TV on a TV</sub></td>
-    <td align="center"><img src="docs/screenshots/tv-torrents.png" width="380"><br><sub>Torrent Home on a TV</sub></td>
+    <td align="center"><img src="docs/screenshots/tv-home.png" alt="Home on a TV" width="260"><br><sub>Home on a TV</sub></td>
+    <td align="center"><img src="docs/screenshots/tv-livetv.png" alt="Live TV on a TV" width="260"><br><sub>Live TV on a TV</sub></td>
+    <td align="center"><img src="docs/screenshots/tv-torrents.png" alt="Torrent Home on a TV" width="260"><br><sub>Torrent Home on a TV</sub></td>
   </tr>
-</table>
-<table>
   <tr>
-    <td align="center"><img src="docs/screenshots/phone-home.png" width="200"><br><sub>Home on a phone</sub></td>
-    <td align="center"><img src="docs/screenshots/phone-livetv.png" width="200"><br><sub>Live TV on a phone</sub></td>
-    <td align="center"><img src="docs/screenshots/phone-torrents.png" width="200"><br><sub>Torrents on a phone</sub></td>
+    <td align="center"><img src="docs/screenshots/phone-home.png" alt="Home on a phone" width="180"><br><sub>Home on a phone</sub></td>
+    <td align="center"><img src="docs/screenshots/phone-livetv.png" alt="Live TV on a phone" width="180"><br><sub>Live TV on a phone</sub></td>
+    <td align="center"><img src="docs/screenshots/phone-torrents.png" alt="Torrents on a phone" width="180"><br><sub>Torrents on a phone</sub></td>
   </tr>
 </table>
 
-## How To Use
+<sub>All screenshots use made-up titles, channels and torrents with generated thumbnails, rendered
+from the current code. The Home and Torrent Home views arrive in the next release.</sub>
 
-To clone and run this application, you'll need [Git](https://git-scm.com) and
-[Flutter](https://flutter.dev) installed. The Dart packages and the app form a
-[pub workspace](https://dart.dev/tools/pub/workspaces), so run `flutter pub get` at the repository root:
+## 🚀 Get started
 
-```bash
-# Clone this repository
-$ git clone https://github.com/sudharamachandranrajeev/chithram
+### Step 1 – Download
 
-# Go into the repository
-$ cd chithram
+Open the [releases page](https://github.com/sudharamachandranrajeev/chithram/releases) and, under
+the newest **Chithram** release, pick the file for your device:
 
-# Install dependencies
-$ flutter pub get
+| Your device | File to download | Works on |
+| --- | --- | --- |
+| 📺 Android TV box or TV, newer phones | `Chithram-<version>-android-arm64-v8a.apk` | Android 7 and newer, 64-bit |
+| 📺 Older or low-cost TV boxes | `Chithram-<version>-android-armeabi-v7a.apk` | Android 7 and newer, 32-bit |
+| 💻 Android emulator or x86 device | `Chithram-<version>-android-x86_64.apk` | Android 7 and newer |
+| 🪟 Windows computer | `Chithram-<version>-windows-x64-setup.exe` | Windows 10 (version 1809) and 11 |
+| 🐧 Linux computer | the one-command installer below, or `…-linux-x86_64.AppImage` | Arch, Omarchy, Debian 12+, Ubuntu 24.04+, Fedora (64-bit); AppImage also Ubuntu 22.04 |
 
-# Run the app
-$ cd app
-$ flutter run -d linux
+Not sure which Android file? Try `arm64-v8a` first. If it will not install, use `armeabi-v7a`.
+Each release also has `SHA256SUMS.txt`, a list of fingerprints to check the files are genuine.
 
-# Run the tests
-$ flutter test
-```
-
-Screenshots: `CHITHRAM_SHOTS=/tmp/shots FLUTTER_ROOT=<flutter sdk> flutter test test/screenshots_test.dart`
-renders the TV (1920x1080) and phone screens to PNG files.
-
-Everything is built in GitHub Actions; no local toolchain is needed or assumed.
-
-- `ci.yml` analyzes and tests the app and packages on every push.
-- `release.yml` builds Android (signed per-ABI APKs), the Windows installer and the Linux AppImage and
-  tarball, and smoke-tests them (emulator, silent install, Xvfb). Pushing a `v*` tag publishes a
-  GitHub release; running it by hand or on the weekly schedule only builds.
-
-Set the Android signing secrets `CHITHRAM_KEYSTORE_BASE64`, `CHITHRAM_KEYSTORE_PASSWORD`,
-`CHITHRAM_KEY_ALIAS` and `CHITHRAM_KEY_PASSWORD` in the repository to sign releases (without them the
-APKs use a debug key).
+### Step 2 – Install
 
 <details>
-<summary><b>Repository layout</b></summary>
+<summary><b>📺 Android TV</b></summary>
 
-| Path | What |
-| --- | --- |
-| `app/` | The Flutter app (`dev.chithram.chithram`) |
-| `packages/innertube/` | YouTube InnerTube client (pure Dart) |
-| `packages/iptv/` | M3U / Xtream / XMLTV parsers |
-| `packages/localsend_rx/` | LocalSend receiver |
-| `packages/tdlib/` | Telegram client: TDLib's JSON interface over FFI, typed objects, a fake for tests |
-| `packages/chithram_player/` | Player engine interface |
-| `native/torrent/` | Rust torrent engine over librqbit |
-| `docs/` | Research, decisions and roadmap |
-
-More packages (`torznab`, `tmdb`, `media_names`, `nova_host`, `torrent`) are listed in `packages/`.
+1. Copy the `.apk` to the TV with a USB stick, or send it from your phone with LocalSend.
+2. Open it with the TV's file manager.
+3. If the TV asks, allow that file manager to install unknown apps. This is normal for apps from
+   outside the TV's app store.
+4. Select **Install**, then **Open**. Chithram also appears in the TV's app row.
 
 </details>
 
-## Download
+<details>
+<summary><b>🤖 Android phone</b></summary>
 
-Builds are on the [releases page](https://github.com/sudharamachandranrajeev/chithram/releases).
+1. Open the downloaded `.apk` on your phone.
+2. If Android asks, allow installs from your browser or file manager.
+3. Tap **Install**, then **Open**.
 
-* **Android TV and phones** – one APK, per-ABI (arm64-v8a, armeabi-v7a, x86_64).
-* **Windows** – installer and portable zip.
-* **Linux** – AppImage (`Chithram-<version>-linux-x86_64.AppImage`, bundles its own libmpv: `chmod +x`
-  and run) and tarball, or the one-command installer below.
+Newer versions install over the top and keep your settings.
 
-### Install on Linux
+</details>
 
-One command, for Arch, Omarchy, Ubuntu, Debian and Fedora (x86_64):
+<details>
+<summary><b>🪟 Windows</b></summary>
+
+1. Double-click `Chithram-<version>-windows-x64-setup.exe`. No admin rights are needed.
+2. Windows may say *"Windows protected your PC"*. The app is not paid-signed yet; that is the only
+   reason. Click **More info → Run anyway**.
+3. Follow the installer, then open **Chithram** from the Start menu.
+
+Prefer no installer? Download `…-windows-x64-portable.zip`, unzip it anywhere and run
+`chithram.exe`.
+
+</details>
+
+<details>
+<summary><b>🐧 Linux</b></summary>
+
+Paste this into a terminal (Arch, Omarchy, Debian, Ubuntu and Fedora, 64-bit x86):
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/sudharamachandranrajeev/chithram/main/install-linux.sh | bash
 ```
 
-On **Arch and Omarchy** this is all you need. Step by step, the script:
-
-1. installs the runtime libraries with `sudo pacman -S --needed mpv libsecret gtk3`
-   (`apt` and `dnf` equivalents are used on Debian/Ubuntu and Fedora);
-2. downloads the newest release's `linux-x64.tar.gz` from GitHub and checks it against the release's
-   `SHA256SUMS.txt`;
-3. unpacks it to `~/.local/share/chithram`, links `~/.local/bin/chithram` and adds an app-launcher entry,
-   so Chithram shows up in your menu (on Omarchy: `Super + Space`).
-
-Everything stays in your home directory; only step 1 needs `sudo`.
+1. It installs the video, keyring and window libraries (mpv, libsecret, GTK 3) with your package
+   manager. This is the only step that asks for your password.
+2. It downloads the newest release and checks it against `SHA256SUMS.txt`.
+3. It installs Chithram for your user only and adds it to your app menu (on Omarchy:
+   **Super + Space**).
 
 - **Update:** run the same command again.
-- **Uninstall:** `curl -fsSL https://raw.githubusercontent.com/sudharamachandranrajeev/chithram/main/install-linux.sh | bash -s -- --uninstall`
-- **Libraries already installed?** Add `--no-deps`: `... | bash -s -- --no-deps`.
-- **Prefer to read it first?** The script is [install-linux.sh](install-linux.sh), about 90 lines.
+- **Remove:** add `-s -- --uninstall` after `bash`. Use `--no-deps` instead to skip step 1.
+- **Read it first?** The script is [install-linux.sh](install-linux.sh), about 100 lines.
+- **Older system?** Download the AppImage, run `chmod +x Chithram-*.AppImage`, then start it. It
+  carries its own video library.
 
-On a desktop you can turn on *Settings > 10-foot TV mode* for the TV layout.
+</details>
 
-### Content-neutral
+### Step 3 – First launch
 
-Chithram ships **no** indexers, plugins or addon URLs, and no channel lists. Users add their own
-sources. The one exception is an opt-in first-run suggestion of two public IPTV catalogues (iptv-org
-and Free-TV): nothing loads until you choose one. Chithram does not circumvent DRM and does not play
-DRM-protected services.
+There is no sign-up. Chithram opens on **Home**. Move with the remote's arrows, or tap on a phone.
 
-See [docs/decisions.md](docs/decisions.md) for decisions, [docs/roadmap.md](docs/roadmap.md) for the
-plan and [docs/research.md](docs/research.md) for the research behind it.
+1. **Watch YouTube**: open **Search** or **YouTube**, type what you want, and select a video.
+2. **Add live TV**: open **Live TV → Add playlist**. Choose **Playlist URL** and paste an M3U link
+   you have, or pick one of the two community catalogues. Nothing downloads until you confirm.
+3. **Stream a torrent**: open **Torrents → Paste magnet** (on a phone: type it in **Magnet link**,
+   then **Add magnet**). The first time, Chithram asks how to protect your connection. Pick **Use
+   SOCKS5** and enter your VPN's SOCKS5 address, or **Continue without protection**.
+4. **Send from your phone** (optional): on the TV, open **Torrents → Send from phone**. On a phone
+   running Chithram, it is under **Settings → Receive**. Then send from the LocalSend app.
 
-## Credits
+On a computer, **Settings → 10-foot TV mode** switches to the TV design.
 
-This software uses the following open source packages and services:
+## 🧭 How it works
 
-- [Flutter](https://flutter.dev), [media_kit](https://pub.dev/packages/media_kit) (libmpv) for desktop video
-- [drift](https://drift.simonbinder.eu) and
-  [flutter_secure_storage](https://pub.dev/packages/flutter_secure_storage)
+```mermaid
+flowchart LR
+    Y["▶️ YouTube"] --> C["📺 Chithram on your<br/>TV, phone or computer"]
+    L["📡 TV playlists you add"] --> C
+    T["🧲 Torrent peers"] -->|"through your VPN, if you choose"| C
+    P["📱 Your phone (LocalSend)"] -->|"same Wi-Fi, asks first"| C
+```
+
+- **Chithram plays the source directly.** YouTube and live TV stream straight to the player, with
+  YouTube's ads left out.
+- **Torrents stream as they download.** One torrent at a time. Its files are deleted when you close
+  the player, so it shares only while you watch.
+- **Nothing is built in.** You add every playlist, indexer and plugin. Chithram does not break copy
+  protection (DRM) and does not play DRM-protected services.
+
+## 🔒 Your data
+
+- **No account, no cloud.** Settings, resume points and playlists stay on the device. Linux:
+  `~/.local/share/dev.chithram.chithram`. Android: inside the app.
+- **Next release:** your watch history and suggestions stay on the device too. **Settings → Clear
+  watch history** wipes them. API keys you enter go into the system's secret store.
+- **What leaves the device:** only requests to the sources you use (YouTube, your playlists, your
+  indexers and torrent peers).
+
+> [!IMPORTANT]
+> Torrenting shows your IP address to every peer. Use **Use SOCKS5** with a VPN unless you are sure
+> you do not need it. With SOCKS5, magnet links need trackers of their own.
+
+## ❓ FAQ and troubleshooting
+
+<details>
+<summary><b>Does Chithram come with channels or torrents?</b></summary>
+
+No. It ships no channel lists, indexers, plugins or add-on links. Live TV offers two public
+community catalogues (iptv-org and Free-TV) as a choice. Nothing loads until you pick one.
+</details>
+
+<details>
+<summary><b>Windows says the app might be unsafe</b></summary>
+
+The build is not code-signed (a paid certificate). Click **More info → Run anyway**. Check the file
+against `SHA256SUMS.txt` on the release if you want to be sure it is genuine.
+</details>
+
+<details>
+<summary><b>The Android TV will not install the app</b></summary>
+
+Allow the file manager you opened it with to install unknown apps (TV **Settings → Apps →
+Security** or similar). If it still fails, your TV may be 32-bit: use the `armeabi-v7a` file.
+</details>
+
+<details>
+<summary><b>A magnet link finds no peers over SOCKS5</b></summary>
+
+With SOCKS5, Chithram turns off peer discovery that cannot go through a proxy (DHT and UDP
+trackers). The magnet link needs HTTP trackers of its own. Try another link, or a `.torrent` file.
+</details>
+
+<details>
+<summary><b>Search plugins say they cannot run here</b> (next release)</summary>
+
+Plugins need Python, which Chithram brings with it. On Android it runs on 64-bit devices only for
+now. Torznab indexers work everywhere.
+</details>
+
+## 🛠️ For developers
+
+<details>
+<summary>Build from source, test and release</summary>
+
+You need [Git](https://git-scm.com) and [Flutter](https://flutter.dev) 3.47. The app and the Dart
+packages form a [pub workspace](https://dart.dev/tools/pub/workspaces), so run `flutter pub get` at
+the top:
+
+```bash
+git clone https://github.com/sudharamachandranrajeev/chithram
+cd chithram
+flutter pub get
+cd app
+flutter run -d linux                     # or an Android device
+flutter test                             # tests
+CHITHRAM_SHOTS=/tmp/shots flutter test test/screenshots_test.dart   # render TV and phone screenshots
+```
+
+- Releases are built in GitHub Actions; no local toolchain is assumed. `ci.yml` analyses and tests
+  every push. `release.yml` builds signed per-ABI APKs, the Windows installer and zip, and the Linux
+  AppImage and tarball, then smoke-tests them. A `v*` tag publishes a pre-release.
+- Signing secrets: `CHITHRAM_KEYSTORE_BASE64`, `CHITHRAM_KEYSTORE_PASSWORD`, `CHITHRAM_KEY_ALIAS`,
+  `CHITHRAM_KEY_PASSWORD`. Without them the APKs use a debug key.
+- Layout: `app/` (the Flutter app, `dev.chithram.chithram`), `packages/` (`innertube` for YouTube,
+  `iptv`, `localsend_rx`, `tdlib`, `torznab`, `tmdb`, `nova_host`, `torrent`, `chithram_player` and
+  more), `native/torrent/` (Rust torrent engine over librqbit), `python/` (plugin sandbox).
+- Changes per version: [CHANGELOG.md](CHANGELOG.md). Design: [decisions](docs/decisions.md),
+  [roadmap](docs/roadmap.md), [research](docs/research.md) and [spikes](docs/spikes.md).
+
+</details>
+
+<details>
+<summary>Credits</summary>
+
+- [Flutter](https://flutter.dev), and [media_kit](https://pub.dev/packages/media_kit) (libmpv) for
+  desktop video
+- [drift](https://drift.simonbinder.eu) and [flutter_secure_storage](https://pub.dev/packages/flutter_secure_storage)
 - [librqbit](https://github.com/ikatson/rqbit) for torrent streaming
 - [TDLib](https://github.com/tdlib/td) for the Telegram receiver (Boost Software License)
 - [LocalSend](https://localsend.org) protocol for Receive
-- [iptv-org](https://github.com/iptv-org/iptv) and [Free-TV](https://github.com/Free-TV/IPTV) as opt-in playlist suggestions
+- [SponsorBlock](https://sponsor.ajay.app) segments on the seek bar (opt-in)
+- [iptv-org](https://github.com/iptv-org/iptv) and [Free-TV](https://github.com/Free-TV/IPTV) as
+  opt-in playlist suggestions
 - [Poppins](https://fonts.google.com/specimen/Poppins) (SIL Open Font License)
 - This product uses the TMDB API but is not endorsed or certified by TMDB. See [NOTICE](NOTICE).
 
+</details>
+
 ## Related
 
-* [Brahma](https://github.com/sudharamachandranrajeev/brahma) – the author's life-management suite (a
-  separate project)
-* [Paattu](https://github.com/sudharamachandranrajeev/paattu) – a music player by the same author,
-  whose YouTube resolver this app's `innertube` package grew from
+| App | What it does |
+| --- | --- |
+| [paattu](https://github.com/sudharamachandranrajeev/paattu) | A music player by the same author. Chithram's YouTube code grew from it. |
+| [brahma](https://github.com/sudharamachandranrajeev/brahma) | The author's life-management suite (a separate project) |
 
 ## License
 
-[MIT](LICENSE). Poppins is under the SIL Open Font License (`app/assets/fonts/OFL.txt`); the TMDB logo
-is covered by TMDB's own terms (see [NOTICE](NOTICE)).
+[MIT](LICENSE). Poppins is under the SIL Open Font License (`app/assets/fonts/OFL.txt`). The TMDB
+logo is covered by TMDB's own terms (see [NOTICE](NOTICE)).
 
 ---
 

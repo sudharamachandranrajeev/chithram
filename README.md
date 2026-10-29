@@ -129,7 +129,7 @@ Prefer no installer? Download `…-windows-x64-portable.zip`, unzip it anywhere 
 <details>
 <summary><b>🐧 Linux</b></summary>
 
-Paste this into a terminal (Arch, Omarchy, Debian, Ubuntu and Fedora, 64-bit Intel/AMD):
+Paste this into a terminal (Arch, Omarchy, Debian, Ubuntu and Fedora, 64-bit x86):
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/sudharamachandranrajeev/chithram/main/install-linux.sh | bash

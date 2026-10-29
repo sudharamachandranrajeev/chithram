@@ -81,6 +81,11 @@ jobs:
             echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/chithram.jks"
             echo "CHITHRAM_KEYSTORE=$RUNNER_TEMP/chithram.jks" >> "$GITHUB_ENV"
           else
+            # A release signed with a debug key could never be updated by the real one.
+            if [[ $GITHUB_REF == refs/tags/* ]]; then
+              echo "::error::No CHITHRAM_KEYSTORE_BASE64 secret: refusing to publish a debug-signed release"
+              exit 1
+            fi
             echo "::warning::No CHITHRAM_KEYSTORE_BASE64 secret: the APK is signed with a debug key"
           fi
       - name: Build the APK

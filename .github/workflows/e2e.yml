@@ -42,7 +42,7 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Build tools, Xvfb, Mesa and ffmpeg
         run: |
           sudo apt-get update -qq
@@ -119,7 +119,7 @@ jobs:
             /usr/local/lib/node_modules /usr/share/swift /usr/local/.ghcup /opt/microsoft || true
           sudo apt-get clean || true
           df -h /
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
       - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4
         with:
@@ -196,7 +196,7 @@ jobs:
             /usr/local/lib/node_modules /usr/share/swift /usr/local/.ghcup /opt/microsoft || true
           sudo apt-get clean || true
           df -h /
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
       - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4
         with:

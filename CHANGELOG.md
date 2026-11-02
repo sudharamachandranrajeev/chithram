@@ -52,6 +52,14 @@ Release notes are taken from the section of the version being tagged.
 ### Changed
 - The TV, phone and shared UI code now live in `ui/tv`, `ui/phone` and `ui/common`.
 
+## 0.2.2
+
+### Fixed
+- Windows: opening Chithram could open Paattu (or Paattu open Chithram). The installer reused Paattu's setup ID, so
+  Windows Setup put Chithram into the Paattu folder and the two apps shared, and overwrote, each other's app code.
+  Chithram now has its own setup ID and its own folder, and Setup refuses a folder that holds another app. Updating
+  takes Chithram out of the Paattu folder; if it was there, reinstall Paattu afterwards to repair it.
+
 ## 0.2.1
 
 ### Added

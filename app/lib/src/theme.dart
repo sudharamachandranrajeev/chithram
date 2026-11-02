@@ -31,6 +31,8 @@ class ChithramTheme extends ThemeExtension<ChithramTheme> {
     required this.text,
     required this.textDim,
     required this.heroTint,
+    this.accent2 = const Color(0xFF9B87FF),
+    this.status = StatusColors.standard,
   });
 
   /// The accent: focus glow, selected state, primary buttons.
@@ -47,8 +49,27 @@ class ChithramTheme extends ThemeExtension<ChithramTheme> {
   /// The corner glow of the Home hero gradient.
   final Color heroTint;
 
+  /// The secondary accent (progress, secondary highlights).
+  final Color accent2;
+
+  /// The colours of the request statuses (see `StatusChip`).
+  final StatusColors status;
+
+  /// The default look: lime on a deep violet-black.
+  static const night = ChithramTheme(
+    accent: Color(0xFFC6F432),
+    onAccent: Color(0xFF0E0B12),
+    background: Color(0xFF0E0B12),
+    surface: Color(0xFF18141E),
+    surfaceHigh: Color(0xFF241E2C),
+    text: Color(0xFFF5F3F7),
+    textDim: Color(0xFFABA4B6),
+    heroTint: Color(0x59C6F432),
+    accent2: Color(0xFF9B87FF),
+  );
+
   /// The original look: saffron / gold on near-black.
-  static const chithram = ChithramTheme(
+  static const saffron = ChithramTheme(
     accent: Color(0xFFF5A300),
     onAccent: Color(0xFF000000),
     background: Color(0xFF0B0B10),
@@ -75,6 +96,16 @@ class ChithramTheme extends ThemeExtension<ChithramTheme> {
     return (hi + 0.05) / (lo + 0.05);
   }
 
+  /// A see-through panel over the page (sidebars, bars, chips): [surface]
+  /// let through, so the hero glow shows under it.
+  Color get glass => surface.withValues(alpha: 0.72);
+
+  /// The hairline edge of a [glass] panel.
+  Color get glassEdge => hairline;
+
+  /// A 1 dp divider or outline: [text] at 8%.
+  Color get hairline => text.withValues(alpha: 0.08);
+
   /// This look with another accent; [onAccent] and [heroTint] follow.
   ChithramTheme withAccent(Color accent) =>
       copyWith(accent: accent, onAccent: onColor(accent), heroTint: accent.withAlpha(0x59));
@@ -89,7 +120,7 @@ class ChithramTheme extends ThemeExtension<ChithramTheme> {
   /// The look saved in [prefs]: preset, optional custom accent, AMOLED flag.
   /// Unknown or missing values fall back to the default.
   static ChithramTheme fromPrefs(Prefs prefs) {
-    var t = (ThemePreset.byId(prefs.getString(ThemePrefs.preset)) ?? ThemePreset.all.first).theme;
+    var t = ThemePreset.resolve(prefs.getString(ThemePrefs.preset)).theme;
     final accent = prefs.getInt(ThemePrefs.accent);
     if (accent != null) t = t.withAccent(Color(accent | 0xFF000000));
     if (prefs.getBool(ThemePrefs.amoled)) t = t.toAmoled();
@@ -106,6 +137,8 @@ class ChithramTheme extends ThemeExtension<ChithramTheme> {
     Color? text,
     Color? textDim,
     Color? heroTint,
+    Color? accent2,
+    StatusColors? status,
   }) =>
       ChithramTheme(
         accent: accent ?? this.accent,
@@ -116,6 +149,8 @@ class ChithramTheme extends ThemeExtension<ChithramTheme> {
         text: text ?? this.text,
         textDim: textDim ?? this.textDim,
         heroTint: heroTint ?? this.heroTint,
+        accent2: accent2 ?? this.accent2,
+        status: status ?? this.status,
       );
 
   @override
@@ -131,6 +166,8 @@ class ChithramTheme extends ThemeExtension<ChithramTheme> {
       text: l(text, other.text),
       textDim: l(textDim, other.textDim),
       heroTint: l(heroTint, other.heroTint),
+      accent2: l(accent2, other.accent2),
+      status: StatusColors.lerp(status, other.status, t),
     );
   }
 
@@ -144,11 +181,74 @@ class ChithramTheme extends ThemeExtension<ChithramTheme> {
       other.surfaceHigh == surfaceHigh &&
       other.text == text &&
       other.textDim == textDim &&
-      other.heroTint == heroTint;
+      other.heroTint == heroTint &&
+      other.accent2 == accent2 &&
+      other.status == status;
 
   @override
   int get hashCode =>
-      Object.hash(accent, onAccent, background, surface, surfaceHigh, text, textDim, heroTint);
+      Object.hash(accent, onAccent, background, surface, surfaceHigh, text, textDim, heroTint, accent2, status);
+}
+
+/// One colour per request status. The same on every look: a status keeps its
+/// meaning when the accent changes.
+@immutable
+class StatusColors {
+  const StatusColors({
+    required this.requested,
+    required this.awaitingApproval,
+    required this.searching,
+    required this.downloading,
+    required this.importing,
+    required this.available,
+    required this.failed,
+  });
+
+  final Color requested;
+  final Color awaitingApproval;
+  final Color searching;
+  final Color downloading;
+  final Color importing;
+  final Color available;
+  final Color failed;
+
+  static const standard = StatusColors(
+    requested: Color(0xFFABA4B6),
+    awaitingApproval: Color(0xFFF5B83D),
+    searching: Color(0xFF5AA9FF),
+    downloading: Color(0xFF9B87FF),
+    importing: Color(0xFF3DD6D0),
+    available: Color(0xFF3DDC84),
+    failed: Color(0xFFFF6B6B),
+  );
+
+  static StatusColors lerp(StatusColors a, StatusColors b, double t) {
+    Color l(Color x, Color y) => Color.lerp(x, y, t)!;
+    return StatusColors(
+      requested: l(a.requested, b.requested),
+      awaitingApproval: l(a.awaitingApproval, b.awaitingApproval),
+      searching: l(a.searching, b.searching),
+      downloading: l(a.downloading, b.downloading),
+      importing: l(a.importing, b.importing),
+      available: l(a.available, b.available),
+      failed: l(a.failed, b.failed),
+    );
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      other is StatusColors &&
+      other.requested == requested &&
+      other.awaitingApproval == awaitingApproval &&
+      other.searching == searching &&
+      other.downloading == downloading &&
+      other.importing == importing &&
+      other.available == available &&
+      other.failed == failed;
+
+  @override
+  int get hashCode =>
+      Object.hash(requested, awaitingApproval, searching, downloading, importing, available, failed);
 }
 
 /// A hand-picked dark look.
@@ -178,14 +278,28 @@ class ThemePreset {
         heroTint: Color(accent).withAlpha(0x59),
       );
 
+  /// Ids that earlier versions saved, mapped to the nearest look kept.
+  static const legacyIds = <String, String>{
+    'chithram': 'saffron', // the old default
+    'sunset': 'saffron',
+    'plum': 'night',
+    'frost': 'night',
+    'violet': 'night',
+    'rose': 'noir',
+    'emerald': 'mint',
+  };
+
+  /// The look for a saved [id]: a current id as is, a removed one through
+  /// [legacyIds], anything else (or null) the default, Night.
+  static ThemePreset resolve(String? id) => byId(id) ?? byId(legacyIds[id]) ?? all.first;
+
   /// The first is the default.
   static final all = <ThemePreset>[
-    const ThemePreset('chithram', 'Chithram', ChithramTheme.chithram),
+    const ThemePreset('night', 'Night', ChithramTheme.night),
+    const ThemePreset('saffron', 'Saffron', ChithramTheme.saffron),
+    ThemePreset('noir', 'Noir', _dark(0xFFF2555A, 0xFF0A0A0B, 0xFF161618, 0xFF212124, 0xFFA6A6AD)),
+    ThemePreset('mint', 'Mint', _dark(0xFF2EE07A, 0xFF0E0F12, 0xFF181A1F, 0xFF22252B, 0xFFA0A4AD)),
     ThemePreset('ocean', 'Ocean', _dark(0xFF3D9BFF, 0xFF090D14, 0xFF121A26, 0xFF1C2636, 0xFF9AA6BA)),
-    ThemePreset('emerald', 'Emerald', _dark(0xFF2ECC8F, 0xFF08110E, 0xFF111C18, 0xFF1B2B25, 0xFF96AAA2)),
-    ThemePreset('rose', 'Rose', _dark(0xFFFF5C8A, 0xFF12090D, 0xFF1F1217, 0xFF2D1B22, 0xFFB5A0A8)),
-    ThemePreset('violet', 'Violet', _dark(0xFFA678FF, 0xFF0E0A14, 0xFF191323, 0xFF261D35, 0xFFA9A0BC)),
-    ThemePreset('sunset', 'Sunset', _dark(0xFFFF7A45, 0xFF120C0A, 0xFF1F1613, 0xFF2D211C, 0xFFB5A59E)),
     ThemePreset('graphite', 'Graphite', _dark(0xFFE0E0E0, 0xFF0E0E0E, 0xFF1A1A1A, 0xFF262626, 0xFFA3A3A3)),
   ];
 }
@@ -217,7 +331,7 @@ class ChithramColors {
 
   /// The colours of the nearest theme (the default look when there is none).
   static ChithramTheme of(BuildContext context) =>
-      Theme.of(context).extension<ChithramTheme>() ?? ChithramTheme.chithram;
+      Theme.of(context).extension<ChithramTheme>() ?? ChithramTheme.night;
 }
 
 /// The theme for [form] in the look [colors]. A TV (and desktop) draws its own
@@ -225,7 +339,7 @@ class ChithramColors {
 /// targets, the M3 type scale and predictive back.
 ThemeData buildChithramTheme({
   FormFactor form = FormFactor.tv,
-  ChithramTheme colors = ChithramTheme.chithram,
+  ChithramTheme colors = ChithramTheme.night,
 }) {
   final scheme = ColorScheme.fromSeed(
     seedColor: colors.accent,

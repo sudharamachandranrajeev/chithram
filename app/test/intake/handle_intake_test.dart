@@ -146,7 +146,7 @@ void main() {
     expect(find.textContaining('secret', findRichText: true), findsNothing);
     final text = t.widget<Text>(find.descendant(of: find.byType(IntakeSummary), matching: find.byType(Text)));
     final host = (text.textSpan! as TextSpan).children!.cast<TextSpan>().firstWhere((s) => s.text == 'tv.example.org');
-    expect(host.style?.fontWeight, FontWeight.w800);
+    expect(host.style?.fontWeight, FontWeight.w700);
     expect(find.text('Add playlist'), findsOneWidget);
   });
 

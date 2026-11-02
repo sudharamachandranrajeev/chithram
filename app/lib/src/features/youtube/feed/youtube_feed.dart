@@ -11,12 +11,16 @@ import 'taste.dart';
 
 /// One row of videos on Home.
 class FeedRail {
-  const FeedRail(this.id, this.title, this.items);
+  const FeedRail(this.id, this.title, this.items, {this.progress = const {}});
 
   /// Stable: plays started from it teach the profile which rails to put first.
   final String id;
   final String title;
   final List<VideoItem> items;
+
+  /// How far each video was watched (0 to 1), by video id; Continue
+  /// watching only.
+  final Map<String, double> progress;
 }
 
 class FeedState {
@@ -175,8 +179,15 @@ class YouTubeFeed {
     final taste = _taste.profile;
     final rails = <FeedRail>[];
 
-    final unfinished = [for (final w in taste.unfinished.take(20)) w.item];
-    if (unfinished.isNotEmpty) rails.add(FeedRail('continue', 'Continue watching', unfinished));
+    final unfinished = taste.unfinished.take(20).toList();
+    if (unfinished.isNotEmpty) {
+      rails.add(FeedRail(
+        'continue',
+        'Continue watching',
+        [for (final w in unfinished) w.item],
+        progress: {for (final w in unfinished) w.item.videoId: w.fraction},
+      ));
+    }
 
     // Popular rails, the ones the user plays from most first (stable order
     // otherwise).

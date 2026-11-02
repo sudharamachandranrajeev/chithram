@@ -8,6 +8,7 @@ import '../../features/youtube/feed/youtube_feed.dart';
 import '../../features/youtube/youtube_results.dart';
 import '../../theme.dart';
 import '../common/dims.dart';
+import '../common/glass.dart';
 import 'focus_card.dart';
 import 'focus_rail.dart';
 
@@ -79,10 +80,17 @@ class _Hero extends StatelessWidget {
     final suggested = state.rails.any((r) => r.id == 'for-you');
     final error = state.error;
     final String label, title, line;
+    final facts = <String>[];
     if (video != null) {
       label = suggested ? 'Recommended for you' : 'Popular on YouTube';
       title = video.title;
-      line = [video.author, video.viewsText].where((s) => s.isNotEmpty).join(' · ');
+      line = '';
+      final duration = video.duration;
+      facts.addAll([
+        video.author,
+        video.viewsText,
+        if (duration != null) VideoTile.clock(duration),
+      ].where((s) => s.isNotEmpty));
     } else if (error != null) {
       (label, title, line) = ('YouTube', error, 'Check the connection, then retry.');
     } else {
@@ -95,7 +103,8 @@ class _Hero extends StatelessWidget {
       margin: EdgeInsets.fromLTRB(d.phone ? 8 : 16, d.tv ? 12 : 16, d.phone ? 8 : 16, 0),
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: ChithramColors.of(context).glassEdge),
         gradient: LinearGradient(
           begin: Alignment.topRight,
           end: Alignment.bottomLeft,
@@ -135,16 +144,31 @@ class _Hero extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.end,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(label,
-                      style: TextStyle(color: ChithramColors.of(context).accent, fontSize: d.t(14), fontWeight: FontWeight.w600)),
-                  const SizedBox(height: 4),
+                  if (video != null)
+                    MetaPill(
+                      text: label,
+                      icon: suggested ? Icons.auto_awesome_rounded : Icons.local_fire_department_rounded,
+                      filled: true,
+                    )
+                  else
+                    Text(label,
+                        style: TextStyle(color: ChithramColors.of(context).accent, fontSize: d.t(14), fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 8),
                   ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 900),
+                    constraints: const BoxConstraints(maxWidth: 820),
                     child: Text(title,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontSize: d.t(32), fontWeight: FontWeight.w700)),
+                        style: TextStyle(fontSize: d.t(34), fontWeight: FontWeight.w700, height: 1.15, letterSpacing: -0.3)),
                   ),
+                  if (facts.isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 6,
+                      children: [for (final f in facts) MetaPill(text: f)],
+                    ),
+                  ],
                   if (line.isNotEmpty) ...[
                     const SizedBox(height: 4),
                     Text(line,

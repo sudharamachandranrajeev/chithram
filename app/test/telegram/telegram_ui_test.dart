@@ -164,6 +164,6 @@ void main() {
     await t.runAsync(rig.service.start);
     await t.pump();
     expect(find.text('Telegram: not in this build'), findsOneWidget);
-    expect(ChithramTheme.chithram.accent, isNotNull);
+    expect(ChithramTheme.night.accent, isNotNull);
   });
 }

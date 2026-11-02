@@ -22,7 +22,7 @@ class ThemeKeys {
 
 /// The name of the saved look, for the Settings entry.
 String themeLabel(Prefs prefs) {
-  final name = (ThemePreset.byId(prefs.getString(ThemePrefs.preset)) ?? ThemePreset.all.first).name;
+  final name = ThemePreset.resolve(prefs.getString(ThemePrefs.preset)).name;
   final custom = prefs.getInt(ThemePrefs.accent) != null ? ', custom accent' : '';
   final black = prefs.getBool(ThemePrefs.amoled) ? ', AMOLED' : '';
   return '$name$custom$black';
@@ -117,7 +117,7 @@ class _ThemePageState extends State<ThemePage> {
             child: ListenableBuilder(
               listenable: prefs,
               builder: (context, _) {
-                final presetId = (ThemePreset.byId(prefs.getString(ThemePrefs.preset)) ?? ThemePreset.all.first).id;
+                final presetId = ThemePreset.resolve(prefs.getString(ThemePrefs.preset)).id;
                 final accent = prefs.getInt(ThemePrefs.accent);
                 final amoled = prefs.getBool(ThemePrefs.amoled);
                 return SingleChildScrollView(

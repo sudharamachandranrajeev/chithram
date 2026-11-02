@@ -177,6 +177,41 @@ jobs:
           }
           iscc /Qp /DAppVersion=${{ needs.version.outputs.version }} windows\installer\chithram.iss
           Copy-Item build\installer\*.exe ..\dist\
+      # Up to 0.2.1 the installer shared Paattu's AppId and installed into Paattu's
+      # folder, so opening one app ran the other. Guard both the refusal and the cleanup.
+      - name: Installer keeps out of other apps' folders
+        shell: pwsh
+        working-directory: dist
+        run: |
+          $setup = (Get-Item Chithram-*-setup.exe).FullName
+          $common = '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/CURRENTUSER'
+          $paattu = Join-Path $env:RUNNER_TEMP 'Paattu'
+          New-Item -ItemType Directory -Force (Join-Path $paattu 'data') | Out-Null
+          Set-Content (Join-Path $paattu 'paattu.exe') 'paattu'
+          Set-Content (Join-Path $paattu 'data\app.so') 'paattu'
+
+          # 1. Pointed at Paattu's folder, Setup must refuse and write nothing.
+          $log = Join-Path $env:RUNNER_TEMP 'refuse.log'
+          $p = Start-Process $setup -ArgumentList ($common + "/DIR=$paattu", "/LOG=$log") -Wait -PassThru
+          if ($p.ExitCode -eq 0) { Get-Content $log; throw "setup installed into another app's folder" }
+          if (Test-Path (Join-Path $paattu 'chithram.exe')) { throw 'chithram.exe was written into Paattu''s folder' }
+          if ((Get-Content (Join-Path $paattu 'data\app.so')) -ne 'paattu') { throw 'Paattu''s data\app.so was overwritten' }
+          "refused Paattu's folder (exit $($p.ExitCode))"
+
+          # 2. An old shared install: chithram.exe inside Paattu's folder under the old AppId.
+          Set-Content (Join-Path $paattu 'chithram.exe') 'old chithram'
+          $key = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\{6E0B9C1E-3D4A-4F57-9B1E-7A5C2D8F0A61}_is1'
+          New-Item -Force $key | Out-Null
+          Set-ItemProperty $key 'Inno Setup: App Path' $paattu
+          $log = Join-Path $env:RUNNER_TEMP 'migrate.log'
+          $p = Start-Process $setup -ArgumentList ($common + "/LOG=$log") -Wait -PassThru
+          Remove-Item -Recurse -Force $key
+          if ($p.ExitCode -ne 0) { Get-Content $log; throw "setup exited with $($p.ExitCode)" }
+          if (Test-Path (Join-Path $paattu 'chithram.exe')) { throw 'old chithram.exe was left in Paattu''s folder' }
+          if (-not (Test-Path (Join-Path $paattu 'paattu.exe'))) { throw 'Paattu''s files were removed' }
+          $dir = Join-Path $env:LOCALAPPDATA 'Programs\Chithram'
+          if (-not (Test-Path (Join-Path $dir 'chithram.exe'))) { throw "Chithram was not installed into $dir" }
+          'moved Chithram out of Paattu''s folder into its own'
       - name: Install, start and uninstall
         shell: pwsh
         working-directory: dist

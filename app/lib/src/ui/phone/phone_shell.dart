@@ -9,10 +9,14 @@ import '../common/form_factor.dart';
 import 'phone_home.dart';
 import '../common/search_page.dart';
 import '../common/sections.dart';
+import '../common/tokens.dart';
 import '../common/settings_page.dart';
+import '../../theme.dart';
 
 /// The sections in the bottom bar (or the tablet rail); Settings is the gear
 /// in the top bar. At most five: more go into a "More" sheet from 0.4.0.
+/// A Media destination (PR5) goes in the top bar before the gear, as in the
+/// design, so the bar keeps its five tabs.
 const _tabs = [
   Section.home,
   Section.search,
@@ -103,6 +107,7 @@ class _PhoneShellState extends State<PhoneShell> {
         appBar: AppBar(
           title: const Text('Chithram'),
           actions: [
+            // Media (PR5) goes here, before the gear.
             IconButton(
               key: const ValueKey('nav-settings'),
               tooltip: 'Settings',
@@ -129,6 +134,7 @@ class _PhoneShellState extends State<PhoneShell> {
                           ),
                       ],
                     ),
+                    VerticalDivider(width: 1, thickness: 1, color: ChithramColors.of(context).hairline),
                     Expanded(child: content),
                   ],
                 )
@@ -136,17 +142,23 @@ class _PhoneShellState extends State<PhoneShell> {
         ),
         bottomNavigationBar: tablet
             ? null
-            : NavigationBar(
-                selectedIndex: _index,
-                onDestinationSelected: _select,
-                destinations: [
-                  for (final s in _tabs)
-                    NavigationDestination(
-                      key: ValueKey('nav-${s.name}'),
-                      icon: Icon(s.icon),
-                      label: s.label,
-                    ),
-                ],
+            : DecoratedBox(
+                decoration: BoxDecoration(
+                  border: Border(top: BorderSide(color: ChithramColors.of(context).hairline)),
+                ),
+                child: NavigationBar(
+                  selectedIndex: _index,
+                  onDestinationSelected: _select,
+                  animationDuration: Motion.of(context).focusTime,
+                  destinations: [
+                    for (final s in _tabs)
+                      NavigationDestination(
+                        key: ValueKey('nav-${s.name}'),
+                        icon: Icon(s.icon),
+                        label: s.label,
+                      ),
+                  ],
+                ),
               ),
       ),
     );

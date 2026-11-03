@@ -1,6 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../theme.dart';
+import '../common/dims.dart';
+import '../common/tokens.dart';
 import 'dpad.dart';
 
 /// Remembers where focus was in one section, so coming back to it (Right from
@@ -37,8 +40,21 @@ class RailScope extends InheritedWidget {
   bool updateShouldNotify(RailScope oldWidget) => false;
 }
 
-/// A tile or button that works with a D-pad: grows ~8% and glows with the
-/// accent when focused; Select / Enter / tap activates it.
+/// The gap a TV rail needs between tiles of [width] so a focused tile's ring
+/// and glow stay clear of its neighbour: the scale overhang plus the ring, and 2 dp.
+double tvRailGap(double width) {
+  const spec = FocusSpec.tv;
+  return (width * (spec.scale - 1) / 2 + (spec.gap + spec.ring) * spec.scale + 2)
+      .clamp(Space.s16, double.infinity);
+}
+
+/// A tile or button that works with a D-pad; Select / Enter / tap activates it.
+///
+/// On a TV the focus is read from across the room ([FocusSpec.tv]): the tile
+/// grows 6%, an accent ring floats just outside it and an accent glow spreads
+/// around. Nothing depends on hover on a TV (a desktop in 10-foot mode still
+/// highlights a hovered tile). Elsewhere (phone, desktop) it grows
+/// ~8% with a border and glow, and a hovering mouse highlights it.
 class FocusCard extends StatefulWidget {
   const FocusCard({
     super.key,
@@ -89,7 +105,7 @@ class _FocusCardState extends State<FocusCard> {
       Scrollable.ensureVisible(
         context,
         alignment: 0.5,
-        duration: const Duration(milliseconds: 180),
+        duration: Dims.of(context).tv ? Motion.of(context).focusTime : const Duration(milliseconds: 180),
         curve: Curves.easeOut,
       );
     }
@@ -97,7 +113,81 @@ class _FocusCardState extends State<FocusCard> {
 
   @override
   Widget build(BuildContext context) {
+    final d = Dims.of(context);
+    final c = ChithramColors.of(context);
+    final motion = Motion.of(context);
     final radius = BorderRadius.circular(widget.radius);
+    final tv = d.tv;
+    final spec = d.focus;
+    // A real Android TV has no pointer; a desktop in 10-foot mode does.
+    final hoverable = !tv || defaultTargetPlatform != TargetPlatform.android;
+    final hovered = _hovered && hoverable;
+    final Widget body;
+    if (tv) {
+      // The ring floats `gap` outside the tile and never changes its layout.
+      final ringRadius = BorderRadius.circular(widget.radius + spec.gap + spec.ring / 2);
+      final out = spec.gap + spec.ring;
+      body = Stack(
+        clipBehavior: Clip.none,
+        // Keep the parent's constraints, as the plain container did.
+        fit: StackFit.passthrough,
+        children: [
+          AnimatedContainer(
+            duration: motion.focusTime,
+            curve: Motion.curve,
+            decoration: BoxDecoration(
+              borderRadius: radius,
+              boxShadow: _focused
+                  ? [
+                      BoxShadow(
+                        color: c.accent.withValues(alpha: spec.glowAlpha),
+                        blurRadius: spec.glowBlur,
+                        spreadRadius: 1,
+                      ),
+                    ]
+                  : const [],
+            ),
+            child: ClipRRect(borderRadius: radius, child: widget.child),
+          ),
+          Positioned(
+            left: -out,
+            top: -out,
+            right: -out,
+            bottom: -out,
+            child: IgnorePointer(
+              child: AnimatedContainer(
+                duration: motion.focusTime,
+                curve: Motion.curve,
+                decoration: BoxDecoration(
+                  borderRadius: ringRadius,
+                  border: Border.all(
+                    color: _focused
+                        ? c.accent
+                        : (hovered ? c.accent.withValues(alpha: 0.6) : Colors.transparent),
+                    width: spec.ring,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    } else {
+      body = AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        decoration: BoxDecoration(
+          borderRadius: radius,
+          border: Border.all(
+            color: _focused ? c.accent : (hovered ? c.accent.withValues(alpha: 0.6) : Colors.transparent),
+            width: 2.5,
+          ),
+          boxShadow: _focused
+              ? [BoxShadow(color: c.accent.withValues(alpha: 0.45), blurRadius: 20, spreadRadius: 1)]
+              : const [],
+        ),
+        child: ClipRRect(borderRadius: radius, child: widget.child),
+      );
+    }
     return FocusableActionDetector(
       focusNode: _node,
       onFocusChange: _onFocusChange,
@@ -123,38 +213,17 @@ class _FocusCardState extends State<FocusCard> {
           if (mounted) setState(() => _hovered = false);
         },
         child: GestureDetector(
-        onTap: () {
-          _node.requestFocus();
-          widget.onActivate?.call();
-        },
-        child: AnimatedScale(
-          scale: _focused ? 1.08 : (_hovered ? 1.04 : 1.0),
-          duration: const Duration(milliseconds: 150),
-          curve: Curves.easeOut,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 150),
-            decoration: BoxDecoration(
-              borderRadius: radius,
-              border: Border.all(
-                color: _focused
-                    ? ChithramColors.of(context).accent
-                    : (_hovered ? ChithramColors.of(context).accent.withValues(alpha: 0.6) : Colors.transparent),
-                width: 2.5,
-              ),
-              boxShadow: _focused
-                  ? [
-                      BoxShadow(
-                        color: ChithramColors.of(context).accent.withValues(alpha: 0.45),
-                        blurRadius: 20,
-                        spreadRadius: 1,
-                      ),
-                    ]
-                  : const [],
-            ),
-            child: ClipRRect(borderRadius: radius, child: widget.child),
+          onTap: () {
+            _node.requestFocus();
+            widget.onActivate?.call();
+          },
+          child: AnimatedScale(
+            scale: _focused ? (tv ? spec.scale : 1.08) : (hovered && !tv ? 1.04 : 1.0),
+            duration: tv ? motion.focusTime : const Duration(milliseconds: 150),
+            curve: tv ? Motion.curve : Curves.easeOut,
+            child: body,
           ),
         ),
-      ),
       ),
     );
   }

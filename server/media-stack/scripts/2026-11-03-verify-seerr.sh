@@ -245,7 +245,9 @@ check "seerr settings.json mode 600" [ "$(stat -c %a "$CONFIG_ROOT/seerr/setting
 leaks=0
 for f in "$S"/*; do
   [ -f "$f" ] || continue
-  case "$f" in *_user|*.old) continue ;; esac # user names are not secrets; .old = rotated keys (checked by rotate-key.sh)
+  # user names are not secrets; .old = rotated keys (checked by rotate-key.sh);
+  # gateway_tls_*: PEM files (public cert, key header lines also occur in source code), scanned by verify-gateway.sh
+  case "$f" in *_user|*.old|*/gateway_tls_*) continue ;; esac
   [ -s "$f" ] || { nope "secret file missing/empty: $(basename "$f")"; continue; }
   hits=$(
     { grep -rlF -f "$f" "$STACK" 2>/dev/null || true

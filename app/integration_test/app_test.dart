@@ -43,8 +43,10 @@ void main() {
 
   testWidgets('every nav item is reachable and leavable', (t) async {
     await pumpApp(t);
+    // Media is behind the `media.enabled` flag (off by default): not in the nav here.
+    final sections = Section.values.where((s) => s != Section.media);
     if (isPhone(t)) {
-      for (final s in Section.values) {
+      for (final s in sections) {
         await t.tap(find.byKey(ValueKey('nav-${s.name}')));
         await t.pumpAndSettle();
         expect(focusLabel(), railLabel(s));
@@ -55,7 +57,7 @@ void main() {
       return;
     }
     expect(focusLabel(), railLabel(Section.home));
-    for (final s in Section.values) {
+    for (final s in sections) {
       if (s != Section.home) {
         await press(t, LogicalKeyboardKey.arrowDown);
       }

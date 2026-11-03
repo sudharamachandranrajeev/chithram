@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../core/prefs.dart';
+import '../../core/services.dart';
 import '../../features/livetv/livetv_page.dart';
 import '../../features/torrents/torrents_page.dart';
 import '../../features/youtube/youtube_page.dart';
+import '../../media/media_config.dart';
+import '../../media/ui/media_page.dart';
 import '../tv/focus_card.dart';
 import '../tv/home_page.dart';
 import 'search_page.dart';
@@ -24,12 +28,31 @@ abstract class SectionShellState<T extends StatefulWidget> extends State<T> {
   final sections = [for (final _ in Section.values) SectionFocus()];
   final railNodes = [for (final s in Section.values) FocusNode(debugLabel: 'rail ${s.label}')];
 
+  Prefs? _flagPrefs;
+
+  /// The Media section is switched on (`media.enabled`); while off, shells
+  /// draw no Media item and build no Media page.
+  bool get mediaOn => _flagPrefs?.getBool(mediaEnabledPref) ?? false;
+
+  void _mediaFlagChanged() {
+    if (!mounted) return;
+    if (!mediaOn && index == Section.media.index) {
+      index = 0;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) railNodes[0].requestFocus();
+      });
+    }
+    setState(() {});
+  }
+
   /// The section's page; Home differs per shell.
   Widget homePage(SectionFocus focus) => HomePage(focus: focus);
 
   @override
   void initState() {
     super.initState();
+    _flagPrefs = context.getInheritedWidgetOfExactType<AppServicesScope>()?.services.prefs
+      ?..addListener(_mediaFlagChanged);
     // Start on the rail's Home item.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) railNodes[0].requestFocus();
@@ -59,6 +82,7 @@ abstract class SectionShellState<T extends StatefulWidget> extends State<T> {
   @override
   void dispose() {
     FocusManager.instance.removeListener(_guardFocus);
+    _flagPrefs?.removeListener(_mediaFlagChanged);
     for (final s in sections) {
       s.dispose();
     }
@@ -105,6 +129,7 @@ abstract class SectionShellState<T extends StatefulWidget> extends State<T> {
       Section.liveTv => LiveTvPage(focus: focus),
       Section.torrents => TorrentsPage(focus: focus),
       Section.youtube => YouTubePage(focus: focus),
+      Section.media => MediaPage(focus: focus),
     };
   }
 
@@ -112,6 +137,7 @@ abstract class SectionShellState<T extends StatefulWidget> extends State<T> {
   Widget buildContent() => Stack(
         children: [
           for (final section in Section.values)
+            if (section != Section.media || mediaOn)
             Offstage(
               offstage: section.index != index,
               child: ExcludeFocus(

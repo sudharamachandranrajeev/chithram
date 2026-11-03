@@ -73,9 +73,10 @@ class _TvShellState extends SectionShellState<TvShell> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // PR5: the Media item goes between the sources and Settings,
-                  // as in the desktop sidebar's `desktopNavGroups`.
+                  // The Media item sits between the sources and Settings, only
+                  // while `media.enabled` is on (the enum order does it).
                   for (final section in Section.values)
+                    if (section != Section.media || mediaOn)
                     RailItemBehavior(
                       section: section,
                       node: railNodes[section.index],

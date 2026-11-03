@@ -59,8 +59,9 @@ class StatusChip extends StatelessWidget {
       FormFactor.phone => 28.0,
       FormFactor.tv => 36.0,
     };
+    // At least `height` tall; taller (and the label wrapping) at large text sizes.
     return Container(
-      height: height,
+      constraints: BoxConstraints(minHeight: height),
       padding: EdgeInsets.symmetric(horizontal: d.tv ? Space.s12 : Space.s8),
       decoration: BoxDecoration(
         color: Color.alphaBlend(color.withValues(alpha: 0.16), colors.surface),
@@ -72,7 +73,7 @@ class StatusChip extends StatelessWidget {
         children: [
           Icon(status.icon, size: height * 0.58, color: color),
           const SizedBox(width: Space.s4),
-          Text(text, style: d.type.meta.copyWith(color: color, height: 1.1)),
+          Flexible(child: Text(text, style: d.type.meta.copyWith(color: color, height: 1.1))),
         ],
       ),
     );

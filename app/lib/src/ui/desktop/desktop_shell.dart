@@ -175,6 +175,7 @@ class _DesktopShellState extends SectionShellState<DesktopShell> {
   Widget buildContent() => Stack(
         children: [
           for (final section in Section.values)
+            if (section != Section.media || mediaOn)
             Offstage(
               offstage: section.index != index,
               child: ExcludeFocus(
@@ -223,6 +224,7 @@ class _DesktopShellState extends SectionShellState<DesktopShell> {
                           builder: (context, _) => buildNav(
                             DesktopSidebar(
                               collapsed: _narrow(context) || prefs.getBool(sidebarCollapsedPref),
+                              showMedia: mediaOn,
                               selected: Section.values[index],
                               nodes: railNodes,
                               onFocused: show,

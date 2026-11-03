@@ -1,0 +1,9 @@
+title = "Chithram gitleaks config"
+
+[extend]
+useDefault = true
+
+# Throwaway TLS keys for the Media client tests (see the README in that folder).
+[[allowlists]]
+description = "Test-only TLS fixtures"
+paths = ['''^app/test/media/fixtures/''']

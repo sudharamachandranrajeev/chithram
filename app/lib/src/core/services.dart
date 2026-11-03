@@ -23,6 +23,8 @@ import '../find/torznab/torznab_service.dart';
 import '../home/engine/home_engine.dart';
 import '../home/home_repository.dart';
 import '../home/snapshot.dart';
+import '../media/media_service.dart';
+import '../media/token_store.dart';
 import '../plugins/plugin_registry.dart';
 import '../plugins/plugin_wiring.dart';
 import '../theme.dart';
@@ -56,7 +58,9 @@ class AppServices {
     required this.torznab,
     required this.torrentHome,
     PluginRegistry? plugins,
-  }) : plugins = plugins ?? PluginRegistry();
+    MediaService? media,
+  })  : plugins = plugins ?? PluginRegistry(),
+        media = media ?? MediaService(prefs: prefs, tokens: SecretTokenStore(secrets));
 
   /// The real services: files under the app support directory. Reads only
   /// `prefs.json` and `home_snapshot.json` (in parallel); the database, the
@@ -129,6 +133,7 @@ class AppServices {
     TorznabService? torznab,
     TorrentHomeFeed? torrentHome,
     PluginRegistry? plugins,
+    MediaService? media,
   }) {
     // Tests build many; each database is lazy and in memory.
     driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
@@ -162,6 +167,7 @@ class AppServices {
       torznab: torznab0,
       torrentHome: torrentHome ?? TorrentHomeFeed(sources: TorznabPopularSources(torznab0)),
       plugins: pluginRegistry,
+      media: media,
     );
   }
 
@@ -204,6 +210,10 @@ class AppServices {
   /// Search plugins: install, update, health, and `search` for Torrent Home.
   /// Inert (no plugins) in [AppServices.memory] unless a test passes one.
   final PluginRegistry plugins;
+
+  /// The Media section's state (flag `media.enabled`, off by default). Idle:
+  /// no disk, no network until the section is on and shown.
+  final MediaService media;
 
   static AppServices of(BuildContext context) {
     final scope = context.dependOnInheritedWidgetOfExactType<AppServicesScope>();

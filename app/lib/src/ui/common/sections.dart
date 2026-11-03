@@ -7,6 +7,8 @@ enum Section {
   liveTv('Live TV', Icons.live_tv_rounded),
   torrents('Torrents', Icons.downloading_rounded),
   youtube('YouTube', Icons.smart_display_rounded),
+  // Behind the `media.enabled` flag: shells leave it out while the flag is off.
+  media('Media', Icons.perm_media_rounded),
   settings('Settings', Icons.settings_rounded);
 
   const Section(this.label, this.icon);

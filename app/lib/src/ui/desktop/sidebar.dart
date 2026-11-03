@@ -25,11 +25,14 @@ class NavGroup {
 }
 
 /// The sidebar's groups, top to bottom; Settings is pinned below them.
-/// A Media group goes between these two when Media arrives (PR5).
+/// The Media group goes between these two, only while `media.enabled` is on.
 const desktopNavGroups = [
   NavGroup('Browse', [Section.home, Section.search]),
   NavGroup('Sources', [Section.liveTv, Section.youtube, Section.torrents]),
 ];
+
+/// The Media group (PR5), shown only while the flag is on.
+const mediaNavGroup = NavGroup('Media', [Section.media]);
 
 /// The desktop navigation: 240 dp wide with labels, or a 72 dp icon rail.
 /// Selection and focus come from [SectionShellState]; hovering never moves
@@ -38,6 +41,7 @@ class DesktopSidebar extends StatelessWidget {
   const DesktopSidebar({
     super.key,
     required this.collapsed,
+    this.showMedia = false,
     required this.selected,
     required this.nodes,
     required this.onFocused,
@@ -45,6 +49,9 @@ class DesktopSidebar extends StatelessWidget {
   });
 
   final bool collapsed;
+
+  /// Draw the Media group (the `media.enabled` flag).
+  final bool showMedia;
   final Section selected;
 
   /// One node per [Section], by index.
@@ -95,7 +102,10 @@ class DesktopSidebar extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    for (final (i, g) in desktopNavGroups.indexed) ...[
+                    for (final (i, g) in [
+                      ...desktopNavGroups,
+                      if (showMedia) mediaNavGroup,
+                    ].indexed) ...[
                       if (collapsed)
                         (i == 0 ? const SizedBox.shrink() : _Divider(color: c.hairline))
                       else

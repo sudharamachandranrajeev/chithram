@@ -7,6 +7,7 @@ import '../../features/youtube/youtube_prefs.dart';
 import '../../features/telegram/phone/phone_telegram_settings.dart';
 import '../../features/torrents/phone/phone_torrent_settings.dart';
 import '../../find/torznab/torznab_settings.dart' show PhoneTorznabSettings;
+import '../../media/ui/media_flag_settings.dart';
 import '../../plugins/ui/plugins_settings.dart';
 import '../common/theme_page.dart' show PhoneThemeTile;
 import 'phone_widgets.dart';
@@ -87,6 +88,8 @@ class PhoneSettings extends StatelessWidget {
           onTap: () => _confirmClear(context),
         ),
         const PhoneTelegramSettings(),
+        const PhoneSectionTitle('Media'),
+        const MediaFlagSettings(),
         const PhoneSectionTitle('About'),
         FutureBuilder<String>(
           future: _version(),

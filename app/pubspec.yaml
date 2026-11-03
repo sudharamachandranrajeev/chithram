@@ -24,6 +24,8 @@ dependencies:
   qr_flutter: ^4.1.0
   # Windows desktop chrome: frameless title bar, min size, F11 (see ui/desktop/).
   window_manager: ^0.5.2
+  # Work-area size, to keep the first window on screen.
+  screen_retriever: ^0.2.2
 
   # Local database (HTTP cache, plugin registry, provider health) and secrets
   # (TMDB and Torznab keys). Opened after the first frame, never before.

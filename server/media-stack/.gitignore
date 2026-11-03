@@ -3,3 +3,5 @@ secrets/
 *.key
 *.pem
 config/
+gateway/.pub-cache/
+gateway/.dart_tool/

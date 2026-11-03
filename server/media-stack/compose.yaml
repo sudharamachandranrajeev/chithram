@@ -1,4 +1,4 @@
-# Chithram media stack. Phase 3: Jellyfin. Phase 5: Prowlarr, Radarr, Sonarr, Lidarr.
+# Chithram media stack. Phase 3: Jellyfin. Phase 5: Prowlarr, Radarr, Sonarr, Lidarr. Phase 6: Seerr.
 # No download client and no indexers (VPN phase deferred).
 # Laptop-only: every published port MUST bind to ${BIND_IP} (127.0.0.1).
 name: chithram-media
@@ -141,6 +141,36 @@ services:
       timeout: 5s
       retries: 5
       start_period: 60s
+
+  seerr:
+    # Pinned: v3.5.1 + manifest-list digest. Image has no curl; healthcheck uses busybox wget.
+    image: ghcr.io/seerr-team/seerr:v3.5.1@sha256:d8fab675b55ad293ded98fd71efcfd46054cbad9746534ae1cc4794a88c0b3be
+    container_name: seerr
+    user: "${PUID:?}:${PGID:?}"
+    restart: unless-stopped
+    environment:
+      TZ: "${TZ:-Etc/UTC}"
+      LOG_LEVEL: info
+    volumes:
+      - ${CONFIG_ROOT:?}/seerr:/app/config
+    ports:
+      - "${BIND_IP:?}:${SEERR_PORT:?}:5055"
+    networks: [media]
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+    pids_limit: 512
+    mem_limit: ${SEERR_MEM:-1g}
+    read_only: true
+    tmpfs:
+      - /tmp:size=256m,mode=1777
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:5055/api/v1/status"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    # No /data mount: Seerr only talks to Jellyfin/Radarr/Sonarr over the media network.
 
 networks:
   media:

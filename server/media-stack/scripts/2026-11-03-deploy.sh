@@ -15,13 +15,14 @@ set -a
 set +a
 mkdir -p "$CONFIG_ROOT/jellyfin/config" "$CONFIG_ROOT/jellyfin/cache"
 chmod 700 "$CONFIG_ROOT/jellyfin"
+mkdir -p "$CONFIG_ROOT/seerr"; chmod 700 "$CONFIG_ROOT/seerr"
 # arr config dirs (700) and API keys + config.xml are prepared BEFORE first start.
 "$HERE/2026-11-03-arr-setup.sh" prepare
 
 cd "$STACK"
 docker compose --env-file "$ENV" up -d
 
-SERVICES="jellyfin prowlarr radarr sonarr lidarr"
+SERVICES="jellyfin prowlarr radarr sonarr lidarr seerr"
 echo "waiting for health (max 180s): $SERVICES"
 for _ in $(seq 1 36); do
   pending=""
@@ -33,6 +34,7 @@ for _ in $(seq 1 36); do
     echo "all healthy"
     "$HERE/2026-11-03-jellyfin-setup.sh"
     "$HERE/2026-11-03-arr-setup.sh" configure
+    "$HERE/2026-11-03-seerr-setup.sh"
     exit 0
   fi
   sleep 5

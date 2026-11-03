@@ -1,0 +1,150 @@
+# Chithram media stack. Phase 3: Jellyfin. Phase 5: Prowlarr, Radarr, Sonarr, Lidarr.
+# No download client and no indexers (VPN phase deferred).
+# Laptop-only: every published port MUST bind to ${BIND_IP} (127.0.0.1).
+name: chithram-media
+
+# Shared hardening for the linuxserver.io *arr images. They start as root (s6),
+# then drop to PUID/PGID. Tested minimal caps: CHOWN (config ownership),
+# DAC_OVERRIDE (read the 700 config dir while still root), SETUID/SETGID (privilege drop).
+# read_only is NOT possible: s6 runs usermod/groupmod on /etc/passwd to apply PUID/PGID
+# (with a read-only root fs the app silently runs as 911:1001 instead).
+# API keys are NOT passed through env: arr-setup.sh writes them into config.xml.
+x-arr: &arr
+  restart: unless-stopped
+  networks: [media]
+  security_opt:
+    - no-new-privileges:true
+  cap_drop: [ALL]
+  cap_add: [CHOWN, DAC_OVERRIDE, SETUID, SETGID]
+  tmpfs:
+    - /tmp:size=256m,mode=1777
+
+services:
+  jellyfin:
+    # Pinned: version tag + manifest-list digest (Jellyfin 12.4).
+    image: jellyfin/jellyfin:12.4@sha256:fea863d0cd9ec445985d9c75fc6ed64e38a1d2766cf0c250a33d553f4fc1b771
+    container_name: jellyfin
+    user: "${PUID:?}:${PGID:?}"
+    restart: unless-stopped
+    environment:
+      TZ: "${TZ:-Etc/UTC}"
+    volumes:
+      - ${CONFIG_ROOT:?}/jellyfin/config:/config
+      - ${CONFIG_ROOT:?}/jellyfin/cache:/cache
+      - ${DATA_ROOT:?}/media:/data/media:ro
+    ports:
+      - "${BIND_IP:?}:${JELLYFIN_PORT:?}:8096"
+    networks: [media]
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+    pids_limit: 512
+    mem_limit: ${JELLYFIN_MEM:-3g}
+    read_only: true
+    tmpfs:
+      - /tmp:size=256m,mode=1777
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8096/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    # No GPU passthrough, no DLNA/discovery ports, no host networking.
+
+  prowlarr:
+    <<: *arr
+    # Pinned: version tag + manifest-list digest.
+    image: lscr.io/linuxserver/prowlarr:2.7.0.5723-ls166@sha256:04be30163fbaf48d6aeee7b5893c9f6614ffbad6d853971df0d6dcdf01c7f104
+    container_name: prowlarr
+    environment:
+      PUID: "${PUID:?}"
+      PGID: "${PGID:?}"
+      TZ: "${TZ:-Etc/UTC}"
+    volumes:
+      - ${CONFIG_ROOT:?}/prowlarr:/config
+    ports:
+      - "${BIND_IP:?}:${PROWLARR_PORT:?}:9696"
+    pids_limit: 512
+    mem_limit: ${PROWLARR_MEM:-1g}
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:9696/ping"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+  radarr:
+    <<: *arr
+    # Pinned: version tag + manifest-list digest.
+    image: lscr.io/linuxserver/radarr:6.4.4.10685-ls325@sha256:ade5937813c6ae415b29db729386e53fea3ecf067a019849bafbe2d2a6ec02ba
+    container_name: radarr
+    environment:
+      PUID: "${PUID:?}"
+      PGID: "${PGID:?}"
+      TZ: "${TZ:-Etc/UTC}"
+    volumes:
+      - ${CONFIG_ROOT:?}/radarr:/config
+      - ${DATA_ROOT:?}:/data
+    ports:
+      - "${BIND_IP:?}:${RADARR_PORT:?}:7878"
+    pids_limit: 512
+    mem_limit: ${RADARR_MEM:-1g}
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:7878/ping"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+  sonarr:
+    <<: *arr
+    # Pinned: version tag + manifest-list digest.
+    image: lscr.io/linuxserver/sonarr:4.0.20.3014-ls2@sha256:386c962ee6e260e3a5656b25df2ed056bcc9b6410e197d075f9547fd14c23bca
+    container_name: sonarr
+    environment:
+      PUID: "${PUID:?}"
+      PGID: "${PGID:?}"
+      TZ: "${TZ:-Etc/UTC}"
+    volumes:
+      - ${CONFIG_ROOT:?}/sonarr:/config
+      - ${DATA_ROOT:?}:/data
+    ports:
+      - "${BIND_IP:?}:${SONARR_PORT:?}:8989"
+    pids_limit: 512
+    mem_limit: ${SONARR_MEM:-1g}
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8989/ping"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+  lidarr:
+    <<: *arr
+    # Pinned: version tag + manifest-list digest.
+    image: lscr.io/linuxserver/lidarr:3.1.6.5079-ls46@sha256:9fddcf5c613361edfce390d4e6b7c364282e71e90a40ce7793077fed788f6e63
+    container_name: lidarr
+    environment:
+      PUID: "${PUID:?}"
+      PGID: "${PGID:?}"
+      TZ: "${TZ:-Etc/UTC}"
+    volumes:
+      - ${CONFIG_ROOT:?}/lidarr:/config
+      - ${DATA_ROOT:?}:/data
+    ports:
+      - "${BIND_IP:?}:${LIDARR_PORT:?}:8686"
+    pids_limit: 512
+    mem_limit: ${LIDARR_MEM:-1g}
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8686/ping"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+networks:
+  media:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: "${MEDIA_SUBNET:?}"

@@ -1,0 +1,16 @@
+name: chithram_gateway
+description: Chithram media gateway. Holds all service keys; the app only ever talks to this.
+publish_to: none
+version: 0.1.0
+
+environment:
+  sdk: ^3.9.0
+
+dependencies:
+  crypto: 3.0.6
+  shelf: 1.4.2
+  shelf_router: 1.1.4
+
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.25.0

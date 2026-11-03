@@ -71,6 +71,7 @@ check_port radarr RADARR_PORT 7878
 check_port sonarr SONARR_PORT 8989
 check_port lidarr LIDARR_PORT 8686
 check_port seerr SEERR_PORT 5055
+check_port gateway GATEWAY_PORT 8443
 command -v python3 >/dev/null && ok "python3 present" || bad "python3 missing"
 
 [ "$fail" -eq 0 ] && echo "PREFLIGHT PASS" || { echo "PREFLIGHT FAIL"; exit 1; }

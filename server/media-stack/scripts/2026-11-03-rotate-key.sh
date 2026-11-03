@@ -104,6 +104,13 @@ wait_healthy || { echo "$APP not healthy after rotation" >&2; exit 1; }
 # 3. re-link
 "$HERE/2026-11-03-arr-setup.sh" configure
 case "$APP" in radarr|sonarr) "$HERE/2026-11-03-seerr-setup.sh" ;; esac
+# The gateway mounts radarr/sonarr keys as file secrets; mv replaced the file, so recreate it.
+case "$APP" in radarr|sonarr)
+  if docker inspect gateway >/dev/null 2>&1; then
+    docker compose --env-file "$ENV" up -d --force-recreate gateway >/dev/null
+    echo "gateway recreated to pick up the new $APP key"
+  fi ;;
+esac
 
 # 4. checks
 fail=0

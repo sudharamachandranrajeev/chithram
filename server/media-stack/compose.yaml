@@ -172,6 +172,61 @@ services:
       start_period: 60s
     # No /data mount: Seerr only talks to Jellyfin/Radarr/Sonarr over the media network.
 
+  # Phase 7a: gateway (Dart, HTTPS, pinned self-signed cert). The only component that holds service
+  # keys; the app pairs with a 6-digit code and gets a device token. Built locally from ./gateway
+  # (base images pinned by digest in gateway/Dockerfile). Keys arrive as file secrets (never env).
+  gateway:
+    build:
+      context: ./gateway
+    image: chithram-gateway:local
+    container_name: gateway
+    user: "${PUID:?}:${PGID:?}"
+    restart: unless-stopped
+    environment:
+      TZ: "${TZ:-Etc/UTC}"
+    volumes:
+      - ${CONFIG_ROOT:?}/gateway:/state
+    secrets:
+      - jellyfin_api_key
+      - seerr_api_key
+      - radarr_api_key
+      - sonarr_api_key
+      - gateway_tls_cert
+      - gateway_tls_key
+    ports:
+      - "${BIND_IP:?}:${GATEWAY_PORT:?}:8443"
+    networks: [media]
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+    pids_limit: 128
+    mem_limit: ${GATEWAY_MEM:-256m}
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    healthcheck:
+      test: ["CMD", "/app/gateway", "healthcheck"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+# File secrets: bind-mounted read-only at /run/secrets/<name>. Replaced files (key rotation uses mv)
+# need a gateway recreate; rotate-key.sh does that for radarr/sonarr.
+secrets:
+  jellyfin_api_key:
+    file: ${SECRETS_ROOT:?}/jellyfin_api_key
+  seerr_api_key:
+    file: ${SECRETS_ROOT:?}/seerr_api_key
+  radarr_api_key:
+    file: ${SECRETS_ROOT:?}/radarr_api_key
+  sonarr_api_key:
+    file: ${SECRETS_ROOT:?}/sonarr_api_key
+  gateway_tls_cert:
+    file: ${SECRETS_ROOT:?}/gateway_tls_cert
+  gateway_tls_key:
+    file: ${SECRETS_ROOT:?}/gateway_tls_key
+
 networks:
   media:
     driver: bridge

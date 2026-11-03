@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../common/dims.dart';
+import '../common/tokens.dart';
 import 'focus_card.dart';
 
 /// A titled horizontal row of tiles. Reusable for every rail in the app.
@@ -41,28 +42,34 @@ class _FocusRailState extends State<FocusRail> {
   @override
   Widget build(BuildContext context) {
     final d = Dims.of(context);
-    final pad = d.phone ? 12.0 : 20.0;
+    final pad = d.phone ? Space.s12 : d.gutter;
+    // The TV leaves 24 dp above and below for the focus scale and glow.
+    final lift = d.tv ? Space.s24 : 20.0;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: EdgeInsets.fromLTRB(pad, 20, pad, 0),
-          child: Text(widget.title, style: TextStyle(fontSize: d.t(20), fontWeight: FontWeight.w600)),
+          padding: EdgeInsets.fromLTRB(pad, lift, pad, 0),
+          child: Text(
+            widget.title,
+            style: d.tv ? d.type.row : TextStyle(fontSize: d.t(20), fontWeight: FontWeight.w600),
+          ),
         ),
         // Vertical padding leaves room for the focus scale and glow.
         SingleChildScrollView(
           key: PageStorageKey<String>('rail-${widget.title}'),
           scrollDirection: Axis.horizontal,
           clipBehavior: Clip.none,
-          padding: EdgeInsets.symmetric(horizontal: pad, vertical: 20),
+          padding: EdgeInsets.symmetric(horizontal: pad, vertical: lift),
           child: Row(
             children: [
               for (var i = 0; i < widget.count; i++)
                 Padding(
-                  padding: const EdgeInsets.only(right: 18),
+                  padding: EdgeInsets.only(right: d.tv ? Space.s16 : 18),
                   child: _menu(
                     i,
                     FocusCard(
+                      radius: d.tv ? Radii.card(d.form) : 14,
                       section: widget.section,
                       onFocus: () => lastIndex = i,
                       onActivate: () => widget.onSelect?.call(i),

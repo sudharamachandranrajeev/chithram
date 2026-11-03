@@ -28,15 +28,9 @@ class _TvShellState extends SectionShellState<TvShell> {
     final c = ChithramColors.of(context);
     return wrapBack(
       Scaffold(
-        body: DecoratedBox(
-          // A faint accent glow in the top-left corner, behind everything.
-          decoration: BoxDecoration(
-            gradient: RadialGradient(
-              center: const Alignment(-1.1, -1.2),
-              radius: 1.3,
-              colors: [c.heroTint.withValues(alpha: 0.18), c.background],
-            ),
-          ),
+        body: ColoredBox(
+          // The design's flat Night background: no glow on a TV.
+          color: c.background,
           child: RailScope(
             focusRail: focusRail,
             // TV: keep everything inside the 5% overscan-safe area.
@@ -50,42 +44,64 @@ class _TvShellState extends SectionShellState<TvShell> {
   }
 
   Widget _buildRail(Dims d) {
+    final c = ChithramColors.of(context);
     return Center(
       child: AnimatedContainer(
         duration: Motion.of(context).expandTime,
-        curve: Curves.easeOut,
+        curve: Motion.curve,
         width: railHasFocus ? d.railOpen : d.railClosed,
-        margin: const EdgeInsets.only(left: 4, right: 8),
-        child: Glass(
-          radius: 38,
-          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              for (final section in Section.values)
-                RailItemBehavior(
-                  section: section,
-                  node: railNodes[section.index],
-                  onFocused: () => show(section),
-                  onEnter: enterContent,
-                  builder: (context, focused, _) => _RailItem(
-                    section: section,
-                    focused: focused,
-                    selected: section.index == index,
-                    expanded: railHasFocus,
-                  ),
-                ),
-            ],
-          ),
+        margin: const EdgeInsets.only(left: Space.s4, right: Space.s8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // The brand mark above the pill.
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Container(
+                width: _markSize,
+                height: _markSize,
+                margin: const EdgeInsets.only(left: (76 - _markSize) / 2, bottom: Space.s12),
+                decoration: BoxDecoration(color: c.accent, borderRadius: BorderRadius.circular(10)),
+              ),
+            ),
+            Glass(
+              radius: Radii.pill,
+              color: c.surface,
+              padding: const EdgeInsets.symmetric(vertical: Space.s12, horizontal: Space.s8),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // PR5: the Media item goes between the sources and Settings,
+                  // as in the desktop sidebar's `desktopNavGroups`.
+                  for (final section in Section.values)
+                    RailItemBehavior(
+                      section: section,
+                      node: railNodes[section.index],
+                      onFocused: () => show(section),
+                      onEnter: enterContent,
+                      builder: (context, focused, _) => _RailItem(
+                        section: section,
+                        focused: focused,
+                        selected: section.index == index,
+                        expanded: railHasFocus,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
+const double _markSize = 32;
+
 /// One icon of the pill: accent-filled while focused; the current section
-/// gets an accent bar on its left while focus is elsewhere.
+/// gets a soft tint and an accent bar on its left while focus is elsewhere.
 class _RailItem extends StatelessWidget {
   const _RailItem({
     required this.section,
@@ -103,14 +119,22 @@ class _RailItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final d = Dims.of(context);
     final c = ChithramColors.of(context);
+    final motion = Motion.of(context);
+    final spec = d.focus;
     final color = focused ? c.onAccent : (selected ? c.text : c.textDim);
-    return Container(
-      height: d.tv ? 44 : 52,
-      margin: EdgeInsets.symmetric(vertical: d.tv ? 3 : 4),
+    return AnimatedContainer(
+      duration: motion.focusTime,
+      curve: Motion.curve,
+      height: 44,
+      margin: const EdgeInsets.symmetric(vertical: Space.s4 / 2 + 1),
       decoration: BoxDecoration(
-        color: focused ? c.accent : Colors.transparent,
-        borderRadius: BorderRadius.circular(d.tv ? 22 : 26),
-        boxShadow: focused ? [BoxShadow(color: c.accent.withValues(alpha: 0.45), blurRadius: 18)] : const [],
+        color: focused
+            ? c.accent
+            : (selected ? c.accent2.withValues(alpha: 0.18) : Colors.transparent),
+        borderRadius: BorderRadius.circular(Radii.pill),
+        boxShadow: focused
+            ? [BoxShadow(color: c.accent.withValues(alpha: spec.glowAlpha), blurRadius: spec.glowBlur)]
+            : const [],
       ),
       // Clipped and unconstrained, so the label can't overflow while the
       // rail is still growing.
@@ -124,22 +148,21 @@ class _RailItem extends StatelessWidget {
             children: [
               // The current section's marker.
               AnimatedContainer(
-                duration: Motion.of(context).hoverPressTime,
+                duration: motion.hoverPressTime,
                 width: 3,
                 height: selected && !focused ? 22 : 0,
                 margin: const EdgeInsets.only(left: 2, right: 10),
-                decoration: BoxDecoration(color: c.accent, borderRadius: BorderRadius.circular(2)),
+                decoration: BoxDecoration(color: c.accent2, borderRadius: BorderRadius.circular(2)),
               ),
               Icon(section.icon, color: color, size: d.u(26)),
               if (expanded) ...[
-                SizedBox(width: d.tv ? 12 : 16),
+                const SizedBox(width: Space.s12),
                 Text(
                   section.label,
                   maxLines: 1,
                   softWrap: false,
-                  style: TextStyle(
+                  style: d.type.card.copyWith(
                     color: color,
-                    fontSize: d.t(16),
                     fontWeight: focused || selected ? FontWeight.w600 : FontWeight.w500,
                   ),
                 ),

@@ -9,6 +9,7 @@ import '../../features/youtube/youtube_results.dart';
 import '../../theme.dart';
 import '../common/dims.dart';
 import '../common/glass.dart';
+import '../common/tokens.dart';
 import 'focus_card.dart';
 import 'focus_rail.dart';
 
@@ -41,19 +42,21 @@ class _HomePageState extends State<HomePage> {
       valueListenable: feed.state,
       builder: (context, state, _) => SingleChildScrollView(
         key: const PageStorageKey<String>('home-scroll'),
-        padding: const EdgeInsets.only(bottom: 32),
+        padding: const EdgeInsets.only(bottom: Space.s32),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _Hero(focus: widget.focus, state: state, onRetry: () => feed.refresh(force: true)),
-            const SizedBox(height: 16),
+            SizedBox(height: d.tv ? Space.s24 : Space.s16),
             for (final rail in state.rails)
               FocusRail(
                 key: ValueKey('home-${rail.id}'),
                 title: rail.title,
                 count: rail.items.length,
                 section: widget.focus,
-                itemBuilder: (_, i) => SizedBox(width: d.u(300), child: VideoTileBody(item: rail.items[i])),
+                // A TV tile is 208 dp on the 960 dp screen (four across), and grows with
+                // a wider layout (a desktop in 10-foot mode).
+                itemBuilder: (_, i) => SizedBox(width: d.tv ? _tvTileWidth(context) : d.u(300), child: VideoTileBody(item: rail.items[i])),
                 onSelect: (i) => playVideo(context, rail.items[i], source: rail.id),
               ),
           ],
@@ -62,6 +65,9 @@ class _HomePageState extends State<HomePage> {
     );
   }
 }
+
+double _tvTileWidth(BuildContext context) =>
+    (MediaQuery.sizeOf(context).width * 208 / 960).clamp(208.0, 416.0);
 
 /// The first suggestion (or popular video) over its frame, with Play. While
 /// nothing is there yet it says so, and offers Retry after a failure.
@@ -75,7 +81,7 @@ class _Hero extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final d = Dims.of(context);
-    final height = (MediaQuery.sizeOf(context).height * 0.42).clamp(d.tv ? 190.0 : 220.0, 460.0);
+    final height = (MediaQuery.sizeOf(context).height * (d.tv ? 0.44 : 0.42)).clamp(d.tv ? 190.0 : 220.0, 460.0);
     final VideoItem? video = state.hero.firstOrNull;
     final suggested = state.rails.any((r) => r.id == 'for-you');
     final error = state.error;
@@ -100,10 +106,10 @@ class _Hero extends StatelessWidget {
       // Fill the width: without it the card shrinks to its widest child.
       width: double.infinity,
       constraints: BoxConstraints(minHeight: height),
-      margin: EdgeInsets.fromLTRB(d.phone ? 8 : 16, d.tv ? 12 : 16, d.phone ? 8 : 16, 0),
+      margin: EdgeInsets.fromLTRB(d.phone ? Space.s8 : Space.s16, d.tv ? Space.s12 : Space.s16, d.phone ? Space.s8 : Space.s16, 0),
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(Radii.hero),
         border: Border.all(color: ChithramColors.of(context).glassEdge),
         gradient: LinearGradient(
           begin: Alignment.topRight,
@@ -136,9 +142,9 @@ class _Hero extends StatelessWidget {
             ),
           ],
           Padding(
-            padding: EdgeInsets.all(d.phone ? 18 : (d.tv ? 20 : 28)),
+            padding: EdgeInsets.all(d.phone ? 18 : (d.tv ? Space.s24 : 28)),
             child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: height - (d.phone ? 36 : (d.tv ? 40 : 56))),
+              constraints: BoxConstraints(minHeight: height - (d.phone ? 36 : (d.tv ? Space.s48 : 56))),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.end,
@@ -153,13 +159,15 @@ class _Hero extends StatelessWidget {
                   else
                     Text(label,
                         style: TextStyle(color: ChithramColors.of(context).accent, fontSize: d.t(14), fontWeight: FontWeight.w600)),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: Space.s8),
                   ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 820),
                     child: Text(title,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontSize: d.t(34), fontWeight: FontWeight.w700, height: 1.15, letterSpacing: -0.3)),
+                        style: d.tv
+                            ? d.type.hero.copyWith(height: 1.1)
+                            : TextStyle(fontSize: d.t(34), fontWeight: FontWeight.w700, height: 1.15, letterSpacing: -0.3)),
                   ),
                   if (facts.isNotEmpty) ...[
                     const SizedBox(height: 10),
@@ -176,12 +184,12 @@ class _Hero extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(color: ChithramColors.of(context).textDim, fontSize: d.t(14))),
                   ],
-                  SizedBox(height: d.tv ? 14 : 18),
+                  SizedBox(height: d.tv ? Space.s16 : 18),
                   FocusCard(
                     key: const ValueKey('home-hero-action'),
                     focusNode: focus.entry,
                     section: focus,
-                    radius: 28,
+                    radius: Radii.pill,
                     onActivate: video != null
                         ? () => playVideo(context, video, source: suggested ? 'for-you' : null)
                         : error != null
@@ -217,7 +225,7 @@ class ActionLabel extends StatelessWidget {
     return Container(
       color: primary ? ChithramColors.of(context).accent : ChithramColors.of(context).surfaceHigh,
       padding: d.tv
-          ? const EdgeInsets.symmetric(horizontal: 18, vertical: 8)
+          ? const EdgeInsets.symmetric(horizontal: Space.s16, vertical: Space.s12)
           : const EdgeInsets.symmetric(horizontal: 24, vertical: 11),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -230,7 +238,9 @@ class ActionLabel extends StatelessWidget {
             child: Text(text,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(color: color, fontSize: d.t(16), fontWeight: FontWeight.w600)),
+                style: d.tv
+                    ? d.type.card.copyWith(color: color, fontWeight: primary ? FontWeight.w700 : FontWeight.w600)
+                    : TextStyle(color: color, fontSize: d.t(16), fontWeight: FontWeight.w600)),
           ),
         ],
       ),

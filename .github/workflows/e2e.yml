@@ -88,9 +88,11 @@ jobs:
           LIBGL_ALWAYS_SOFTWARE: '1'
         run: |
           set -o pipefail
+          # FORM_FACTOR=tv: the suites below drive the D-pad (TV layout); the form
+          # test names its own form (desktop) and checks the desktop shell.
           mapfile -t defines <"$RUNNER_TEMP/e2e/e2e.env"
           xvfb-run -a -s '-screen 0 1280x720x24' timeout 900 \
-            flutter test integration_test/e2e_all_test.dart -d linux "${defines[@]}" --dart-define=E2E_FORM=desktop 2>&1 | tee ../linux-e2e.log
+            flutter test integration_test/e2e_all_test.dart -d linux "${defines[@]}" --dart-define=FORM_FACTOR=tv --dart-define=E2E_FORM=desktop 2>&1 | tee ../linux-e2e.log
       - name: Results to the step summary
         if: always()
         run: |

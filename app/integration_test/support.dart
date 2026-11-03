@@ -1,3 +1,4 @@
+import 'package:chithram/src/core/prefs.dart';
 import 'package:chithram/src/core/services.dart';
 import 'package:chithram/src/features/youtube/youtube_fixture.dart';
 import 'package:chithram/src/features/youtube/youtube_service.dart';
@@ -15,8 +16,8 @@ Future<void> press(WidgetTester t, LogicalKeyboardKey key) async {
 
 /// In-memory services with YouTube answered by fixtures: Home has rails of
 /// "Fixture" videos and nothing touches the network.
-AppServices fixtureServices() =>
-    AppServices.memory(youtube: YouTubeService(browse: FixtureBrowse(''), resolver: FixtureResolver('')));
+AppServices fixtureServices({Prefs? prefs}) =>
+    AppServices.memory(prefs: prefs, youtube: YouTubeService(browse: FixtureBrowse(''), resolver: FixtureResolver('')));
 
 String? focusLabel() => FocusManager.instance.primaryFocus?.debugLabel;
 

@@ -1,24 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
-import '../../features/livetv/livetv_page.dart';
-import '../../features/torrents/torrents_page.dart';
-import '../../features/youtube/youtube_page.dart';
 import '../../theme.dart';
 import '../common/dims.dart';
-import 'focus_card.dart';
-import 'home_page.dart';
-import '../common/search_page.dart';
+import '../common/glass.dart';
+import '../common/section_shell.dart';
 import '../common/sections.dart';
-import '../common/settings_page.dart';
+import '../common/tokens.dart';
+import 'focus_card.dart';
 
-class _EnterContentIntent extends Intent {
-  const _EnterContentIntent();
-}
-
-/// Nav rail on the left, the current section on the right. Focus is
-/// remembered per section; Back goes content -> rail -> Home -> exit.
-/// For a TV and for desktop (a phone has `PhoneShell`).
+/// The TV design: a floating frosted pill of icons on the left that opens
+/// into labels while it has focus, the current section on the right, all
+/// inside the overscan-safe area. Focus is remembered per section; Back goes
+/// content -> rail -> Home -> exit (see [SectionShellState]).
+///
+/// Also the desktop's "10-foot TV mode". Desktop has no shell of its own yet.
 class TvShell extends StatefulWidget {
   const TvShell({super.key});
 
@@ -26,233 +21,96 @@ class TvShell extends StatefulWidget {
   State<TvShell> createState() => _TvShellState();
 }
 
-class _TvShellState extends State<TvShell> {
-  int _index = 0;
-  bool _railHasFocus = true;
-  final _sections = [for (final _ in Section.values) SectionFocus()];
-  final _railNodes = [for (final s in Section.values) FocusNode(debugLabel: 'rail ${s.label}')];
-
-  @override
-  void initState() {
-    super.initState();
-    // Start on the rail's Home item.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _railNodes[0].requestFocus();
-    });
-    FocusManager.instance.addListener(_guardFocus);
-  }
-
-  bool _guardQueued = false;
-
-  /// Focus is never lost: if nothing (or only a scope) is focused while the
-  /// shell is the visible route, put it back on the current rail item.
-  void _guardFocus() {
-    if (_guardQueued) return;
-    _guardQueued = true;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _guardQueued = false;
-      if (!mounted) return;
-      final route = ModalRoute.of(context);
-      if (route != null && !route.isCurrent) return;
-      final f = FocusManager.instance.primaryFocus;
-      if (f == null || f is FocusScopeNode || f.context == null) {
-        _railNodes[_index].requestFocus();
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    FocusManager.instance.removeListener(_guardFocus);
-    for (final s in _sections) {
-      s.dispose();
-    }
-    for (final n in _railNodes) {
-      n.dispose();
-    }
-    super.dispose();
-  }
-
-  void _focusRail() => _railNodes[_index].requestFocus();
-
-  void _enterContent() => _sections[_index].focus();
-
-  void _onBack() {
-    if (!_railHasFocus) {
-      _focusRail();
-    } else if (_index != 0) {
-      _railNodes[0].requestFocus();
-    } else {
-      SystemNavigator.pop();
-    }
-  }
-
-  Widget _page(Section section) {
-    final focus = _sections[section.index];
-    switch (section) {
-      case Section.home:
-        return HomePage(focus: focus);
-      case Section.search:
-        return SearchPage(focus: focus);
-      case Section.settings:
-        return SettingsPage(focus: focus);
-      case Section.liveTv:
-        return LiveTvPage(focus: focus);
-      case Section.torrents:
-        return TorrentsPage(focus: focus);
-      case Section.youtube:
-        return YouTubePage(focus: focus);
-    }
-  }
-
+class _TvShellState extends SectionShellState<TvShell> {
   @override
   Widget build(BuildContext context) {
     final d = Dims.of(context);
-    final content = Stack(
-      children: [
-        for (final section in Section.values)
-          Offstage(
-            offstage: section.index != _index,
-            child: ExcludeFocus(
-              excluding: section.index != _index,
-              // Its own scope: arrows stay inside the section.
-              child: FocusScope(child: _page(section)),
+    final c = ChithramColors.of(context);
+    return wrapBack(
+      Scaffold(
+        body: DecoratedBox(
+          // A faint accent glow in the top-left corner, behind everything.
+          decoration: BoxDecoration(
+            gradient: RadialGradient(
+              center: const Alignment(-1.1, -1.2),
+              radius: 1.3,
+              colors: [c.heroTint.withValues(alpha: 0.18), c.background],
             ),
           ),
-      ],
-    );
-    final nav = Focus(
-      canRequestFocus: false,
-      skipTraversal: true,
-      onFocusChange: (has) => setState(() => _railHasFocus = has),
-      child: FocusScope(child: _buildRail(d)),
-    );
-
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) _onBack();
-      },
-      child: Scaffold(
-        body: RailScope(
-          focusRail: _focusRail,
-          // TV: keep everything inside the 5% overscan-safe area.
-          child: Overscan(child: Row(children: [nav, Expanded(child: content)])),
+          child: RailScope(
+            focusRail: focusRail,
+            // TV: keep everything inside the 5% overscan-safe area.
+            child: Overscan(
+              child: Row(children: [buildNav(_buildRail(d)), Expanded(child: buildContent())]),
+            ),
+          ),
         ),
       ),
     );
   }
 
   Widget _buildRail(Dims d) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      curve: Curves.easeOut,
-      width: _railHasFocus ? d.railOpen : d.railClosed,
-      padding: EdgeInsets.symmetric(vertical: d.tv ? 8 : 24, horizontal: 8),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          for (final section in Section.values)
-            _RailItem(
-              section: section,
-              node: _railNodes[section.index],
-              selected: section.index == _index,
-              expanded: _railHasFocus,
-              dims: d,
-              onFocused: () {
-                if (_index != section.index) setState(() => _index = section.index);
-              },
-              onEnter: _enterContent,
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _RailItem extends StatefulWidget {
-  const _RailItem({
-    required this.section,
-    required this.node,
-    required this.selected,
-    required this.expanded,
-    required this.dims,
-    required this.onFocused,
-    required this.onEnter,
-  });
-
-  final Section section;
-  final FocusNode node;
-  final bool selected;
-  final bool expanded;
-  final Dims dims;
-  final VoidCallback onFocused;
-  final VoidCallback onEnter;
-
-  @override
-  State<_RailItem> createState() => _RailItemState();
-}
-
-class _RailItemState extends State<_RailItem> {
-  bool _focused = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final active = _focused || widget.selected;
-    final color = _focused
-        ? ChithramColors.of(context).onAccent
-        : widget.selected
-            ? ChithramColors.of(context).accent
-            : ChithramColors.of(context).textDim;
-    return FocusableActionDetector(
-      focusNode: widget.node,
-      onFocusChange: (focused) {
-        setState(() => _focused = focused);
-        if (focused) widget.onFocused();
-      },
-      shortcuts: const <ShortcutActivator, Intent>{
-        SingleActivator(LogicalKeyboardKey.arrowRight): _EnterContentIntent(),
-      },
-      actions: <Type, Action<Intent>>{
-        _EnterContentIntent: CallbackAction<_EnterContentIntent>(onInvoke: (_) {
-          widget.onEnter();
-          return null;
-        }),
-        ActivateIntent: CallbackAction<ActivateIntent>(onInvoke: (_) {
-          widget.onEnter();
-          return null;
-        }),
-      },
-      child: MouseRegion(
-        onEnter: (_) {
-          if (!widget.node.hasFocus) widget.node.requestFocus();
-        },
-        child: GestureDetector(
-          key: ValueKey('nav-${widget.section.name}'),
-          behavior: HitTestBehavior.opaque,
-          onTap: () {
-            widget.node.requestFocus();
-            widget.onEnter();
-          },
-          child: _railItem(color, active),
+    return Center(
+      child: AnimatedContainer(
+        duration: Motion.of(context).expandTime,
+        curve: Curves.easeOut,
+        width: railHasFocus ? d.railOpen : d.railClosed,
+        margin: const EdgeInsets.only(left: 4, right: 8),
+        child: Glass(
+          radius: 38,
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (final section in Section.values)
+                RailItemBehavior(
+                  section: section,
+                  node: railNodes[section.index],
+                  onFocused: () => show(section),
+                  onEnter: enterContent,
+                  builder: (context, focused, _) => _RailItem(
+                    section: section,
+                    focused: focused,
+                    selected: section.index == index,
+                    expanded: railHasFocus,
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
   }
+}
 
-  Widget _railItem(Color color, bool active) {
-    final d = widget.dims;
+/// One icon of the pill: accent-filled while focused; the current section
+/// gets an accent bar on its left while focus is elsewhere.
+class _RailItem extends StatelessWidget {
+  const _RailItem({
+    required this.section,
+    required this.focused,
+    required this.selected,
+    required this.expanded,
+  });
+
+  final Section section;
+  final bool focused;
+  final bool selected;
+  final bool expanded;
+
+  @override
+  Widget build(BuildContext context) {
+    final d = Dims.of(context);
+    final c = ChithramColors.of(context);
+    final color = focused ? c.onAccent : (selected ? c.text : c.textDim);
     return Container(
       height: d.tv ? 44 : 52,
-      margin: EdgeInsets.symmetric(vertical: d.tv ? 2 : 4),
-      padding: EdgeInsets.symmetric(horizontal: d.tv ? 17 : 16),
+      margin: EdgeInsets.symmetric(vertical: d.tv ? 3 : 4),
       decoration: BoxDecoration(
-        color: _focused ? ChithramColors.of(context).accent : Colors.transparent,
+        color: focused ? c.accent : Colors.transparent,
         borderRadius: BorderRadius.circular(d.tv ? 22 : 26),
-        boxShadow: _focused
-            ? [BoxShadow(color: ChithramColors.of(context).accent.withValues(alpha: 0.4), blurRadius: 16)]
-            : const [],
+        boxShadow: focused ? [BoxShadow(color: c.accent.withValues(alpha: 0.45), blurRadius: 18)] : const [],
       ),
       // Clipped and unconstrained, so the label can't overflow while the
       // rail is still growing.
@@ -264,17 +122,25 @@ class _RailItemState extends State<_RailItem> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(widget.section.icon, color: color, size: d.u(26)),
-              if (widget.expanded) ...[
+              // The current section's marker.
+              AnimatedContainer(
+                duration: Motion.of(context).hoverPressTime,
+                width: 3,
+                height: selected && !focused ? 22 : 0,
+                margin: const EdgeInsets.only(left: 2, right: 10),
+                decoration: BoxDecoration(color: c.accent, borderRadius: BorderRadius.circular(2)),
+              ),
+              Icon(section.icon, color: color, size: d.u(26)),
+              if (expanded) ...[
                 SizedBox(width: d.tv ? 12 : 16),
                 Text(
-                  widget.section.label,
+                  section.label,
                   maxLines: 1,
                   softWrap: false,
                   style: TextStyle(
                     color: color,
                     fontSize: d.t(16),
-                    fontWeight: active ? FontWeight.w600 : FontWeight.w500,
+                    fontWeight: focused || selected ? FontWeight.w600 : FontWeight.w500,
                   ),
                 ),
               ],

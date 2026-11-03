@@ -69,7 +69,7 @@ GitHub repo; Windows app, Android app (phone + TV), Linux program. "Research rev
   No big Flutter TV streaming apps found; Compose-for-TV tv-material 1.1.0 is Google's path. KMP/Compose MP = rewrite;
   Tauri/Electron no TV; Qt licence friction.
 - OTT design: hero billboard w/ muted autoplay trailer, rails, Top-10, continue watching w/ progress, profile picker,
-  details page, focus scale 1.05-1.1 + glow, overscan-safe, mini-player, skip intro, dark theme, ≥24sp TV type.
+  details page, focus scale 1.05-1.1 + glow, overscan-safe, mini-player, skip intro, dark theme, ≥16 dp TV type at 960x540 (32 px at 1080p).
   FOSS refs: Wholphin, Moonfin, Jellyfin Android TV, Findroid, Kodi skins.
 - Security/reliability: cleartext only player/sidecar layer, system trust, sidecar sandbox (bubblewrap/Job Object),
   local crash log w/ share (no telemetry), updater = GitHub Releases + signed asset, TV memory caps (1-2 GB boxes).

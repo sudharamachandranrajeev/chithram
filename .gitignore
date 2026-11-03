@@ -44,3 +44,20 @@ packages/tdlib/prebuilt/
 packages/tdlib/android/src/main/jniLibs/
 __pycache__/
 *.pyc
+
+# Local design references and private notes - never publish
+/docs/UI/
+/docs/notes/
+
+# Secrets
+key.properties
+.env
+.env.*
+!.env.example
+**/secrets/
+
+# More key material and local agent files
+/.claude/
+*.p12
+*.pem
+google-services.json

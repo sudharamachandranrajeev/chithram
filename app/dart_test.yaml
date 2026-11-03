@@ -1,0 +1,4 @@
+tags:
+  # Pixel goldens are generated on Linux (CI and the dev WSL distro); other
+  # platforms skip them (see test/goldens/golden_support.dart).
+  golden:

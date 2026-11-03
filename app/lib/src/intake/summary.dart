@@ -32,7 +32,7 @@ List<InlineSpan> intakeSpans(String text, TextStyle base) {
         TextSpan(text: cut.substring(0, hostAt)),
         TextSpan(
           text: cut.substring(hostAt, hostAt + uri.host.length),
-          style: base.copyWith(fontWeight: FontWeight.w800),
+          style: base.copyWith(fontWeight: FontWeight.w700),
         ),
         TextSpan(text: cut.substring(hostAt + uri.host.length)),
       ];

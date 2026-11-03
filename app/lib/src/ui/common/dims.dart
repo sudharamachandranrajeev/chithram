@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'form_factor.dart';
+import 'tokens.dart';
 
 export 'form_factor.dart' show FormFactor;
 
@@ -16,6 +17,12 @@ class Dims {
 
   bool get tv => form == FormFactor.tv;
   bool get phone => form == FormFactor.phone;
+
+  /// The design-token type scale for this form factor.
+  TypeScale get type => TypeScale.of(form);
+
+  /// How a focused control looks here.
+  FocusSpec get focus => FocusSpec.of(form);
 
   /// The window-size guess: phone below 600 dp wide; a wide Android screen is
   /// a TV; the rest desktop. Only a fallback (tests): the app knows its form
@@ -35,9 +42,9 @@ class Dims {
   // desktop window, so TV sizes stay close to the base ones. The font floor
   // keeps text readable from the sofa.
 
-  /// A font size: never below 18 on a TV (10-foot reading); large headings a
+  /// A font size: never below 16 on a TV (10-foot reading); large headings a
   /// little smaller there, so a 540 dp tall screen holds them.
-  double t(double base) => tv ? math.max(18, base * 0.9) : base;
+  double t(double base) => tv ? math.max(16, base * 0.9) : base;
 
   /// A length (tile sizes, icons): the base on a TV and desktop alike.
   double u(double base) => base;

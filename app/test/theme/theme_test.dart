@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:chithram/src/core/prefs.dart';
 import 'package:chithram/src/core/services.dart';
 import 'package:chithram/src/theme.dart';
@@ -37,16 +39,90 @@ Widget _app(AppServices s, {FormFactor form = FormFactor.tv}) => ChithramApp(
 Color _bg(WidgetTester t) => Theme.of(t.element(find.byType(Scaffold).first)).scaffoldBackgroundColor;
 
 void main() {
-  test('default look is the original Chithram colours', () {
+  test('default look is Night', () {
     final t = ChithramTheme.fromPrefs(Prefs.memory());
-    expect(t, ChithramTheme.chithram);
-    expect(t.accent, const Color(0xFFF5A300));
-    expect(t.background, const Color(0xFF0B0B10));
-    expect(t.surface, const Color(0xFF16161E));
-    expect(t.surfaceHigh, const Color(0xFF22222D));
-    expect(t.textDim, const Color(0xFF9A9AAB));
-    expect(t.heroTint, const Color(0x59F5A300));
-    expect(ThemePreset.all.length, inInclusiveRange(6, 8));
+    expect(t, ChithramTheme.night);
+    expect(t.accent, const Color(0xFFC6F432));
+    expect(t.onAccent, const Color(0xFF0E0B12));
+    expect(t.accent2, const Color(0xFF9B87FF));
+    expect(t.background, const Color(0xFF0E0B12));
+    expect(t.surface, const Color(0xFF18141E));
+    expect(t.surfaceHigh, const Color(0xFF241E2C));
+    expect(t.text, const Color(0xFFF5F3F7));
+    expect(t.textDim, const Color(0xFFABA4B6));
+    expect(t.hairline, t.text.withValues(alpha: 0.08));
+    expect(t.status.requested, const Color(0xFFABA4B6));
+    expect(t.status.awaitingApproval, const Color(0xFFF5B83D));
+    expect(t.status.searching, const Color(0xFF5AA9FF));
+    expect(t.status.downloading, const Color(0xFF9B87FF));
+    expect(t.status.importing, const Color(0xFF3DD6D0));
+    expect(t.status.available, const Color(0xFF3DDC84));
+    expect(t.status.failed, const Color(0xFFFF6B6B));
+  });
+
+  test('a prefs file with wrong-typed values loads and the theme falls back to Night', () async {
+    final dir = Directory.systemTemp.createTempSync('prefs_types');
+    addTearDown(() => dir.deleteSync(recursive: true));
+    final f = File('${dir.path}/prefs.json')
+      ..writeAsStringSync('{"theme.preset": 5, "theme.accent": "red", "theme.amoled": "yes"}');
+    final prefs = await Prefs.load(f);
+    expect(prefs.getString(ThemePrefs.preset), isNull);
+    expect(prefs.getInt(ThemePrefs.accent), isNull);
+    expect(prefs.getBool(ThemePrefs.amoled), isFalse);
+    expect(ChithramTheme.fromPrefs(prefs), ChithramTheme.night);
+  });
+
+  test('exactly six presets, Night first', () {
+    expect(ThemePreset.all.map((p) => p.id), ['night', 'saffron', 'noir', 'mint', 'ocean', 'graphite']);
+    expect(ThemePreset.byId('saffron')!.theme.accent, const Color(0xFFF5A300));
+    expect(ThemePreset.byId('noir')!.theme.accent, const Color(0xFFF2555A));
+  });
+
+  test('removed preset ids map to the nearest kept look; unknown ids to Night', () {
+    const expected = {
+      'chithram': 'saffron',
+      'sunset': 'saffron',
+      'plum': 'night',
+      'frost': 'night',
+      'violet': 'night',
+      'rose': 'noir',
+      'emerald': 'mint',
+      // kept ids map to themselves
+      'night': 'night',
+      'saffron': 'saffron',
+      'noir': 'noir',
+      'mint': 'mint',
+      'ocean': 'ocean',
+      'graphite': 'graphite',
+      // unknown
+      'gone': 'night',
+      '': 'night',
+    };
+    for (final e in expected.entries) {
+      expect(ThemePreset.resolve(e.key).id, e.value, reason: e.key);
+      final t = ChithramTheme.fromPrefs(Prefs.memory({ThemePrefs.preset: e.key}));
+      expect(t, ThemePreset.byId(e.value)!.theme, reason: 'fromPrefs ${e.key}');
+    }
+    expect(ThemePreset.resolve(null).id, 'night');
+  });
+
+  test('pinDefault keeps existing installs on Saffron, starts fresh ones on Night', () async {
+    final existing = Prefs.memory();
+    await ThemePreset.pinDefault(existing, existingInstall: true);
+    expect(existing.getString(ThemePrefs.preset), 'saffron');
+
+    final fresh = Prefs.memory();
+    await ThemePreset.pinDefault(fresh, existingInstall: false);
+    expect(fresh.getString(ThemePrefs.preset), 'night');
+
+    // A saved choice, even a removed id, is never overwritten.
+    final chosen = Prefs.memory({ThemePrefs.preset: 'plum'});
+    await ThemePreset.pinDefault(chosen, existingInstall: true);
+    expect(chosen.getString(ThemePrefs.preset), 'plum');
+
+    // Once pinned, a later launch (now an existing install) changes nothing.
+    await ThemePreset.pinDefault(fresh, existingInstall: true);
+    expect(fresh.getString(ThemePrefs.preset), 'night');
   });
 
   test('every preset and its AMOLED variant is readable', () {
@@ -79,11 +155,11 @@ void main() {
     expect(t.accent, const Color(0xFF2ECC8F));
     expect(t.background, Colors.black);
     expect(t.surface, ThemePreset.byId('ocean')!.theme.toAmoled().surface);
-    expect(ChithramTheme.fromPrefs(Prefs.memory({ThemePrefs.preset: 'gone'})), ChithramTheme.chithram);
+    expect(ChithramTheme.fromPrefs(Prefs.memory({ThemePrefs.preset: 'gone'})), ChithramTheme.night);
   });
 
   test('lerp blends and a missing extension keeps this', () {
-    final a = ChithramTheme.chithram;
+    final a = ChithramTheme.night;
     final b = ThemePreset.byId('ocean')!.theme;
     expect(a.lerp(b, 0), a);
     expect(a.lerp(b, 1), b);
@@ -100,12 +176,12 @@ void main() {
       youtube: YouTubeService(browse: FixtureBrowse('')),
     )));
     await tester.pumpAndSettle();
-    expect(_bg(tester), ChithramTheme.chithram.background);
+    expect(_bg(tester), ChithramTheme.night.background);
 
-    await prefs.set(ThemePrefs.preset, 'emerald');
+    await prefs.set(ThemePrefs.preset, 'ocean');
     await tester.pump();
     await tester.pumpAndSettle();
-    expect(_bg(tester), ThemePreset.byId('emerald')!.theme.background);
+    expect(_bg(tester), ThemePreset.byId('ocean')!.theme.background);
     expect(tester.takeException(), isNull);
 
     await prefs.set(ThemePrefs.amoled, true);
@@ -130,10 +206,10 @@ void main() {
       expect(find.byKey(ThemeKeys.preset(p.id)), findsOneWidget);
     }
 
-    await tester.tap(find.byKey(ThemeKeys.preset('rose')));
+    await tester.tap(find.byKey(ThemeKeys.preset('noir')));
     await tester.pumpAndSettle();
-    expect(prefs.getString(ThemePrefs.preset), 'rose');
-    expect(_bg(tester), ThemePreset.byId('rose')!.theme.background);
+    expect(prefs.getString(ThemePrefs.preset), 'noir');
+    expect(_bg(tester), ThemePreset.byId('noir')!.theme.background);
 
     await tester.tap(find.byKey(ThemeKeys.swatch(accentSwatches[9])));
     await tester.pumpAndSettle();
@@ -152,7 +228,7 @@ void main() {
       ThemePrefs.amoled: prefs.getBool(ThemePrefs.amoled),
     }));
     expect(restored, ChithramTheme.fromPrefs(prefs));
-    expect(themeLabel(prefs), 'Rose, custom accent, AMOLED');
+    expect(themeLabel(prefs), 'Noir, custom accent, AMOLED');
     expect(tester.takeException(), isNull);
   });
 
@@ -181,7 +257,7 @@ void main() {
     tester.view.physicalSize = const Size(1920, 1080);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
-    final prefs = Prefs.memory({ThemePrefs.preset: 'violet'});
+    final prefs = Prefs.memory({ThemePrefs.preset: 'mint'});
     await tester.pumpWidget(MaterialApp(
       theme: buildChithramTheme(colors: ChithramTheme.fromPrefs(prefs)),
       home: AppServicesScope(
@@ -189,6 +265,6 @@ void main() {
         child: const Scaffold(body: ThemeSettings()),
       ),
     ));
-    expect(find.text('Theme: Violet'), findsOneWidget);
+    expect(find.text('Theme: Mint'), findsOneWidget);
   });
 }

@@ -31,9 +31,18 @@ class Prefs extends ChangeNotifier {
   final File? _file;
   final Map<String, Object?> _data;
 
-  String? getString(String key) => _data[key] as String?;
-  bool getBool(String key, {bool fallback = false}) => _data[key] as bool? ?? fallback;
-  int? getInt(String key) => _data[key] as int?;
+  String? getString(String key) {
+    final v = _data[key];
+    return v is String ? v : null;
+  }
+  bool getBool(String key, {bool fallback = false}) {
+    final v = _data[key];
+    return v is bool ? v : fallback;
+  }
+  int? getInt(String key) {
+    final v = _data[key];
+    return v is int ? v : null;
+  }
 
   /// Stores [value] (null removes the key).
   Future<void> set(String key, Object? value) async {

@@ -25,6 +25,7 @@ import '../home/home_repository.dart';
 import '../home/snapshot.dart';
 import '../plugins/plugin_registry.dart';
 import '../plugins/plugin_wiring.dart';
+import '../theme.dart';
 import 'paths.dart';
 import 'prefs.dart';
 import 'resume_store.dart';
@@ -64,10 +65,17 @@ class AppServices {
   static Future<AppServices> open() async {
     final paths = await AppPaths.resolve();
     final snapshots = SnapshotStore(paths.supportFile('home_snapshot.json'));
+    final prefsFile = paths.supportFile('prefs.json');
+    // Either file means the app ran before (the look default changed in 0.3).
+    final (prefsExisted, snapshotExisted) = await (
+      prefsFile.exists(),
+      paths.supportFile('home_snapshot.json').exists(),
+    ).wait;
     final (prefs, snapshot) = await (
-      Prefs.load(paths.supportFile('prefs.json')),
+      Prefs.load(prefsFile),
       snapshots.load(),
     ).wait;
+    await ThemePreset.pinDefault(prefs, existingInstall: prefsExisted || snapshotExisted);
     final navigatorKey = GlobalKey<NavigatorState>();
     final youtube = YouTubeService(taste: TasteStore(paths.supportFile('youtube_taste.json')), prefs: prefs);
     final db = AppDatabase.open(paths); // opens on its first query

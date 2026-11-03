@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../theme.dart';
@@ -39,11 +40,20 @@ class RailScope extends InheritedWidget {
   bool updateShouldNotify(RailScope oldWidget) => false;
 }
 
+/// The gap a TV rail needs between tiles of [width] so a focused tile's ring
+/// and glow stay clear of its neighbour: the scale overhang plus the ring, and 2 dp.
+double tvRailGap(double width) {
+  const spec = FocusSpec.tv;
+  return (width * (spec.scale - 1) / 2 + (spec.gap + spec.ring) * spec.scale + 2)
+      .clamp(Space.s16, double.infinity);
+}
+
 /// A tile or button that works with a D-pad; Select / Enter / tap activates it.
 ///
 /// On a TV the focus is read from across the room ([FocusSpec.tv]): the tile
 /// grows 6%, an accent ring floats just outside it and an accent glow spreads
-/// around. Nothing depends on hover there. Elsewhere (phone, desktop) it grows
+/// around. Nothing depends on hover on a TV (a desktop in 10-foot mode still
+/// highlights a hovered tile). Elsewhere (phone, desktop) it grows
 /// ~8% with a border and glow, and a hovering mouse highlights it.
 class FocusCard extends StatefulWidget {
   const FocusCard({
@@ -109,7 +119,9 @@ class _FocusCardState extends State<FocusCard> {
     final radius = BorderRadius.circular(widget.radius);
     final tv = d.tv;
     final spec = d.focus;
-    final hovered = _hovered && !tv;
+    // A real Android TV has no pointer; a desktop in 10-foot mode does.
+    final hoverable = !tv || defaultTargetPlatform != TargetPlatform.android;
+    final hovered = _hovered && hoverable;
     final Widget body;
     if (tv) {
       // The ring floats `gap` outside the tile and never changes its layout.
@@ -149,7 +161,9 @@ class _FocusCardState extends State<FocusCard> {
                 decoration: BoxDecoration(
                   borderRadius: ringRadius,
                   border: Border.all(
-                    color: _focused ? c.accent : Colors.transparent,
+                    color: _focused
+                        ? c.accent
+                        : (hovered ? c.accent.withValues(alpha: 0.6) : Colors.transparent),
                     width: spec.ring,
                   ),
                 ),
@@ -204,7 +218,7 @@ class _FocusCardState extends State<FocusCard> {
             widget.onActivate?.call();
           },
           child: AnimatedScale(
-            scale: _focused ? (tv ? spec.scale : 1.08) : (hovered ? 1.04 : 1.0),
+            scale: _focused ? (tv ? spec.scale : 1.08) : (hovered && !tv ? 1.04 : 1.0),
             duration: tv ? motion.focusTime : const Duration(milliseconds: 150),
             curve: tv ? Motion.curve : Curves.easeOut,
             child: body,

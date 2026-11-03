@@ -61,8 +61,8 @@ class _TvShellState extends SectionShellState<TvShell> {
               child: Container(
                 width: _markSize,
                 height: _markSize,
-                margin: const EdgeInsets.only(left: (76 - _markSize) / 2, bottom: Space.s12),
-                decoration: BoxDecoration(color: c.accent, borderRadius: BorderRadius.circular(10)),
+                margin: EdgeInsets.only(left: (d.railClosed - _markSize) / 2, bottom: Space.s12),
+                decoration: BoxDecoration(color: c.accent, borderRadius: BorderRadius.circular(Radii.button)),
               ),
             ),
             Glass(
@@ -126,7 +126,7 @@ class _RailItem extends StatelessWidget {
       duration: motion.focusTime,
       curve: Motion.curve,
       height: 44,
-      margin: const EdgeInsets.symmetric(vertical: Space.s4 / 2 + 1),
+      margin: const EdgeInsets.symmetric(vertical: Space.s4 / 2),
       decoration: BoxDecoration(
         color: focused
             ? c.accent

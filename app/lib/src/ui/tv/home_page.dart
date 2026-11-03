@@ -38,6 +38,7 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     final feed = AppServices.of(context).feed;
     final d = Dims.of(context);
+    final tileWidth = d.tv ? _tvTileWidth(context) : d.u(300);
     return ValueListenableBuilder<FeedState>(
       valueListenable: feed.state,
       builder: (context, state, _) => SingleChildScrollView(
@@ -54,9 +55,17 @@ class _HomePageState extends State<HomePage> {
                 title: rail.title,
                 count: rail.items.length,
                 section: widget.focus,
-                // A TV tile is 208 dp on the 960 dp screen (four across), and grows with
-                // a wider layout (a desktop in 10-foot mode).
-                itemBuilder: (_, i) => SizedBox(width: d.tv ? _tvTileWidth(context) : d.u(300), child: VideoTileBody(item: rail.items[i])),
+                // A TV tile is 208 dp on the 960 dp screen (about three and a
+                // half across) with a 16:9 thumbnail, and grows with a wider
+                // layout (a desktop in 10-foot mode).
+                spacing: d.tv ? tvRailGap(tileWidth) : null,
+                itemBuilder: (_, i) => SizedBox(
+                  width: tileWidth,
+                  child: VideoTileBody(
+                    item: rail.items[i],
+                    thumbnailHeight: d.tv ? tileWidth * 9 / 16 : null,
+                  ),
+                ),
                 onSelect: (i) => playVideo(context, rail.items[i], source: rail.id),
               ),
           ],
@@ -66,8 +75,14 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
+/// A TV tile: 208 dp on the 960 dp (1080p) screen, scaling with the width up to
+/// twice that.
+const double _tvTileBase = 208;
+const double _tvScreenBase = 960;
+
 double _tvTileWidth(BuildContext context) =>
-    (MediaQuery.sizeOf(context).width * 208 / 960).clamp(208.0, 416.0);
+    (MediaQuery.sizeOf(context).width * _tvTileBase / _tvScreenBase)
+        .clamp(_tvTileBase, _tvTileBase * 2);
 
 /// The first suggestion (or popular video) over its frame, with Play. While
 /// nothing is there yet it says so, and offers Retry after a failure.

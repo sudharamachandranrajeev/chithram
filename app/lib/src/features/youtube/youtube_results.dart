@@ -124,9 +124,13 @@ class VideoTile extends StatelessWidget {
 /// A video tile's look without the focus handling: thumbnail with the length
 /// (or LIVE), title and channel. Fills its width; [VideoTile.extent] tall.
 class VideoTileBody extends StatelessWidget {
-  const VideoTileBody({super.key, required this.item});
+  const VideoTileBody({super.key, required this.item, this.thumbnailHeight});
 
   final VideoItem item;
+
+  /// The thumbnail's height; [VideoTile.thumbnailHeight] when null. A TV rail
+  /// passes 16:9 of its tile width.
+  final double? thumbnailHeight;
 
   @override
   Widget build(BuildContext context) {
@@ -142,7 +146,7 @@ class VideoTileBody extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            height: VideoTile.thumbnailHeight(d),
+            height: thumbnailHeight ?? VideoTile.thumbnailHeight(d),
             width: double.infinity,
             child: Stack(
               fit: StackFit.expand,

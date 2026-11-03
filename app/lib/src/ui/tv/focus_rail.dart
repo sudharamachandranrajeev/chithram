@@ -21,6 +21,7 @@ class FocusRail extends StatefulWidget {
     required this.section,
     this.onSelect,
     this.onMenu,
+    this.spacing,
   });
 
   final String title;
@@ -31,6 +32,9 @@ class FocusRail extends StatefulWidget {
 
   /// The remote's Menu (context-menu) key on a focused tile.
   final void Function(int index)? onMenu;
+
+  /// The gap between tiles; the default when null.
+  final double? spacing;
 
   @override
   State<FocusRail> createState() => _FocusRailState();
@@ -65,7 +69,7 @@ class _FocusRailState extends State<FocusRail> {
             children: [
               for (var i = 0; i < widget.count; i++)
                 Padding(
-                  padding: EdgeInsets.only(right: d.tv ? Space.s16 : 18),
+                  padding: EdgeInsets.only(right: widget.spacing ?? (d.tv ? Space.s16 : 18)),
                   child: _menu(
                     i,
                     FocusCard(

@@ -106,6 +106,25 @@ void main() {
     expect(ThemePreset.resolve(null).id, 'night');
   });
 
+  test('pinDefault keeps existing installs on Saffron, starts fresh ones on Night', () async {
+    final existing = Prefs.memory();
+    await ThemePreset.pinDefault(existing, existingInstall: true);
+    expect(existing.getString(ThemePrefs.preset), 'saffron');
+
+    final fresh = Prefs.memory();
+    await ThemePreset.pinDefault(fresh, existingInstall: false);
+    expect(fresh.getString(ThemePrefs.preset), 'night');
+
+    // A saved choice, even a removed id, is never overwritten.
+    final chosen = Prefs.memory({ThemePrefs.preset: 'plum'});
+    await ThemePreset.pinDefault(chosen, existingInstall: true);
+    expect(chosen.getString(ThemePrefs.preset), 'plum');
+
+    // Once pinned, a later launch (now an existing install) changes nothing.
+    await ThemePreset.pinDefault(fresh, existingInstall: true);
+    expect(fresh.getString(ThemePrefs.preset), 'night');
+  });
+
   test('every preset and its AMOLED variant is readable', () {
     for (final e in _looks().entries) {
       _checkLook(e.key, e.value);

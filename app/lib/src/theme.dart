@@ -293,6 +293,15 @@ class ThemePreset {
   /// [legacyIds], anything else (or null) the default, Night.
   static ThemePreset resolve(String? id) => byId(id) ?? byId(legacyIds[id]) ?? all.first;
 
+  /// Saves a look once for installs that never picked one, so changing the
+  /// default never restyles an existing user: an install from before Night
+  /// became the default ([existingInstall]) keeps Saffron, the old default;
+  /// a fresh one starts on Night. A saved choice is left alone.
+  static Future<void> pinDefault(Prefs prefs, {required bool existingInstall}) async {
+    if (prefs.getString(ThemePrefs.preset) != null) return;
+    await prefs.set(ThemePrefs.preset, existingInstall ? 'saffron' : all.first.id);
+  }
+
   /// The first is the default.
   static final all = <ThemePreset>[
     const ThemePreset('night', 'Night', ChithramTheme.night),

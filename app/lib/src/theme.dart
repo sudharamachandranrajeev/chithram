@@ -374,14 +374,46 @@ ThemeData buildChithramTheme({
           .white
           .apply(fontFamily: 'Poppins', bodyColor: colors.text, displayColor: colors.text),
       appBarTheme: AppBarTheme(
-        backgroundColor: colors.background,
+        backgroundColor: colors.glass,
         surfaceTintColor: Colors.transparent,
         scrolledUnderElevation: 0,
+        shape: Border(bottom: BorderSide(color: colors.hairline)),
+        titleTextStyle: TextStyle(
+          fontFamily: 'Poppins',
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+          color: colors.text,
+        ),
         systemOverlayStyle: systemBars(colors),
       ),
       navigationBarTheme: NavigationBarThemeData(
+        height: 80,
         backgroundColor: colors.surface,
-        indicatorColor: colors.accent.withValues(alpha: 0.25),
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        // The selected tab sits in a violet pill (the secondary accent).
+        indicatorColor: colors.accent2.withValues(alpha: 0.22),
+        indicatorShape: const StadiumBorder(),
+        labelTextStyle: WidgetStateProperty.resolveWith(
+          (s) => s.contains(WidgetState.selected)
+              ? TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: colors.text)
+              : TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: colors.textDim),
+        ),
+        iconTheme: WidgetStateProperty.resolveWith(
+          (s) => IconThemeData(
+            size: 22,
+            color: s.contains(WidgetState.selected) ? colors.text : colors.textDim,
+          ),
+        ),
+      ),
+      navigationRailTheme: NavigationRailThemeData(
+        backgroundColor: colors.surface,
+        indicatorColor: colors.accent2.withValues(alpha: 0.22),
+        indicatorShape: const StadiumBorder(),
+        selectedIconTheme: IconThemeData(size: 22, color: colors.text),
+        unselectedIconTheme: IconThemeData(size: 22, color: colors.textDim),
+        selectedLabelTextStyle: TextStyle(fontFamily: 'Poppins', fontSize: 12, fontWeight: FontWeight.w600, color: colors.text),
+        unselectedLabelTextStyle: TextStyle(fontFamily: 'Poppins', fontSize: 12, fontWeight: FontWeight.w500, color: colors.textDim),
       ),
       pageTransitionsTheme: const PageTransitionsTheme(builders: {
         TargetPlatform.android: PredictiveBackPageTransitionsBuilder(),

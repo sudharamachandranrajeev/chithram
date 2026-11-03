@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../theme.dart';
+import '../common/tokens.dart';
 
 /// Side margin of every phone page.
 const phoneGutter = 16.0;
@@ -30,7 +31,7 @@ class PhoneSearchBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(phoneGutter, 8, 4, 8),
+      padding: const EdgeInsets.fromLTRB(phoneGutter, Space.s8, Space.s4, Space.s8),
       child: Row(
         children: [
           Expanded(
@@ -49,7 +50,7 @@ class PhoneSearchBar extends StatelessWidget {
                   fillColor: ChithramColors.of(context).surface,
                   prefixIcon: const Icon(Icons.search_rounded),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(28),
+                    borderRadius: BorderRadius.circular(Radii.pill),
                     borderSide: BorderSide.none,
                   ),
                   suffixIcon: controller.text.isEmpty

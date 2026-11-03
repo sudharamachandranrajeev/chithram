@@ -43,17 +43,23 @@ void torrentHomeE2e() {
       }
       await press(t, LogicalKeyboardKey.arrowRight);
 
-      // The tab opened: the feed fetches, then the rails appear.
+      // The tab opened: the feed fetches, then the rails appear. Rails fill in
+      // per source, so wait for the whole fetch (the TV list merges in last).
       final top = find.text('Fixture Film 1 2026 1080p WEB-DL');
       final watch = Stopwatch()..start();
-      while (top.evaluate().isEmpty && watch.elapsed < const Duration(seconds: 30)) {
+      while ((top.evaluate().isEmpty || feed.state.value.loading) &&
+          watch.elapsed < const Duration(seconds: 30)) {
         await t.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 250)));
         await t.pump();
       }
       expect(top, findsWidgets, reason: 'the fixture indexer\'s top film shows');
       expect(find.text('Fixture Adult 1 2026'), findsNothing);
       expect(feed.state.value.rails.first.title, 'Popular today · Films');
-      expect(feed.state.value.rails.first.items.first.seeders, 900, reason: 'merged with the TV-list duplicate');
+      expect(
+        feed.state.value.rails.first.items.first.seeders,
+        900,
+        reason: 'merged with the TV-list duplicate',
+      );
 
       await t.ensureVisible(top.first);
       await t.tap(top.first);

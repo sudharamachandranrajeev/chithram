@@ -144,7 +144,8 @@ jobs:
           grep " gitleaks_${v}_linux_x64.tar.gz\$" "gitleaks_${v}_checksums.txt" | sha256sum -c -
           tar xzf "gitleaks_${v}_linux_x64.tar.gz" gitleaks
       - name: Scan the history
-        run: "$RUNNER_TEMP/gl/gitleaks" git --redact --no-banner
+        run: |
+          "$RUNNER_TEMP/gl/gitleaks" git --redact --no-banner
 
   # The committed drift code (lib/src/data/*.g.dart), the schema dump and the
   # migration test helpers must be what the generators produce now.

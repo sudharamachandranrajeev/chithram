@@ -5,6 +5,7 @@ import '../common/dims.dart';
 import '../common/glass.dart';
 import '../common/section_shell.dart';
 import '../common/sections.dart';
+import '../common/tokens.dart';
 import 'focus_card.dart';
 
 /// The TV design: a floating frosted pill of icons on the left that opens
@@ -51,7 +52,7 @@ class _TvShellState extends SectionShellState<TvShell> {
   Widget _buildRail(Dims d) {
     return Center(
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+        duration: Motion.of(context).expandTime,
         curve: Curves.easeOut,
         width: railHasFocus ? d.railOpen : d.railClosed,
         margin: const EdgeInsets.only(left: 4, right: 8),
@@ -123,7 +124,7 @@ class _RailItem extends StatelessWidget {
             children: [
               // The current section's marker.
               AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
+                duration: Motion.of(context).hoverPressTime,
                 width: 3,
                 height: selected && !focused ? 22 : 0,
                 margin: const EdgeInsets.only(left: 2, right: 10),

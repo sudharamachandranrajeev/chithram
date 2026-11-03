@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:chithram/src/core/prefs.dart';
 import 'package:chithram/src/core/services.dart';
 import 'package:chithram/src/theme.dart';
@@ -56,6 +58,18 @@ void main() {
     expect(t.status.importing, const Color(0xFF3DD6D0));
     expect(t.status.available, const Color(0xFF3DDC84));
     expect(t.status.failed, const Color(0xFFFF6B6B));
+  });
+
+  test('a prefs file with wrong-typed values loads and the theme falls back to Night', () async {
+    final dir = Directory.systemTemp.createTempSync('prefs_types');
+    addTearDown(() => dir.deleteSync(recursive: true));
+    final f = File('${dir.path}/prefs.json')
+      ..writeAsStringSync('{"theme.preset": 5, "theme.accent": "red", "theme.amoled": "yes"}');
+    final prefs = await Prefs.load(f);
+    expect(prefs.getString(ThemePrefs.preset), isNull);
+    expect(prefs.getInt(ThemePrefs.accent), isNull);
+    expect(prefs.getBool(ThemePrefs.amoled), isFalse);
+    expect(ChithramTheme.fromPrefs(prefs), ChithramTheme.night);
   });
 
   test('exactly six presets, Night first', () {

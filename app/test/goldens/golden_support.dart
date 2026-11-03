@@ -19,13 +19,17 @@ Future<void> loadGoldenFonts() async {
     );
   }
   await poppins.load();
-  final root = Platform.environment['FLUTTER_ROOT'] ?? '';
-  final icons = File('$root/bin/cache/artifacts/material_fonts/MaterialIcons-Regular.otf');
-  if (icons.existsSync()) {
-    final l = FontLoader('MaterialIcons')
-      ..addFont(Future.value(ByteData.sublistView(icons.readAsBytesSync())));
-    await l.load();
+  final root = Platform.environment['FLUTTER_ROOT'];
+  if (root == null || root.isEmpty) {
+    fail('FLUTTER_ROOT is not set; goldens need it to find the Material icon font.');
   }
+  final icons = File('$root/bin/cache/artifacts/material_fonts/MaterialIcons-Regular.otf');
+  if (!icons.existsSync()) {
+    fail('Material icon font missing at ${icons.path}; goldens would draw blank icons.');
+  }
+  final l = FontLoader('MaterialIcons')
+    ..addFont(Future.value(ByteData.sublistView(icons.readAsBytesSync())));
+  await l.load();
 }
 
 /// The surfaces the redesign is checked on: desktop, TV at 1080p (960x540 dp)

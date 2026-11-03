@@ -64,4 +64,14 @@ void main() {
       expect(ChithramTheme.contrastRatio(c, surface), greaterThanOrEqualTo(4.5), reason: '$s');
     }
   });
+
+  test('status colours read on the chip fill (colour at 16% over the surface) on every preset', () {
+    for (final p in ThemePreset.all) {
+      for (final s in RequestStatus.values) {
+        final c = s.color(p.theme.status);
+        final fill = Color.alphaBlend(c.withValues(alpha: 0.16), p.theme.surface);
+        expect(ChithramTheme.contrastRatio(c, fill), greaterThanOrEqualTo(4.5), reason: '${p.id} $s');
+      }
+    }
+  });
 }

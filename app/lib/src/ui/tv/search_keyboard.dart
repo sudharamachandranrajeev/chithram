@@ -351,6 +351,9 @@ class _KeyboardPanelState extends State<_KeyboardPanel> {
   // pad takes digits and `+` only.
   KeyEventResult _onKey(FocusNode node, KeyEvent event) {
     if (event is KeyUpEvent) return KeyEventResult.ignored;
+    // Ctrl, Alt and Meta chords are shortcuts (the desktop shell's Ctrl+1), not typing.
+    final keys = HardwareKeyboard.instance;
+    if (keys.isControlPressed || keys.isAltPressed || keys.isMetaPressed) return KeyEventResult.ignored;
     if (event.logicalKey == LogicalKeyboardKey.backspace) {
       _backspace();
       return KeyEventResult.handled;

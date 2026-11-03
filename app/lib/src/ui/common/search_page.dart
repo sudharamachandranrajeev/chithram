@@ -163,6 +163,9 @@ class _SearchPageState extends State<_TvSearchPage> {
   KeyEventResult _onKey(FocusNode node, KeyEvent event) {
     if (Dims.of(context).phone) return KeyEventResult.ignored;
     if (event is KeyUpEvent) return KeyEventResult.ignored;
+    // Ctrl, Alt and Meta chords are shortcuts (the desktop shell's Ctrl+1), not typing.
+    final keys = HardwareKeyboard.instance;
+    if (keys.isControlPressed || keys.isAltPressed || keys.isMetaPressed) return KeyEventResult.ignored;
     if (event.logicalKey == LogicalKeyboardKey.backspace) {
       _backspace();
       return KeyEventResult.handled;

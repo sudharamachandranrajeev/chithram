@@ -13,7 +13,7 @@ import 'focus_card.dart';
 /// inside the overscan-safe area. Focus is remembered per section; Back goes
 /// content -> rail -> Home -> exit (see [SectionShellState]).
 ///
-/// Also the desktop's "10-foot TV mode". Desktop has no shell of its own yet.
+/// Also the desktop's "10-foot TV mode"; a normal desktop uses `DesktopShell`.
 class TvShell extends StatefulWidget {
   const TvShell({super.key});
 

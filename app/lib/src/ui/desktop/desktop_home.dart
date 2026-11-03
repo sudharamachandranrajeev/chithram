@@ -313,6 +313,7 @@ class _Dots extends StatelessWidget {
             button: true,
             selected: i == current,
             label: 'Slide ${i + 1} of $count',
+            onTap: () => onSelect(i),
             excludeSemantics: true,
             child: GestureDetector(
               key: ValueKey('hero-dot-$i'),
@@ -384,6 +385,7 @@ class _DesktopPillState extends State<DesktopPill> {
       button: true,
       enabled: enabled,
       label: widget.label,
+      onTap: widget.onPressed,
       excludeSemantics: true,
       child: FocusableActionDetector(
         focusNode: widget.focusNode,
@@ -556,6 +558,7 @@ class _TextLinkState extends State<_TextLink> {
     return Semantics(
       button: true,
       label: 'View all',
+      onTap: widget.onPressed,
       excludeSemantics: true,
       child: FocusableActionDetector(
         onFocusChange: (f) => setState(() => _focused = f),
@@ -612,6 +615,7 @@ class _ChevronState extends State<_Chevron> {
       button: true,
       enabled: enabled,
       label: widget.label,
+      onTap: widget.onPressed,
       excludeSemantics: true,
       child: FocusableActionDetector(
         enabled: enabled,
@@ -707,6 +711,10 @@ class _VideoCardState extends State<_VideoCard> {
     return Semantics(
       button: true,
       label: item.title,
+      onTap: () {
+        _node.requestFocus();
+        widget.onOpen();
+      },
       excludeSemantics: true,
       child: FocusableActionDetector(
         focusNode: _node,

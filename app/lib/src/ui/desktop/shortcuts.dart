@@ -123,3 +123,103 @@ class _FocusSearchAction extends Action<FocusSearchIntent> {
     return null;
   }
 }
+
+/// What the shell offers the shortcut host (see [DesktopShortcutScope]).
+class DesktopShellCallbacks {
+  const DesktopShellCallbacks({
+    required this.focusSearch,
+    required this.goTo,
+    required this.goHome,
+    required this.toggleSidebar,
+    required this.toggleFullscreen,
+    required this.escapeSearch,
+  });
+
+  final VoidCallback focusSearch;
+  final void Function(Section) goTo;
+  final VoidCallback goHome;
+  final VoidCallback toggleSidebar;
+  final VoidCallback toggleFullscreen;
+
+  /// Esc while the title-bar search has focus: leaves it. False when it had none.
+  final bool Function() escapeSearch;
+}
+
+/// The desktop shortcuts above the [Navigator], so they also work on a page
+/// pushed over the shell (details, player settings...). Desktop form only; the
+/// TV and phone shells never get one. The shell registers itself here; without
+/// a scope it handles the keys itself.
+class DesktopShortcutScope extends StatefulWidget {
+  const DesktopShortcutScope({super.key, required this.navigatorKey, required this.child});
+
+  final GlobalKey<NavigatorState> navigatorKey;
+  final Widget child;
+
+  static DesktopShortcutScopeState? maybeOf(BuildContext context) =>
+      context.findAncestorStateOfType<DesktopShortcutScopeState>();
+
+  @override
+  State<DesktopShortcutScope> createState() => DesktopShortcutScopeState();
+}
+
+class DesktopShortcutScopeState extends State<DesktopShortcutScope> {
+  DesktopShellCallbacks? _shell;
+
+  void register(DesktopShellCallbacks shell) => _shell = shell;
+
+  void unregister(DesktopShellCallbacks shell) {
+    if (identical(_shell, shell)) _shell = null;
+  }
+
+  NavigatorState? get _nav => widget.navigatorKey.currentState;
+
+  /// Closes every page over the shell.
+  void _toShell() => _nav?.popUntil((r) => r.isFirst);
+
+  void _focusSearch() {
+    _toShell();
+    _shell?.focusSearch();
+  }
+
+  void _goTo(Section s) {
+    _toShell();
+    _shell?.goTo(s);
+  }
+
+  void _back() {
+    final nav = _nav;
+    if (nav != null && nav.canPop()) {
+      nav.pop();
+    } else {
+      _shell?.goHome();
+    }
+  }
+
+  /// Esc: leaves the search field; in any other text field only leaves that
+  /// field; else closes the top page.
+  void _escape() {
+    if (_shell?.escapeSearch() ?? false) return;
+    if (typingInTextField()) {
+      FocusManager.instance.primaryFocus?.unfocus();
+      return;
+    }
+    final nav = _nav;
+    if (nav != null && nav.canPop()) nav.pop();
+  }
+
+  @override
+  Widget build(BuildContext context) => Shortcuts(
+        shortcuts: desktopShortcuts,
+        child: Actions(
+          actions: desktopActions(
+            focusSearch: _focusSearch,
+            goTo: _goTo,
+            toggleSidebar: () => _shell?.toggleSidebar(),
+            toggleFullscreen: () => _shell?.toggleFullscreen(),
+            back: _back,
+            escape: _escape,
+          ),
+          child: widget.child,
+        ),
+      );
+}

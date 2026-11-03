@@ -17,6 +17,7 @@ import '../tv/focus_card.dart';
 import '../tv/focus_rail.dart';
 import '../tv/search_keyboard.dart';
 import 'form_factor.dart';
+import 'keys.dart';
 import 'text_entry.dart';
 
 /// Search on TV and desktop: the search bar opens an on-screen D-pad keyboard
@@ -164,8 +165,7 @@ class _SearchPageState extends State<_TvSearchPage> {
     if (Dims.of(context).phone) return KeyEventResult.ignored;
     if (event is KeyUpEvent) return KeyEventResult.ignored;
     // Ctrl, Alt and Meta chords are shortcuts (the desktop shell's Ctrl+1), not typing.
-    final keys = HardwareKeyboard.instance;
-    if (keys.isControlPressed || keys.isAltPressed || keys.isMetaPressed) return KeyEventResult.ignored;
+    if (isShortcutChord(event)) return KeyEventResult.ignored;
     if (event.logicalKey == LogicalKeyboardKey.backspace) {
       _backspace();
       return KeyEventResult.handled;

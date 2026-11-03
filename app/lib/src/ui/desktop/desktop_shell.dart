@@ -53,15 +53,30 @@ class _DesktopShellState extends SectionShellState<DesktopShell> {
   /// The section that was showing when the search field took focus; Esc goes back to it.
   int? _returnTo;
 
+  /// Set when the app handles the shortcuts above the Navigator (then pages
+  /// pushed over the shell get them too); null: this shell handles them.
+  DesktopShortcutScopeState? _host;
+
+  late final _callbacks = DesktopShellCallbacks(
+    focusSearch: _focusSearch,
+    goTo: open,
+    goHome: _goHome,
+    toggleSidebar: _toggleSidebar,
+    toggleFullscreen: () => unawaited(_chrome.toggleFullscreen().catchError((Object _) {})),
+    escapeSearch: _escapeSearch,
+  );
+
   @override
   void initState() {
     super.initState();
-    unawaited(_chrome.setCustomFrame(true));
+    unawaited(_chrome.setCustomFrame(true).catchError((Object _) {}));
     _searchFocus.addListener(_searchFocusChanged);
+    _host = DesktopShortcutScope.maybeOf(context)?..register(_callbacks);
   }
 
   @override
   void dispose() {
+    _host?.unregister(_callbacks);
     _searchFocus.removeListener(_searchFocusChanged);
     _searchFocus.dispose();
     _searchText.dispose();
@@ -101,6 +116,13 @@ class _DesktopShellState extends SectionShellState<DesktopShell> {
   /// Esc: leaves the search field (and the Search section it opened), else
   /// closes a page opened over the shell.
   void _escape() {
+    if (_escapeSearch()) return;
+    final nav = Navigator.of(context);
+    if (nav.canPop()) nav.pop();
+  }
+
+  /// Esc in the search field: leaves it. False when it did not have focus.
+  bool _escapeSearch() {
     if (_searchFocus.hasFocus) {
       final back = _returnTo;
       _returnTo = null;
@@ -111,10 +133,9 @@ class _DesktopShellState extends SectionShellState<DesktopShell> {
       } else {
         focusRail();
       }
-      return;
+      return true;
     }
-    final nav = Navigator.of(context);
-    if (nav.canPop()) nav.pop();
+    return false;
   }
 
   /// Alt+Left: close the page over the shell, else go to Home.
@@ -122,10 +143,15 @@ class _DesktopShellState extends SectionShellState<DesktopShell> {
     final nav = Navigator.of(context);
     if (nav.canPop()) {
       nav.pop();
-    } else if (index != 0) {
-      show(Section.home);
-      railNodes[0].requestFocus();
+    } else {
+      _goHome();
     }
+  }
+
+  void _goHome() {
+    if (index == 0) return;
+    show(Section.home);
+    railNodes[0].requestFocus();
   }
 
   bool _narrow(BuildContext context) => MediaQuery.sizeOf(context).width < sidebarAutoCollapseWidth;
@@ -163,77 +189,82 @@ class _DesktopShellState extends SectionShellState<DesktopShell> {
   Widget build(BuildContext context) {
     final c = ChithramColors.of(context);
     final prefs = AppServices.of(context).prefs;
-    return wrapBack(
-      Shortcuts(
-        shortcuts: desktopShortcuts,
-        child: Actions(
-          actions: desktopActions(
-            focusSearch: _focusSearch,
-            goTo: open,
-            toggleSidebar: _toggleSidebar,
-            toggleFullscreen: () => unawaited(_chrome.toggleFullscreen()),
-            back: _goBack,
-            escape: _escape,
+    final page = Scaffold(
+      body: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: RadialGradient(
+            center: const Alignment(-1.1, -1.2),
+            radius: 1.3,
+            colors: [c.heroTint.withValues(alpha: 0.14), c.background],
           ),
-          child: Scaffold(
-            body: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: RadialGradient(
-                  center: const Alignment(-1.1, -1.2),
-                  radius: 1.3,
-                  colors: [c.heroTint.withValues(alpha: 0.14), c.background],
+        ),
+        child: RailScope(
+          focusRail: focusRail,
+          child: FocusTraversalGroup(
+            policy: OrderedTraversalPolicy(),
+            child: Column(
+              children: [
+                FocusTraversalOrder(
+                  order: const NumericFocusOrder(0),
+                  child: DesktopTitleBar(
+                    chrome: _chrome,
+                    searchFocus: _searchFocus,
+                    searchController: _searchText,
+                    onSearchSubmitted: _submitSearch,
+                  ),
                 ),
-              ),
-              child: RailScope(
-                focusRail: focusRail,
-                child: FocusTraversalGroup(
-                  policy: OrderedTraversalPolicy(),
-                  child: Column(
+                Expanded(
+                  child: Row(
                     children: [
                       FocusTraversalOrder(
-                        order: const NumericFocusOrder(0),
-                        child: DesktopTitleBar(
-                          chrome: _chrome,
-                          searchFocus: _searchFocus,
-                          searchController: _searchText,
-                          onSearchSubmitted: _submitSearch,
+                        order: const NumericFocusOrder(1),
+                        child: ListenableBuilder(
+                          listenable: prefs,
+                          builder: (context, _) => buildNav(
+                            DesktopSidebar(
+                              collapsed: _narrow(context) || prefs.getBool(sidebarCollapsedPref),
+                              selected: Section.values[index],
+                              nodes: railNodes,
+                              onFocused: show,
+                              onEnter: enterContent,
+                            ),
+                          ),
                         ),
                       ),
                       Expanded(
-                        child: Row(
-                          children: [
-                            FocusTraversalOrder(
-                              order: const NumericFocusOrder(1),
-                              child: ListenableBuilder(
-                                listenable: prefs,
-                                builder: (context, _) => buildNav(
-                                  DesktopSidebar(
-                                    collapsed: _narrow(context) || prefs.getBool(sidebarCollapsedPref),
-                                    selected: Section.values[index],
-                                    nodes: railNodes,
-                                    onFocused: show,
-                                    onEnter: enterContent,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            Expanded(
-                              child: FocusTraversalOrder(
-                                order: const NumericFocusOrder(2),
-                                child: buildContent(),
-                              ),
-                            ),
-                          ],
+                        child: FocusTraversalOrder(
+                          order: const NumericFocusOrder(2),
+                          child: buildContent(),
                         ),
                       ),
                     ],
                   ),
                 ),
-              ),
+              ],
             ),
           ),
         ),
       ),
+    );
+    // With a scope above the Navigator the keys also work on pages over the
+    // shell; without one (this shell on its own) it handles them itself.
+    return wrapBack(
+      _host != null
+          ? page
+          : Shortcuts(
+              shortcuts: desktopShortcuts,
+              child: Actions(
+                actions: desktopActions(
+                  focusSearch: _focusSearch,
+                  goTo: open,
+                  toggleSidebar: _toggleSidebar,
+                  toggleFullscreen: _callbacks.toggleFullscreen,
+                  back: _goBack,
+                  escape: _escape,
+                ),
+                child: page,
+              ),
+            ),
     );
   }
 }

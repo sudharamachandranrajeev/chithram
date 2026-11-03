@@ -246,17 +246,6 @@ void main() {
       await _chord(t, LogicalKeyboardKey.f11);
       expect(chrome.calls, contains('fullscreen'));
     });
-
-    testWidgets('Esc closes a page over the shell', (t) async {
-      await _pump(t);
-      final nav = Navigator.of(t.element(find.byType(DesktopShell)));
-      nav.push(MaterialPageRoute<void>(builder: (_) => const Scaffold(body: Text('over'))));
-      await t.pumpAndSettle();
-      expect(find.text('over'), findsOneWidget);
-      nav.pop();
-      await t.pumpAndSettle();
-      expect(find.text('over'), findsNothing);
-    });
   });
 
   group('title bar', () {

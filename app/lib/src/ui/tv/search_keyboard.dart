@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 
 import '../../theme.dart';
 import '../common/dims.dart';
+import '../common/keys.dart';
 import '../common/sfx.dart';
 import 'dpad.dart';
 
@@ -352,8 +353,7 @@ class _KeyboardPanelState extends State<_KeyboardPanel> {
   KeyEventResult _onKey(FocusNode node, KeyEvent event) {
     if (event is KeyUpEvent) return KeyEventResult.ignored;
     // Ctrl, Alt and Meta chords are shortcuts (the desktop shell's Ctrl+1), not typing.
-    final keys = HardwareKeyboard.instance;
-    if (keys.isControlPressed || keys.isAltPressed || keys.isMetaPressed) return KeyEventResult.ignored;
+    if (isShortcutChord(event)) return KeyEventResult.ignored;
     if (event.logicalKey == LogicalKeyboardKey.backspace) {
       _backspace();
       return KeyEventResult.handled;

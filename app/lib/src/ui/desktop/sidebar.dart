@@ -65,6 +65,10 @@ class DesktopSidebar extends StatelessWidget {
           focused: focused,
           hovered: hovered,
           collapsed: collapsed,
+          onTap: () {
+            onFocused(s);
+            nodes[s.index].requestFocus();
+          },
         ),
       );
 
@@ -151,6 +155,7 @@ class _SidebarItem extends StatelessWidget {
     required this.focused,
     required this.hovered,
     required this.collapsed,
+    required this.onTap,
   });
 
   final Section section;
@@ -158,6 +163,9 @@ class _SidebarItem extends StatelessWidget {
   final bool focused;
   final bool hovered;
   final bool collapsed;
+
+  /// What a click does (also the screen reader's tap).
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -172,6 +180,7 @@ class _SidebarItem extends StatelessWidget {
       button: true,
       selected: selected,
       label: section.label,
+      onTap: onTap,
       excludeSemantics: true,
       child: Tooltip(
         message: collapsed ? section.label : '',

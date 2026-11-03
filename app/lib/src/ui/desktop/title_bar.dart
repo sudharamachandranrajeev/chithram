@@ -257,6 +257,7 @@ class _WindowButtonState extends State<_WindowButton> {
     return Semantics(
       button: true,
       label: widget.label,
+      onTap: widget.onPressed,
       excludeSemantics: true,
       child: FocusableActionDetector(
         onFocusChange: (f) => setState(() => _focused = f),

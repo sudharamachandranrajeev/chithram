@@ -12,6 +12,21 @@ import '../../theme.dart';
 import '../common/form_factor.dart';
 import '../common/tokens.dart';
 
+/// The inset of the text inside the hero card (the design's 18 dp).
+const _heroInset = 18.0;
+
+/// Space between a rail's title and its cards.
+const _railTitleGap = 10.0;
+
+/// Gap between pager dots.
+const _dotGap = 2.5;
+
+/// Height of the hero's text at scale 1 (kicker, two title lines, meta line)
+/// and of everything else in it (gaps, Play, insets); the card is never
+/// shorter than these at the user's text scale.
+const _heroTextHeight = 113.0;
+const _heroChrome = 104.0;
+
 /// Phone Home: a swipeable billboard card and swipeable rails of YouTube
 /// videos, popular now and, as Chithram learns, suggestions. Pull to refresh.
 class PhoneHome extends StatefulWidget {
@@ -34,6 +49,7 @@ class _PhoneHomeState extends State<PhoneHome> {
   @override
   Widget build(BuildContext context) {
     final feed = AppServices.of(context).feed;
+    final textRoom = MediaQuery.textScalerOf(context).scale(_heroTextHeight) + _heroChrome;
     return ValueListenableBuilder<FeedState>(
       valueListenable: feed.state,
       builder: (context, state, _) => LayoutBuilder(
@@ -43,10 +59,10 @@ class _PhoneHomeState extends State<PhoneHome> {
             key: const PageStorageKey<String>('phone-home-scroll'),
             padding: const EdgeInsets.only(bottom: Space.s24),
             children: [
-              // 220 dp on a small phone, taller on a big one, so the first
-              // rail always peeks in under it.
+              // 220 dp on a small phone, taller on a big one, so the first rail
+              // peeks in under it; taller still for large text.
               _PhoneHero(
-                height: (box.maxHeight * 0.36).clamp(220.0, 320.0) + Space.s16,
+                height: math.max((box.maxHeight * 0.36).clamp(220.0, 320.0), textRoom) + Space.s16,
                 state: state,
                 onRetry: () => feed.refresh(force: true),
               ),
@@ -73,7 +89,7 @@ class _Rail extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(Space.s16, Space.s24, Space.s16, 10),
+          padding: const EdgeInsets.fromLTRB(Space.s16, Space.s24, Space.s16, _railTitleGap),
           child: Semantics(
             header: true,
             child: Text(
@@ -175,7 +191,7 @@ class _Dots extends StatelessWidget {
             AnimatedContainer(
               duration: time,
               curve: Motion.curve,
-              margin: const EdgeInsets.symmetric(horizontal: 2.5),
+              margin: const EdgeInsets.symmetric(horizontal: _dotGap),
               width: i == page ? 14 : 5,
               height: 5,
               decoration: BoxDecoration(
@@ -231,7 +247,7 @@ class _HeroPage extends StatelessWidget {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.all(18),
+            padding: const EdgeInsets.all(_heroInset),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.end,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -280,7 +296,10 @@ class _PlayButton extends StatelessWidget {
         minimumSize: const Size(48, 48),
         padding: const EdgeInsets.symmetric(horizontal: 20),
         shape: const StadiumBorder(),
-        textStyle: Theme.of(context).textTheme.labelLarge?.copyWith(fontSize: 15, fontWeight: FontWeight.w700),
+        textStyle: Theme.of(context).textTheme.labelLarge?.copyWith(
+          fontSize: TypeScale.of(FormFactor.phone).card.fontSize,
+          fontWeight: FontWeight.w700,
+        ),
       ),
       icon: const Icon(Icons.play_arrow_rounded, size: 20),
       label: const Text('Play'),
@@ -300,25 +319,31 @@ class _StatusPage extends StatelessWidget {
     final failed = error;
     return DecoratedBox(
       decoration: _heroBackground(context),
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.end,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('YouTube', style: type.overline.copyWith(color: ChithramColors.of(context).accent)),
-            const SizedBox(height: Space.s4),
-            Text(failed ?? 'Loading what is popular…', style: type.h1),
-            if (failed != null) ...[
-              const SizedBox(height: Space.s16),
-              FilledButton.tonalIcon(
-                onPressed: onRetry,
-                style: FilledButton.styleFrom(minimumSize: const Size(48, 48), shape: const StadiumBorder()),
-                icon: const Icon(Icons.refresh_rounded),
-                label: const Text('Retry'),
-              ),
+      // Anchored at the bottom; scrolls rather than overflows at large text.
+      child: SingleChildScrollView(
+        reverse: true,
+        padding: const EdgeInsets.all(_heroInset),
+        child: SizedBox(
+          width: double.infinity,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('YouTube', style: type.overline.copyWith(color: ChithramColors.of(context).accent)),
+              const SizedBox(height: Space.s4),
+              Text(failed ?? 'Loading what is popular…',
+                  maxLines: 4, overflow: TextOverflow.ellipsis, style: type.h1),
+              if (failed != null) ...[
+                const SizedBox(height: Space.s16),
+                FilledButton.tonalIcon(
+                  onPressed: onRetry,
+                  style: FilledButton.styleFrom(minimumSize: const Size(48, 48), shape: const StadiumBorder()),
+                  icon: const Icon(Icons.refresh_rounded),
+                  label: const Text('Retry'),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );

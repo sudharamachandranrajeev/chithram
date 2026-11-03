@@ -29,13 +29,14 @@ class PhoneVideoCard extends StatelessWidget {
     final duration = item.duration;
     final badge = item.isLive ? 'LIVE' : (duration == null ? null : VideoTile.clock(duration));
     final by = item.author.isEmpty ? '' : ', ${item.author}';
+    final percent = progress == null ? '' : ', ${(progress! * 100).round()}% watched';
     final c = ChithramColors.of(context);
     final type = TypeScale.of(FormFactor.phone);
     final shape = BorderRadius.circular(Radii.card(FormFactor.phone));
     final watched = progress;
     return TouchCard(
       key: ValueKey('yt-result-${item.videoId}'),
-      label: 'Play ${item.title}$by${badge == null ? '' : ', $badge'}',
+      label: 'Play ${item.title}$by${badge == null ? '' : ', $badge'}$percent',
       onTap: onOpen,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

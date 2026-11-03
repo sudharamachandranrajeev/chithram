@@ -3,6 +3,7 @@
 // (E2E_FORM=tv) and on Linux (E2E_FORM=desktop); skipped without E2E_FORM.
 import 'package:chithram/src/ui/common/app.dart';
 import 'package:chithram/src/ui/common/form_factor.dart';
+import 'package:chithram/src/ui/desktop/desktop_shell.dart';
 import 'package:chithram/src/ui/phone/phone_shell.dart';
 import 'package:chithram/src/ui/tv/tv_shell.dart';
 import 'package:flutter/foundation.dart';
@@ -24,7 +25,14 @@ void formE2e() {
       expect(detected?.name, e2eForm);
       await t.pumpWidget(ChithramApp(formFactor: detected));
       await t.pumpAndSettle();
-      expect(find.byType(detected == FormFactor.phone ? PhoneShell : TvShell), findsOneWidget);
+      expect(
+        find.byType(switch (detected) {
+          FormFactor.phone => PhoneShell,
+          FormFactor.desktop => DesktopShell,
+          _ => TvShell,
+        }),
+        findsOneWidget,
+      );
     }, skip: e2eForm.isEmpty);
   });
 }

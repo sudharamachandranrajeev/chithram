@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import '../../core/services.dart';
 import '../../spikes/registry.dart';
 import '../../theme.dart';
+import '../desktop/shortcuts.dart';
 import 'form_factor.dart';
 import 'shell.dart';
 
@@ -74,7 +75,13 @@ class _ChithramAppState extends State<ChithramApp> {
                       value: systemBars(look),
                       child: child ?? const SizedBox.shrink(),
                     )
-                : null,
+                : (form == FormFactor.desktop
+                    // Above the Navigator: the shortcuts reach pages over the shell.
+                    ? (context, child) => DesktopShortcutScope(
+                          navigatorKey: _services.navigatorKey,
+                          child: child ?? const SizedBox.shrink(),
+                        )
+                    : null),
             home: Shell(key: ValueKey(form)),
             // Debug-only spike pages (see spikes/registry.dart); null in release.
             initialRoute: spikeInitialRoute(),

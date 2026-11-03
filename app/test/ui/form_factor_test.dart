@@ -3,6 +3,7 @@ import 'package:chithram/src/core/services.dart';
 import 'package:chithram/src/ui/common/app.dart';
 import 'package:chithram/src/ui/common/dims.dart';
 import 'package:chithram/src/ui/common/form_factor.dart';
+import 'package:chithram/src/ui/desktop/desktop_shell.dart';
 import 'package:chithram/src/ui/phone/phone_shell.dart';
 import 'package:chithram/src/ui/tv/tv_shell.dart';
 import 'package:flutter/material.dart';
@@ -120,7 +121,7 @@ void main() {
       expect(find.byType(TvShell), findsOneWidget);
     });
 
-    testWidgets('desktop with the 10-foot preference is the TV shell, and it applies at once', (t) async {
+    testWidgets('desktop is the desktop shell; the 10-foot preference makes it the TV shell at once', (t) async {
       final prefs = Prefs.memory();
       await pumpAt(
         t,
@@ -130,14 +131,17 @@ void main() {
           formFactor: FormFactor.desktop,
         ),
       );
-      Dims dimsNow() => Dims.of(t.element(find.byType(TvShell)));
-      expect(dimsNow().form, FormFactor.desktop);
+      expect(find.byType(DesktopShell), findsOneWidget);
+      expect(find.byType(TvShell), findsNothing);
       await prefs.set(tenFootPref, true);
       await t.pumpAndSettle();
-      expect(dimsNow().form, FormFactor.tv);
+      expect(find.byType(TvShell), findsOneWidget);
+      expect(find.byType(DesktopShell), findsNothing);
+      expect(Dims.of(t.element(find.byType(TvShell))).form, FormFactor.tv);
       await prefs.set(tenFootPref, false);
       await t.pumpAndSettle();
-      expect(dimsNow().form, FormFactor.desktop);
+      expect(find.byType(DesktopShell), findsOneWidget);
+      expect(find.byType(TvShell), findsNothing);
     });
   });
 

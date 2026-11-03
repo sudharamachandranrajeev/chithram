@@ -13,6 +13,7 @@ import 'src/smoke.dart';
 import 'src/ui/common/app.dart';
 import 'src/ui/common/form_factor.dart';
 import 'src/ui/common/search_page.dart';
+import 'src/ui/desktop/window_chrome.dart';
 
 Future<void> main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -41,6 +42,11 @@ Future<void> main(List<String> args) async {
   // "Search for this text" in the intake prompt.
   IntakeHooks.search = openSearch;
   final services = await AppServices.open();
+  // Windows: the frameless window (the desktop shell draws the title bar),
+  // unless 10-foot TV mode asked for the TV design.
+  await setupWindowChrome(
+    frameless: form != FormFactor.tv && !services.prefs.getBool(tenFootPref),
+  );
   runApp(ChithramApp(services: services, formFactor: form));
   // After the first frame: the cold-start mark, then the image cache budget
   // from the device's RAM. Nothing here runs before Home is on screen.

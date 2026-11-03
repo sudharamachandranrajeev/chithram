@@ -17,6 +17,7 @@ class Dims {
 
   bool get tv => form == FormFactor.tv;
   bool get phone => form == FormFactor.phone;
+  bool get desktop => form == FormFactor.desktop;
 
   /// The design-token type scale for this form factor.
   TypeScale get type => TypeScale.of(form);

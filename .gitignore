@@ -55,3 +55,9 @@ key.properties
 .env.*
 !.env.example
 **/secrets/
+
+# More key material and local agent files
+/.claude/
+*.p12
+*.pem
+google-services.json

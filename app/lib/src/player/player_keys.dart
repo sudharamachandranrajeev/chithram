@@ -23,6 +23,24 @@ abstract final class PlayerKeys {
   static const previous = ValueKey('player-previous');
   static const next = ValueKey('player-next');
   static const playPause = ValueKey('player-play-pause');
+
+  /// The top bar's Back (always there; [back] is the error panel's).
+  static const osdBack = ValueKey('player-osd-back');
+
+  /// Back and forward [seekStep].
+  static const rewind = ValueKey('player-rewind');
+  static const forward = ValueKey('player-forward');
+
+  /// The OSD button that opens [speedMenu]; only for a seekable item on an
+  /// engine that can change speed.
+  static const speed = ValueKey('player-speed');
+  static const speedMenu = ValueKey('player-speed-menu');
+  static ValueKey<String> speedOption(double speed) => ValueKey('player-speed-$speed');
+
+  /// Desktop only.
+  static const fullscreen = ValueKey('player-fullscreen');
+  static const volume = ValueKey('player-volume');
+  static const mute = ValueKey('player-mute');
   static const upNext = ValueKey('player-up-next');
   static const upNextTitle = ValueKey('player-up-next-title');
   static const upNextCount = ValueKey('player-up-next-count');

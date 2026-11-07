@@ -14,6 +14,9 @@ abstract final class PlayerPrefs {
   /// Language code of the last subtitle track picked.
   static const subtitleLanguage = 'player.subtitle_language';
 
+  /// Desktop volume, 0 to 100. Mute is not kept: a muted start is confusing.
+  static const volume = 'player.volume';
+
   static TrackPreferences read(Prefs? p) => TrackPreferences(
     audioLanguage: p?.getString(audioLanguage),
     subtitleLanguage: p?.getString(subtitleLanguage),

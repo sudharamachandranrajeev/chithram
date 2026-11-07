@@ -61,6 +61,17 @@ class PlaybackCaps {
   final bool hdr;
 }
 
+/// Playback speed and volume. A separate interface, so engines (and test
+/// fakes) that cannot do it need not; the app checks `engine is PlayerTuning`
+/// and hides the controls otherwise.
+abstract interface class PlayerTuning {
+  /// 1 is normal speed. Kept across [PlayerEngine.open].
+  Future<void> setSpeed(double speed);
+
+  /// 0 (silent) to 1 (full). Kept across [PlayerEngine.open].
+  Future<void> setVolume(double volume);
+}
+
 /// One player instance. Media3 on Android, media_kit (libmpv) on desktop.
 ///
 /// Streams are broadcast. [position] ticks about 4 times a second while

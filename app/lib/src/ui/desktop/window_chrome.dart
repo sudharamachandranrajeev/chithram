@@ -17,6 +17,10 @@ abstract class WindowChrome {
 
   ValueListenable<bool> get maximized;
 
+  /// The window fills the screen (F11, the player's fullscreen button). Esc
+  /// in the player leaves it before it closes the player.
+  ValueListenable<bool> get fullscreen;
+
   /// Frameless (the shell draws the bar) or the native frame (10-foot mode).
   Future<void> setCustomFrame(bool on);
 
@@ -40,6 +44,9 @@ class NativeChrome implements WindowChrome {
   ValueListenable<bool> get maximized => _never;
 
   @override
+  ValueListenable<bool> get fullscreen => _never;
+
+  @override
   Future<void> setCustomFrame(bool on) async {}
   @override
   Future<void> minimize() async {}
@@ -61,6 +68,7 @@ class WindowsChrome with WindowListener implements WindowChrome {
   WindowsChrome._();
 
   final _maximized = ValueNotifier<bool>(false);
+  final _fullscreen = ValueNotifier<bool>(false);
   bool _frameless = false;
 
   @override
@@ -70,10 +78,19 @@ class WindowsChrome with WindowListener implements WindowChrome {
   ValueListenable<bool> get maximized => _maximized;
 
   @override
+  ValueListenable<bool> get fullscreen => _fullscreen;
+
+  @override
   void onWindowMaximize() => _maximized.value = true;
 
   @override
   void onWindowUnmaximize() => _maximized.value = false;
+
+  @override
+  void onWindowEnterFullScreen() => _fullscreen.value = true;
+
+  @override
+  void onWindowLeaveFullScreen() => _fullscreen.value = false;
 
   @override
   Future<void> setCustomFrame(bool on) async {
@@ -98,8 +115,12 @@ class WindowsChrome with WindowListener implements WindowChrome {
   Future<void> close() => windowManager.close();
 
   @override
-  Future<void> toggleFullscreen() async =>
-      windowManager.setFullScreen(!await windowManager.isFullScreen());
+  Future<void> toggleFullscreen() async {
+    final on = !await windowManager.isFullScreen();
+    await windowManager.setFullScreen(on);
+    // Not every platform sends the enter/leave events; the call itself is known.
+    _fullscreen.value = on;
+  }
 
   @override
   Future<void> startDrag() => windowManager.startDragging();

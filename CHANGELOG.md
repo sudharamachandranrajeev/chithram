@@ -2,6 +2,17 @@
 
 Release notes are taken from the section of the version being tagged.
 
+## 0.3.1
+
+### Added
+- Media section (redesign part 5), off by default: turn on Media to pair the app with your own Chithram media gateway
+  using a 6-digit code and the gateway's certificate fingerprint. Then search, request films and series, approve
+  requests (admins), follow downloads, browse the library and play films. What you see depends on your role. The app
+  never holds a Jellyfin, Seerr or other service key; its device token sits in secure storage and every connection is
+  pinned to the gateway's certificate. On desktop it is a sidebar group, on TV a rail item, on phones a top-bar button.
+- Not yet: episode and track browsing (series and albums are listed, only films play), posters in search results, and
+  scanning the fingerprint as a QR code.
+
 ## 0.2.2
 
 ### Fixed

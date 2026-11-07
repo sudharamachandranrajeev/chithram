@@ -10,9 +10,15 @@ Release notes are taken from the section of the version being tagged.
   Chithram now has its own setup ID and its own folder, and Setup refuses a folder that holds another app. Updating
   takes Chithram out of the Paattu folder; if it was there, reinstall Paattu afterwards to repair it.
 
-## 0.3.0 (in progress)
+## 0.3.0
 
 ### Changed
+- New look (redesign parts 1 to 4): design tokens for spacing, corners, motion and type, and a new default dark look,
+  Night. The TV rail, hero, rails and tiles are restyled with a focus ring and glow, 16:9 thumbnails and less motion
+  when the system asks for it. The phone has a glass top bar, a pill bottom bar (a rail on tablets), a rounded hero
+  card and rails that show how much you watched, and it holds large text sizes without overflowing.
+- Themes are now six looks: Night (default), Saffron, Noir, Mint, Ocean and Graphite. A look that was removed maps to
+  the nearest one kept. Installs that never picked a look stay on Saffron; new installs start on Night.
 - TV fit: everything is about a quarter smaller on a 1080p TV (it lays out at 960x540): text floor 18 instead of 24,
   tiles at their base size, a narrower nav rail and tighter pages, so Home, Settings and dialogs fit one screen.
   Telegram sign-in shows a smaller QR code beside its steps, and the phone-number view has a way back to the QR code.
@@ -56,6 +62,21 @@ Release notes are taken from the section of the version being tagged.
   (Down to the subtitles button, or the Menu / Info key; a sheet on a phone). The last language and subtitles on/off are
   remembered. The display now fades out slowly after a few seconds of playback and comes back on any key, touch or mouse
   move; the key that wakes it does nothing else. It stays up while paused or while a menu is open.
+- Player: Up Next plays the next video on its own, and the seek bar is redrawn.
+- Desktop shell (Windows and Linux): a title bar with search (Ctrl+K), a sidebar that collapses under 1200 dp or with
+  Ctrl+B, a hero and paged rows on Home, and keyboard shortcuts (Esc, Alt+Left, F11 and more) that also work on
+  pages opened over it. The 10-foot TV mode setting still gives the TV layout.
+- Search plugins: add plugin repositories, which are signed, with domains pinned on first use, a warning for unsigned
+  ones, health, and automatic updates you review. Plugins also run on desktop.
+- One-command Linux install (`install-linux.sh`): Arch and Omarchy first, also Debian and Fedora.
+- Media stack (optional, off by default, the app does not use it yet): a Docker Compose setup in `server/media-stack/` with
+  Jellyfin, Prowlarr, Radarr, Sonarr, Lidarr and Seerr requests with admin, requester and viewer roles, plus a small
+  gateway that holds every service key so the app never sees one. It has no download client and no indexers: nothing
+  downloads until the owner adds authorised sources.
+
+### Fixed
+- Live TV: Free-TV and iptv-org catalogues showed 0 channels because gzipped lists were not decoded.
+- Windows: the 0.2.2 installer fix (own setup ID and folder, never Paattu's) is included.
 
 ### Changed
 - The TV, phone and shared UI code now live in `ui/tv`, `ui/phone` and `ui/common`.

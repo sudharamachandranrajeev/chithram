@@ -5,6 +5,9 @@ import '../../core/services.dart';
 import '../../player/play_request.dart';
 import '../../theme.dart';
 import '../../ui/common/dims.dart';
+import '../../ui/common/glass.dart' show WatchProgress;
+import '../../ui/common/motion_kit.dart';
+import '../../ui/common/video_card.dart';
 import '../../ui/tv/focus_card.dart';
 
 /// Plays [v] in the fullscreen player. [source] is the Home rail it was
@@ -66,11 +69,16 @@ class VideoResultsSliver extends StatelessWidget {
       delegate: SliverChildBuilderDelegate((context, i) {
         if (i >= items.length - 3) onNearEnd?.call();
         final v = items[i];
-        return VideoTile(
-          key: ValueKey('yt-result-${v.videoId}'),
-          item: v,
-          section: section,
-          onActivate: () => onOpen(v),
+        // Each page of results cascades in; the index restarts every 20 so a
+        // continuation page arrives the same way as the first.
+        return StaggeredEntrance(
+          index: i % 20,
+          child: VideoTile(
+            key: ValueKey('yt-result-${v.videoId}'),
+            item: v,
+            section: section,
+            onActivate: () => onOpen(v),
+          ),
         );
       }, childCount: items.length),
     );
@@ -122,9 +130,10 @@ class VideoTile extends StatelessWidget {
 }
 
 /// A video tile's look without the focus handling: thumbnail with the length
-/// (or LIVE), title and channel. Fills its width; [VideoTile.extent] tall.
+/// (or LIVE), title, then channel and views. Fills its width;
+/// [VideoTile.extent] tall.
 class VideoTileBody extends StatelessWidget {
-  const VideoTileBody({super.key, required this.item, this.thumbnailHeight});
+  const VideoTileBody({super.key, required this.item, this.thumbnailHeight, this.progress});
 
   final VideoItem item;
 
@@ -132,16 +141,17 @@ class VideoTileBody extends StatelessWidget {
   /// passes 16:9 of its tile width.
   final double? thumbnailHeight;
 
+  /// How far it was watched (0 to 1): a bar along the thumbnail's foot.
+  final double? progress;
+
   @override
   Widget build(BuildContext context) {
     final d = Dims.of(context);
-    final url = VideoTile.thumbnailUrl(item.thumbnails);
-    final duration = item.duration;
-    final badge = item.isLive
-        ? 'LIVE'
-        : (duration == null ? null : VideoTile.clock(duration));
+    final c = ChithramColors.of(context);
+    final meta = videoMeta(item, separator: ' · ');
+    final watched = progress;
     return Container(
-      color: ChithramColors.of(context).surface,
+      color: c.surface,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -151,40 +161,9 @@ class VideoTileBody extends StatelessWidget {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                ColoredBox(
-                  color: ChithramColors.of(context).surfaceHigh,
-                  child: url == null
-                      ? const Icon(Icons.smart_display_rounded, size: 40)
-                      : Image.network(
-                          url,
-                          fit: BoxFit.cover,
-                          cacheWidth: 320,
-                          errorBuilder: (_, _, _) =>
-                              const Icon(Icons.smart_display_rounded, size: 40),
-                        ),
-                ),
-                if (badge != null)
-                  Positioned(
-                    right: 6,
-                    bottom: 6,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.75),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        badge,
-                        style: TextStyle(
-                          fontSize: d.t(12),
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
+                ColoredBox(color: c.surfaceHigh, child: VideoThumbnail(item: item, cacheWidth: 320)),
+                Positioned(right: 6, bottom: watched == null ? 6 : 10, child: VideoBadge(item: item)),
+                if (watched != null) Positioned(left: 0, right: 0, bottom: 0, child: WatchProgress(fraction: watched)),
               ],
             ),
           ),
@@ -197,17 +176,14 @@ class VideoTileBody extends StatelessWidget {
               style: TextStyle(fontSize: d.t(14), fontWeight: FontWeight.w600),
             ),
           ),
-          if (item.author.isNotEmpty)
+          if (meta.isNotEmpty)
             Padding(
               padding: const EdgeInsets.fromLTRB(10, 2, 10, 0),
               child: Text(
-                item.author,
+                meta,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: d.t(12),
-                  color: ChithramColors.of(context).textDim,
-                ),
+                style: TextStyle(fontSize: d.t(12), color: c.textDim),
               ),
             ),
         ],

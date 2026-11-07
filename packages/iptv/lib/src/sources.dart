@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'catalogue.dart';
+import 'channel_meta.dart';
 import 'http.dart';
 import 'm3u.dart';
 import 'store.dart';
@@ -61,24 +62,23 @@ class Source {
     String? country,
     String? language,
     String? category,
-  }) =>
-      Source(
-        id: id,
-        kind: SourceKind.catalogue,
-        name: 'iptv-org',
-        location: CatalogueEndpoints.iptvOrgApi,
-        filterCountry: country,
-        filterLanguage: language,
-        filterCategory: category,
-      );
+  }) => Source(
+    id: id,
+    kind: SourceKind.catalogue,
+    name: 'iptv-org',
+    location: CatalogueEndpoints.iptvOrgApi,
+    filterCountry: country,
+    filterLanguage: language,
+    filterCategory: category,
+  );
 
   /// Opt-in Free-TV/IPTV playlist.
   factory Source.freeTv(String id) => Source(
-        id: id,
-        kind: SourceKind.m3uUrl,
-        name: 'Free-TV/IPTV',
-        location: CatalogueEndpoints.freeTvPlaylist,
-      );
+    id: id,
+    kind: SourceKind.m3uUrl,
+    name: 'Free-TV/IPTV',
+    location: CatalogueEndpoints.freeTvPlaylist,
+  );
 
   bool get active => enabled && !deprecated;
 
@@ -92,51 +92,49 @@ class Source {
     String? lastModified,
     String? lastError,
     bool clearError = false,
-  }) =>
-      Source(
-        id: id,
-        kind: kind,
-        name: name,
-        location: location,
-        username: username,
-        enabled: enabled ?? this.enabled,
-        deprecated: deprecated ?? this.deprecated,
-        failures: failures ?? this.failures,
-        lastAttempt: lastAttempt ?? this.lastAttempt,
-        lastSuccess: lastSuccess ?? this.lastSuccess,
-        etag: etag ?? this.etag,
-        lastModified: lastModified ?? this.lastModified,
-        refreshInterval: refreshInterval,
-        filterCountry: filterCountry,
-        filterLanguage: filterLanguage,
-        filterCategory: filterCategory,
-        lastError: clearError ? null : (lastError ?? this.lastError),
-      );
+  }) => Source(
+    id: id,
+    kind: kind,
+    name: name,
+    location: location,
+    username: username,
+    enabled: enabled ?? this.enabled,
+    deprecated: deprecated ?? this.deprecated,
+    failures: failures ?? this.failures,
+    lastAttempt: lastAttempt ?? this.lastAttempt,
+    lastSuccess: lastSuccess ?? this.lastSuccess,
+    etag: etag ?? this.etag,
+    lastModified: lastModified ?? this.lastModified,
+    refreshInterval: refreshInterval,
+    filterCountry: filterCountry,
+    filterLanguage: filterLanguage,
+    filterCategory: filterCategory,
+    lastError: clearError ? null : (lastError ?? this.lastError),
+  );
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'kind': kind.name,
-        'name': name,
-        'location': location,
-        'username': username,
-        'enabled': enabled,
-        'deprecated': deprecated,
-        'failures': failures,
-        'lastAttempt': lastAttempt?.millisecondsSinceEpoch,
-        'lastSuccess': lastSuccess?.millisecondsSinceEpoch,
-        'etag': etag,
-        'lastModified': lastModified,
-        'intervalMin': refreshInterval.inMinutes,
-        'country': filterCountry,
-        'language': filterLanguage,
-        'category': filterCategory,
-        'lastError': lastError,
-      };
+    'id': id,
+    'kind': kind.name,
+    'name': name,
+    'location': location,
+    'username': username,
+    'enabled': enabled,
+    'deprecated': deprecated,
+    'failures': failures,
+    'lastAttempt': lastAttempt?.millisecondsSinceEpoch,
+    'lastSuccess': lastSuccess?.millisecondsSinceEpoch,
+    'etag': etag,
+    'lastModified': lastModified,
+    'intervalMin': refreshInterval.inMinutes,
+    'country': filterCountry,
+    'language': filterLanguage,
+    'category': filterCategory,
+    'lastError': lastError,
+  };
 
   factory Source.fromJson(Map<String, dynamic> j) {
-    DateTime? d(Object? v) => v is int
-        ? DateTime.fromMillisecondsSinceEpoch(v, isUtc: true)
-        : null;
+    DateTime? d(Object? v) =>
+        v is int ? DateTime.fromMillisecondsSinceEpoch(v, isUtc: true) : null;
     return Source(
       id: j['id'] as String,
       kind: SourceKind.values.firstWhere((k) => k.name == j['kind']),
@@ -201,6 +199,10 @@ class StoredChannel {
     this.missing = false,
     this.firstSeen,
     this.lastSeen,
+    this.country,
+    this.languages = const [],
+    this.quality,
+    this.number,
   });
 
   /// Stable identity across refreshes (survives URL changes when tvg-id or
@@ -234,10 +236,24 @@ class StoredChannel {
   final DateTime? firstSeen;
   final DateTime? lastSeen;
 
+  /// ISO 3166 alpha-2 (upper case) from `tvg-country`, the tvg-id suffix or
+  /// the catalogue. Null in records stored before it existed: [ChannelMeta]
+  /// derives it then.
+  final String? country;
+
+  /// Language names ("English", "Hindi") the list or catalogue gave.
+  final List<String> languages;
+
+  /// A [ChannelQuality] name, from the catalogue or the channel name.
+  final String? quality;
+
+  /// `tvg-chno`: the channel number the list gives.
+  final int? number;
+
   Map<String, String> get headers => {
-        'Referer': ?referrer,
-        'User-Agent': ?userAgent,
-      };
+    'Referer': ?referrer,
+    'User-Agent': ?userAgent,
+  };
 
   bool get playable => !dead && !missing;
 
@@ -247,82 +263,93 @@ class StoredChannel {
     bool clearDeadSince = false,
     int? ttfbMs,
     bool? missing,
-  }) =>
-      StoredChannel(
-        key: key,
-        sourceId: sourceId,
-        name: name,
-        url: url,
-        ref: ref,
-        group: group,
-        logo: logo,
-        tvgId: tvgId,
-        catchup: catchup,
-        catchupDays: catchupDays,
-        catchupSource: catchupSource,
-        referrer: referrer,
-        userAgent: userAgent,
-        categories: categories,
-        dead: dead ?? this.dead,
-        deadSince: clearDeadSince ? null : (deadSince ?? this.deadSince),
-        ttfbMs: ttfbMs ?? this.ttfbMs,
-        missing: missing ?? this.missing,
-        firstSeen: firstSeen,
-        lastSeen: lastSeen,
-      );
+  }) => StoredChannel(
+    key: key,
+    sourceId: sourceId,
+    name: name,
+    url: url,
+    ref: ref,
+    group: group,
+    logo: logo,
+    tvgId: tvgId,
+    catchup: catchup,
+    catchupDays: catchupDays,
+    catchupSource: catchupSource,
+    referrer: referrer,
+    userAgent: userAgent,
+    categories: categories,
+    dead: dead ?? this.dead,
+    deadSince: clearDeadSince ? null : (deadSince ?? this.deadSince),
+    ttfbMs: ttfbMs ?? this.ttfbMs,
+    missing: missing ?? this.missing,
+    firstSeen: firstSeen,
+    lastSeen: lastSeen,
+    country: country,
+    languages: languages,
+    quality: quality,
+    number: number,
+  );
 
   /// Fresh data from a refresh merged over the old record (keeps health).
   StoredChannel mergedOver(StoredChannel? old, DateTime now) => StoredChannel(
-        key: key,
-        sourceId: sourceId,
-        name: name,
-        url: url,
-        ref: ref,
-        group: group,
-        logo: logo,
-        tvgId: tvgId,
-        catchup: catchup,
-        catchupDays: catchupDays,
-        catchupSource: catchupSource,
-        referrer: referrer,
-        userAgent: userAgent,
-        categories: categories,
-        // A changed URL deserves a fresh probe, so health is reset then.
-        dead: old != null && old.url == url ? old.dead : false,
-        deadSince: old != null && old.url == url ? old.deadSince : null,
-        ttfbMs: old?.ttfbMs,
-        missing: false,
-        firstSeen: old?.firstSeen ?? now,
-        lastSeen: now,
-      );
+    key: key,
+    sourceId: sourceId,
+    name: name,
+    url: url,
+    ref: ref,
+    group: group,
+    logo: logo,
+    tvgId: tvgId,
+    catchup: catchup,
+    catchupDays: catchupDays,
+    catchupSource: catchupSource,
+    referrer: referrer,
+    userAgent: userAgent,
+    categories: categories,
+    // A changed URL deserves a fresh probe, so health is reset then.
+    dead: old != null && old.url == url ? old.dead : false,
+    deadSince: old != null && old.url == url ? old.deadSince : null,
+    ttfbMs: old?.ttfbMs,
+    missing: false,
+    firstSeen: old?.firstSeen ?? now,
+    lastSeen: now,
+    country: country,
+    languages: languages,
+    quality: quality,
+    number: number,
+  );
 
   Map<String, dynamic> toJson() => {
-        'key': key,
-        'src': sourceId,
-        'name': name,
-        'url': url,
-        'ref': ref,
-        'group': group,
-        'logo': logo,
-        'tvgId': tvgId,
-        'catchup': catchup,
-        'catchupDays': catchupDays,
-        'catchupSource': catchupSource,
-        'referrer': referrer,
-        'ua': userAgent,
-        'cats': categories,
-        'dead': dead,
-        'deadSince': deadSince?.millisecondsSinceEpoch,
-        'ttfb': ttfbMs,
-        'missing': missing,
-        'first': firstSeen?.millisecondsSinceEpoch,
-        'last': lastSeen?.millisecondsSinceEpoch,
-      };
+    'key': key,
+    'src': sourceId,
+    'name': name,
+    'url': url,
+    'ref': ref,
+    'group': group,
+    'logo': logo,
+    'tvgId': tvgId,
+    'catchup': catchup,
+    'catchupDays': catchupDays,
+    'catchupSource': catchupSource,
+    'referrer': referrer,
+    'ua': userAgent,
+    'cats': categories,
+    'dead': dead,
+    'deadSince': deadSince?.millisecondsSinceEpoch,
+    'ttfb': ttfbMs,
+    'missing': missing,
+    'first': firstSeen?.millisecondsSinceEpoch,
+    'last': lastSeen?.millisecondsSinceEpoch,
+    // Written only when known, so lists without them stay small on disk.
+    if (country != null) 'cc': country,
+    if (languages.isNotEmpty) 'langs': languages,
+    if (quality != null) 'q': quality,
+    if (number != null) 'chno': number,
+  };
 
   factory StoredChannel.fromJson(Map<String, dynamic> j) {
-    DateTime? d(Object? v) => v is int
-        ? DateTime.fromMillisecondsSinceEpoch(v, isUtc: true)
-        : null;
+    DateTime? d(Object? v) =>
+        v is int ? DateTime.fromMillisecondsSinceEpoch(v, isUtc: true) : null;
     return StoredChannel(
       key: j['key'] as String,
       sourceId: j['src'] as String,
@@ -344,6 +371,11 @@ class StoredChannel {
       missing: j['missing'] == true,
       firstSeen: d(j['first']),
       lastSeen: d(j['last']),
+      // Records from before these fields existed simply lack the keys.
+      country: j['cc'] as String?,
+      languages: [for (final l in (j['langs'] as List? ?? const [])) '$l'],
+      quality: j['q'] as String?,
+      number: j['chno'] is int ? j['chno'] as int : null,
     );
   }
 
@@ -352,8 +384,14 @@ class StoredChannel {
 }
 
 class RefreshResult {
-  RefreshResult(this.sourceId, this.status,
-      {this.added = 0, this.removed = 0, this.total = 0, this.error});
+  RefreshResult(
+    this.sourceId,
+    this.status, {
+    this.added = 0,
+    this.removed = 0,
+    this.total = 0,
+    this.error,
+  });
   final String sourceId;
   final RefreshStatus status;
   final int added;
@@ -365,7 +403,10 @@ class RefreshResult {
 enum RefreshStatus { updated, notModified, failed, skipped, deprecated }
 
 /// Receives parsed XMLTV batches for an `xmltvUrl` source (app writes SQLite).
-typedef EpgIngest = Future<void> Function(Source source, Stream<EpgBatch> batches);
+typedef EpgIngest = Future<void> Function(
+  Source source,
+  Stream<EpgBatch> batches,
+);
 
 class SourceRegistry {
   SourceRegistry(
@@ -375,8 +416,8 @@ class SourceRegistry {
     this.maxFailures = 5,
     this.onEpg,
     DateTime Function()? clock,
-  })  : secrets = secrets ?? InMemorySecretStore(),
-        _clock = clock ?? DateTime.now;
+  }) : secrets = secrets ?? InMemorySecretStore(),
+       _clock = clock ?? DateTime.now;
 
   final IptvStore _store;
   final IptvHttp _http;
@@ -402,13 +443,22 @@ class SourceRegistry {
   Future<void> enable(String id) async {
     for (final s in await _store.sources()) {
       if (s.id == id) {
-        await _store.saveSource(Source(
-          id: s.id, kind: s.kind, name: s.name, location: s.location,
-          username: s.username, refreshInterval: s.refreshInterval,
-          filterCountry: s.filterCountry, filterLanguage: s.filterLanguage,
-          filterCategory: s.filterCategory, etag: s.etag,
-          lastModified: s.lastModified, lastSuccess: s.lastSuccess,
-        ));
+        await _store.saveSource(
+          Source(
+            id: s.id,
+            kind: s.kind,
+            name: s.name,
+            location: s.location,
+            username: s.username,
+            refreshInterval: s.refreshInterval,
+            filterCountry: s.filterCountry,
+            filterLanguage: s.filterLanguage,
+            filterCategory: s.filterCategory,
+            etag: s.etag,
+            lastModified: s.lastModified,
+            lastSuccess: s.lastSuccess,
+          ),
+        );
       }
     }
   }
@@ -449,8 +499,9 @@ class SourceRegistry {
     final pw = await secrets.read(s.id);
     if (pw == null || s.username == null) return null;
     return XtreamClient(
-        XtreamAccount(baseUrl: s.location, username: s.username!, password: pw),
-        _http);
+      XtreamAccount(baseUrl: s.location, username: s.username!, password: pw),
+      _http,
+    );
   }
 
   Future<RefreshResult> refresh(String id) async {
@@ -465,15 +516,20 @@ class SourceRegistry {
     } catch (e) {
       final failures = s.failures + 1;
       final dep = failures >= maxFailures;
-      await _store.saveSource(s.copyWith(
-        failures: failures,
-        lastAttempt: now,
-        lastError: e.runtimeType.toString(),
-        deprecated: dep,
-        enabled: dep ? false : null,
-      ));
-      return RefreshResult(id, dep ? RefreshStatus.deprecated : RefreshStatus.failed,
-          error: e.runtimeType.toString());
+      await _store.saveSource(
+        s.copyWith(
+          failures: failures,
+          lastAttempt: now,
+          lastError: e.runtimeType.toString(),
+          deprecated: dep,
+          enabled: dep ? false : null,
+        ),
+      );
+      return RefreshResult(
+        id,
+        dep ? RefreshStatus.deprecated : RefreshStatus.failed,
+        error: e.runtimeType.toString(),
+      );
     }
   }
 
@@ -488,9 +544,7 @@ class SourceRegistry {
         if (x == null) throw StateError('missing credentials');
         final auth = await x.authenticate();
         if (!auth.authenticated) throw StateError('xtream auth failed');
-        final cats = {
-          for (final c in await x.liveCategories()) c.id: c.name,
-        };
+        final cats = {for (final c in await x.liveCategories()) c.id: c.name};
         final streams = await x.liveStreams();
         final items = [
           for (final st in streams)
@@ -518,20 +572,25 @@ class SourceRegistry {
         for (final it in sel) {
           for (var i = 0; i < it.streams.length; i++) {
             final st = it.streams[i];
-            items.add(StoredChannel(
-              key: '${s.id}:${it.channel.id}${i == 0 ? '' : '#$i'}',
-              sourceId: s.id,
-              name: it.channel.name,
-              url: st.url,
-              group: it.channel.categories.isEmpty
-                  ? null
-                  : it.channel.categories.first,
-              logo: it.channel.logo,
-              tvgId: it.channel.id,
-              referrer: st.referrer,
-              userAgent: st.userAgent,
-              categories: it.channel.categories,
-            ));
+            items.add(
+              StoredChannel(
+                key: '${s.id}:${it.channel.id}${i == 0 ? '' : '#$i'}',
+                sourceId: s.id,
+                name: it.channel.name,
+                url: st.url,
+                group: it.channel.categories.isEmpty
+                    ? null
+                    : it.channel.categories.first,
+                logo: it.channel.logo,
+                tvgId: it.channel.id,
+                referrer: st.referrer,
+                userAgent: st.userAgent,
+                categories: it.channel.categories,
+                country: normalizeCountry(it.channel.country),
+                languages: normalizeLanguages(it.languages),
+                quality: qualityOf(it.channel.name, st.quality).nameOrNull,
+              ),
+            );
           }
         }
         return _commit(s, items, now);
@@ -545,14 +604,24 @@ class SourceRegistry {
     if (s.kind == SourceKind.m3uFile) {
       bytes = File(s.location).openRead();
     } else {
-      resp = await _http.open(Uri.parse(s.location), headers: {
-        if (s.etag != null) 'If-None-Match': s.etag!,
-        if (s.lastModified != null) 'If-Modified-Since': s.lastModified!,
-      }, timeout: const Duration(seconds: 30));
+      resp = await _http.open(
+        Uri.parse(s.location),
+        headers: {
+          if (s.etag != null) 'If-None-Match': s.etag!,
+          if (s.lastModified != null) 'If-Modified-Since': s.lastModified!,
+        },
+        timeout: const Duration(seconds: 30),
+      );
       if (resp.status == 304) {
         resp.close();
-        await _store.saveSource(s.copyWith(
-            failures: 0, lastAttempt: now, lastSuccess: now, clearError: true));
+        await _store.saveSource(
+          s.copyWith(
+            failures: 0,
+            lastAttempt: now,
+            lastSuccess: now,
+            clearError: true,
+          ),
+        );
         return RefreshResult(s.id, RefreshStatus.notModified);
       }
       if (!resp.ok) {
@@ -574,7 +643,10 @@ class SourceRegistry {
           }
         }
       }
-      final batches = parseXmltv(bytes, window: EpgWindow(now: now, catchupDays: catchup));
+      final batches = parseXmltv(
+        bytes,
+        window: EpgWindow(now: now, catchupDays: catchup),
+      );
       if (onEpg != null) {
         await onEpg!(s, batches);
       } else {
@@ -582,9 +654,16 @@ class SourceRegistry {
           n += b.programmes.length;
         }
       }
-      await _store.saveSource(s.copyWith(
-          failures: 0, lastAttempt: now, lastSuccess: now, etag: etag,
-          lastModified: lastMod, clearError: true));
+      await _store.saveSource(
+        s.copyWith(
+          failures: 0,
+          lastAttempt: now,
+          lastSuccess: now,
+          etag: etag,
+          lastModified: lastMod,
+          clearError: true,
+        ),
+      );
       return RefreshResult(s.id, RefreshStatus.updated, total: n);
     }
 
@@ -596,26 +675,40 @@ class SourceRegistry {
           : '${s.id}:${e.name.toLowerCase()}';
       // Several streams for one tvg-id get an index suffix, in file order.
       final n = seen[base] = (seen[base] ?? -1) + 1;
-      items.add(StoredChannel(
-        key: n == 0 ? base : '$base#$n',
-        sourceId: s.id,
-        name: e.name,
-        url: e.url,
-        group: e.group,
-        logo: e.logo,
-        tvgId: e.tvgId,
-        catchup: e.catchup,
-        catchupDays: e.catchupDays,
-        catchupSource: e.catchupSource,
-        referrer: e.referrer,
-        userAgent: e.userAgent,
-      ));
+      final a = e.attributes;
+      items.add(
+        StoredChannel(
+          key: n == 0 ? base : '$base#$n',
+          sourceId: s.id,
+          name: e.name,
+          url: e.url,
+          group: e.group,
+          logo: e.logo,
+          tvgId: e.tvgId,
+          catchup: e.catchup,
+          catchupDays: e.catchupDays,
+          catchupSource: e.catchupSource,
+          referrer: e.referrer,
+          userAgent: e.userAgent,
+          categories: categoriesFromGroup(e.group),
+          country:
+              normalizeCountry(a['tvg-country']) ?? countryFromTvgId(e.tvgId),
+          languages: languagesFromAttribute(a['tvg-language']),
+          quality: qualityOf(e.name).nameOrNull,
+          number: int.tryParse(a['tvg-chno'] ?? ''),
+        ),
+      );
     }
     return _commit(s, items, now, etag: etag, lastModified: lastMod);
   }
 
-  Future<RefreshResult> _commit(Source s, List<StoredChannel> fresh, DateTime now,
-      {String? etag, String? lastModified}) async {
+  Future<RefreshResult> _commit(
+    Source s,
+    List<StoredChannel> fresh,
+    DateTime now, {
+    String? etag,
+    String? lastModified,
+  }) async {
     if (fresh.isEmpty) throw StateError('source returned no channels');
     final old = {for (final c in await _store.channels(s.id)) c.key: c};
     final merged = <StoredChannel>[];
@@ -630,15 +723,22 @@ class SourceRegistry {
       merged.add(gone.copyWith(missing: true));
     }
     await _store.replaceChannels(s.id, merged);
-    await _store.saveSource(s.copyWith(
-      failures: 0,
-      lastAttempt: now,
-      lastSuccess: now,
-      etag: etag,
-      lastModified: lastModified,
-      clearError: true,
-    ));
-    return RefreshResult(s.id, RefreshStatus.updated,
-        added: added, removed: old.length, total: fresh.length);
+    await _store.saveSource(
+      s.copyWith(
+        failures: 0,
+        lastAttempt: now,
+        lastSuccess: now,
+        etag: etag,
+        lastModified: lastModified,
+        clearError: true,
+      ),
+    );
+    return RefreshResult(
+      s.id,
+      RefreshStatus.updated,
+      added: added,
+      removed: old.length,
+      total: fresh.length,
+    );
   }
 }

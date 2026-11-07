@@ -5,6 +5,7 @@
 library;
 
 export 'src/catalogue.dart';
+export 'src/channel_meta.dart';
 export 'src/http.dart';
 export 'src/health.dart';
 export 'src/m3u.dart';

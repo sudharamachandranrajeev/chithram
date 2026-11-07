@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/services.dart';
+import '../../media/ui/media_flag_settings.dart';
 import '../tv/focus_card.dart';
 import 'form_factor.dart';
 import 'sfx.dart';
@@ -18,7 +19,6 @@ class InterfaceSettings extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (!available && !sfxSupported) return const SizedBox.shrink();
     final prefs = AppServices.of(context).prefs;
     return ListenableBuilder(
       listenable: prefs,
@@ -27,6 +27,7 @@ class InterfaceSettings extends StatelessWidget {
         final sounds = prefs.getBool(soundsPref, fallback: true);
         return Wrap(
           children: [
+            const MediaFlagSettings(),
             if (sfxSupported)
               Padding(
                 padding: const EdgeInsets.all(8),

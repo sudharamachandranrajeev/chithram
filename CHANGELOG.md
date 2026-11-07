@@ -27,6 +27,10 @@ Release notes are taken from the section of the version being tagged.
   magnets, PINs, keys, phone numbers) now open compact and drop the same keyboard down only when you select the field.
 
 ### Added
+- Media section (off by default; Settings > Media section): Search, Requests, Downloads (admins), Library and the
+  pairing/server screen, talking only to the Chithram media gateway over HTTPS with its certificate pinned by
+  SHA-256 fingerprint. Roles (admin, requester, viewer) hide what the server would refuse. The device token lives in
+  secure storage only. Playback runs through a loopback proxy so the token never appears in a URL.
 - Themes: Settings > Theme (TV and phone) picks one of seven dark looks (Chithram, Ocean, Emerald, Rose, Violet, Sunset,
   Graphite), an AMOLED black background for any look, or a custom accent from a 16-colour grid; text on the accent turns
   black or white automatically. Changes fade in at once and are kept. On phones the status and navigation bars follow.

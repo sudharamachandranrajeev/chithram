@@ -1,3 +1,6 @@
 
 # Shell scripts, compose and env templates run on Linux: always LF.
 server/media-stack/** text eol=lf
+
+# Test TLS fixtures: byte-exact, no line-ending conversion.
+app/test/media/fixtures/* -text

@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../../features/livetv/livetv_page.dart';
 import '../../features/torrents/torrents_page.dart';
 import '../../features/youtube/youtube_page.dart';
+import '../../media/ui/media_page.dart';
 import '../tv/focus_card.dart';
 import '../common/form_factor.dart';
 import 'phone_home.dart';
@@ -62,6 +63,8 @@ class _PhoneShellState extends State<PhoneShell> {
         return TorrentsPage(focus: focus);
       case Section.youtube:
         return YouTubePage(focus: focus);
+      case Section.media:
+        return MediaPage(focus: focus);
     }
   }
 
@@ -107,7 +110,8 @@ class _PhoneShellState extends State<PhoneShell> {
         appBar: AppBar(
           title: const Text('Chithram'),
           actions: [
-            // Media (PR5) goes here, before the gear.
+            // Media goes here, before the gear; nothing while its flag is off.
+            MediaEntryButton(focus: _sections[Section.media.index]),
             IconButton(
               key: const ValueKey('nav-settings'),
               tooltip: 'Settings',

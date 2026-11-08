@@ -5,6 +5,7 @@ import 'package:chithram/src/core/prefs.dart';
 import 'package:chithram/src/ui/common/app.dart';
 import 'package:chithram/src/ui/common/dims.dart';
 import 'package:chithram/src/ui/common/form_factor.dart' show tenFootPref;
+import 'package:chithram/src/ui/common/video_card.dart';
 import 'package:chithram/src/ui/desktop/desktop_shell.dart';
 import 'package:chithram/src/ui/phone/phone_shell.dart';
 import 'package:chithram/src/ui/tv/tv_shell.dart';
@@ -59,7 +60,8 @@ void main() {
       await pumpForm(t, const Size(421, 927), FormFactor.phone);
       await t.tap(find.byKey(const ValueKey('nav-youtube')));
       await t.pumpAndSettle();
-      expect(find.text('Search YouTube.'), findsOneWidget);
+      // The YouTube tab opens on its home page, with the search field on top.
+      expect(find.text('Search YouTube'), findsOneWidget);
       await t.binding.handlePopRoute();
       await t.pumpAndSettle();
       expect(find.text('Popular on YouTube'), findsWidgets);
@@ -123,13 +125,11 @@ void main() {
 
     testWidgets('hover zooms a card poster without moving focus', (t) async {
       await pumpForm(t, const Size(1280, 800), FormFactor.desktop);
-      // Not the first video: the billboard shows its title too.
-      final tile = find.text('Fixture p-9 2').first;
+      // The card, not the billboard: it rotates and may show this title too
+      // (it comes first in the tree).
+      final tile = find.text('Fixture p-9 2').last;
       final focusBefore = FocusManager.instance.primaryFocus;
-      final card = find.ancestor(
-        of: tile,
-        matching: find.byWidgetPredicate((w) => w.runtimeType.toString() == '_VideoCard'),
-      );
+      final card = find.ancestor(of: tile, matching: find.byType(VideoCard));
       final scale = find.descendant(of: card, matching: find.byType(AnimatedScale)).first;
       expect(t.widget<AnimatedScale>(scale).scale, 1.0);
 

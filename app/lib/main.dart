@@ -55,6 +55,7 @@ Future<void> main(List<String> args) async {
     unawaited(AppChannel.reportFullyDrawn());
     unawaited(_sizeImageCache());
     unawaited(services.plugins.start()); // loads plugins, then the daily repo check after 30 s
+    unawaited(services.updates.check(quiet: true)); // a newer release on GitHub?
   });
   final smoke = smokeTarget(args);
   if (smoke != null) unawaited(runSmoke(smoke));

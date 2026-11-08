@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../core/services.dart';
 import '../../features/receive/phone/phone_receive_settings.dart';
@@ -10,19 +9,12 @@ import '../../find/torznab/torznab_settings.dart' show PhoneTorznabSettings;
 import '../../media/ui/media_flag_settings.dart';
 import '../../plugins/ui/plugins_settings.dart';
 import '../common/theme_page.dart' show PhoneThemeTile;
+import '../common/update_settings.dart';
 import 'phone_widgets.dart';
 
 /// Settings on a phone: Material 3 list tiles in titled groups.
 class PhoneSettings extends StatelessWidget {
   const PhoneSettings({super.key});
-
-  static Future<String> _version() async {
-    try {
-      return (await PackageInfo.fromPlatform()).version;
-    } catch (_) {
-      return '';
-    }
-  }
 
   static Future<void> _confirmClear(BuildContext context) async {
     final ok = await showDialog<bool>(
@@ -91,8 +83,9 @@ class PhoneSettings extends StatelessWidget {
         const PhoneSectionTitle('Media'),
         const MediaFlagSettings(),
         const PhoneSectionTitle('About'),
+        const PhoneUpdateTile(),
         FutureBuilder<String>(
-          future: _version(),
+          future: AppServices.platformVersion(),
           builder: (context, snap) => ListTile(
             minTileHeight: 56,
             leading: const Icon(Icons.info_outline_rounded),

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 
+import '../../core/services.dart';
 import '../../core/images/cache_settings.dart';
 import '../../features/metadata/metadata_settings.dart';
 import '../../features/receive/receive_settings.dart';
@@ -15,6 +15,7 @@ import '../tv/focus_card.dart';
 import '../tv/home_page.dart' show ActionLabel;
 import 'interface_settings.dart';
 import 'theme_page.dart' show ThemeSettings;
+import 'update_settings.dart';
 import '../phone/phone_settings.dart';
 
 class SettingsPage extends StatelessWidget {
@@ -51,6 +52,7 @@ class SettingsPage extends StatelessWidget {
           const TelegramSettings(),
           const ThemeSettings(),
           const InterfaceSettings(),
+          const UpdateSettings(),
           const AboutSettings(),
         ],
       ),
@@ -63,14 +65,6 @@ class SettingsPage extends StatelessWidget {
 class AboutSettings extends StatelessWidget {
   const AboutSettings({super.key});
 
-  static Future<String> _version() async {
-    try {
-      return (await PackageInfo.fromPlatform()).version;
-    } catch (_) {
-      return '';
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -79,7 +73,7 @@ class AboutSettings extends StatelessWidget {
         radius: 24,
         onActivate: () {},
         child: FutureBuilder<String>(
-          future: _version(),
+          future: AppServices.platformVersion(),
           builder: (context, snap) => ActionLabel(text: 'About Chithram ${snap.data ?? ''}'.trim()),
         ),
       ),

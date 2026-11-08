@@ -1,7 +1,7 @@
 name: chithram
 description: "Chithram: a bring-your-own-sources media app for Android TV, phones and desktop"
 publish_to: 'none'
-version: 0.4.0+1
+version: 0.4.1+2
 resolution: workspace
 
 environment:

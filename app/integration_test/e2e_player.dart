@@ -27,8 +27,12 @@ Future<void> _key(WidgetTester t, LogicalKeyboardKey key) async {
 }
 
 /// Brings the display back if it faded: the key that wakes it does nothing
-/// else. Up without a channel list never acts, so it is safe either way.
-Future<void> _wake(WidgetTester t) => _key(t, LogicalKeyboardKey.arrowUp);
+/// else. Only sent while the controls are hidden: with them showing, Up moves
+/// focus to the top bar (and OK would then press that button, not pause).
+Future<void> _wake(WidgetTester t) async {
+  if (find.byKey(PlayerKeys.playPause).evaluate().isNotEmpty) return;
+  await _key(t, LogicalKeyboardKey.arrowUp);
+}
 
 Future<void> _back(WidgetTester t) async {
   await t.binding.handlePopRoute();

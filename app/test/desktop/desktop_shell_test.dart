@@ -7,11 +7,12 @@ import 'package:chithram/src/ui/common/app.dart';
 import 'package:chithram/src/ui/common/glass.dart';
 import 'package:chithram/src/ui/common/form_factor.dart';
 import 'package:chithram/src/ui/common/sections.dart';
+import 'package:chithram/src/ui/common/video_billboard.dart' show kenBurnsTime;
+import 'package:chithram/src/ui/common/video_card.dart';
 import 'package:chithram/src/ui/desktop/desktop_home.dart';
 import 'package:chithram/src/ui/desktop/desktop_shell.dart';
 import 'package:chithram/src/ui/desktop/shortcuts.dart';
 import 'package:chithram/src/ui/desktop/sidebar.dart';
-import 'package:chithram/src/ui/desktop/window_chrome.dart';
 import 'package:chithram/src/ui/phone/phone_shell.dart';
 import 'package:chithram/src/ui/tv/tv_shell.dart';
 import 'package:flutter/gestures.dart';
@@ -19,31 +20,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'fake_chrome.dart';
 import 'static_feed.dart';
-
-class FakeChrome implements WindowChrome {
-  FakeChrome({this.custom = true});
-
-  @override
-  final bool custom;
-  final calls = <String>[];
-
-  @override
-  final ValueNotifier<bool> maximized = ValueNotifier(false);
-
-  @override
-  Future<void> setCustomFrame(bool on) async => calls.add('frame:$on');
-  @override
-  Future<void> minimize() async => calls.add('minimize');
-  @override
-  Future<void> toggleMaximize() async => calls.add('maximize');
-  @override
-  Future<void> close() async => calls.add('close');
-  @override
-  Future<void> toggleFullscreen() async => calls.add('fullscreen');
-  @override
-  Future<void> startDrag() async => calls.add('drag');
-}
 
 AppServices _services({Prefs? prefs}) => AppServices.memory(
       prefs: prefs,
@@ -300,7 +278,7 @@ void main() {
     int cardsInFirstRow(WidgetTester t) => find
         .descendant(
           of: find.byWidgetPredicate((w) => w.key is ValueKey && '${(w.key as ValueKey).value}'.startsWith('home-popular')).first,
-          matching: find.byWidgetPredicate((w) => w.runtimeType.toString() == '_VideoCard'),
+          matching: find.byType(VideoCard),
         )
         .evaluate()
         .length;
@@ -332,11 +310,12 @@ void main() {
         ];
 
     testWidgets('the hero advances every 8 s, pauses on hover, and stops when animations are off', (t) async {
+      // Settles when the first slide's Ken Burns push ends, 7 s in.
       await _pump(t);
       final first = heroTexts(t);
-      await t.pump(const Duration(seconds: 7));
+      await t.pump(heroAutoAdvance - kenBurnsTime - const Duration(milliseconds: 500));
       expect(heroTexts(t), first, reason: 'not yet');
-      await t.pump(const Duration(seconds: 2));
+      await t.pump(const Duration(seconds: 1));
       await t.pumpAndSettle();
       final second = heroTexts(t);
       expect(second, isNot(first), reason: 'advanced after 8 s');

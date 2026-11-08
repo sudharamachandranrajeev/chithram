@@ -70,7 +70,9 @@ void main() {
     // YouTube search by typing (fixture mode: one "Fixture" item).
     await t.enterText(field, 'fix');
     await t.pumpAndSettle();
-    await _tap(t, find.byKey(const ValueKey('search-go')));
+    // The keyboard's search key submits (the YouTube home has no Go button).
+    await t.testTextInput.receiveAction(TextInputAction.search);
+    await t.pumpAndSettle();
     final result = find.byKey(const ValueKey('yt-result-fixturevid1'));
     expect(await pumpUntil(t, () => result.evaluate().isNotEmpty, timeout: const Duration(seconds: 20)), isTrue,
         reason: 'the search result never appeared');
@@ -91,8 +93,12 @@ void main() {
     expect(await pumpUntil(t, () => _logicalSize(t).height > _logicalSize(t).width), isTrue,
         reason: 'Back from the player must return to portrait');
     await t.pumpAndSettle();
+    expect(result, findsOneWidget, reason: 'Back returns to the results');
+    // The results are a page over the shell: Back again returns to the YouTube home.
+    await t.binding.handlePopRoute();
+    await t.pumpAndSettle();
     expect(find.byType(PhoneShell), findsOneWidget);
-    expect(result, findsOneWidget, reason: 'Back returns to the same tab with its results');
+    expect(field, findsOneWidget, reason: 'Back from the results shows the YouTube home');
   });
 
   testWidgets('phone: a pasted magnet lists the files, Back removes the torrent', (t) async {
@@ -148,6 +154,7 @@ void main() {
     Navigator.of(t.element(find.byKey(Keys.playerRoot))).pop();
     await t.pumpAndSettle();
     expect(await pumpUntil(t, () => _logicalSize(t).height > _logicalSize(t).width), isTrue);
-    expect(row, findsOneWidget, reason: 'Back returns to the channel list');
+    // The channel now also shows under Recently watched.
+    expect(row, findsWidgets, reason: 'Back returns to the channel list');
   });
 }

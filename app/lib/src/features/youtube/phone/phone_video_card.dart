@@ -4,7 +4,9 @@ import 'package:innertube/innertube.dart' hide Page;
 import '../../../theme.dart';
 import '../../../ui/common/form_factor.dart';
 import '../../../ui/common/glass.dart' show WatchProgress;
+import '../../../ui/common/motion_kit.dart';
 import '../../../ui/common/tokens.dart';
+import '../../../ui/common/video_card.dart';
 import '../../../ui/phone/touch_card.dart';
 import '../youtube_results.dart';
 
@@ -25,7 +27,6 @@ class PhoneVideoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final url = VideoTile.thumbnailUrl(item.thumbnails);
     final duration = item.duration;
     final badge = item.isLive ? 'LIVE' : (duration == null ? null : VideoTile.clock(duration));
     final by = item.author.isEmpty ? '' : ', ${item.author}';
@@ -34,6 +35,7 @@ class PhoneVideoCard extends StatelessWidget {
     final type = TypeScale.of(FormFactor.phone);
     final shape = BorderRadius.circular(Radii.card(FormFactor.phone));
     final watched = progress;
+    final meta = videoMeta(item, separator: ' · ');
     return TouchCard(
       key: ValueKey('yt-result-${item.videoId}'),
       label: 'Play ${item.title}$by${badge == null ? '' : ', $badge'}$percent',
@@ -48,30 +50,8 @@ class PhoneVideoCard extends StatelessWidget {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  ColoredBox(
-                    color: c.surfaceHigh,
-                    child: url == null
-                        ? const Icon(Icons.smart_display_rounded, size: 40)
-                        : Image.network(
-                            url,
-                            fit: BoxFit.cover,
-                            cacheWidth: 640,
-                            errorBuilder: (_, _, _) => const Icon(Icons.smart_display_rounded, size: 40),
-                          ),
-                  ),
-                  if (badge != null)
-                    Positioned(
-                      right: Space.s8,
-                      bottom: Space.s8,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.75),
-                          borderRadius: BorderRadius.circular(Space.s4),
-                        ),
-                        child: Text(badge, style: type.meta.copyWith(fontWeight: FontWeight.w600)),
-                      ),
-                    ),
+                  ColoredBox(color: c.surfaceHigh, child: VideoThumbnail(item: item)),
+                  Positioned(right: Space.s8, bottom: watched == null ? Space.s8 : Space.s12, child: VideoBadge(item: item)),
                   if (watched != null)
                     Positioned(left: 0, right: 0, bottom: 0, child: WatchProgress(fraction: watched)),
                 ],
@@ -87,11 +67,11 @@ class PhoneVideoCard extends StatelessWidget {
               style: type.card.copyWith(height: 1.4),
             ),
           ),
-          if (item.author.isNotEmpty)
+          if (meta.isNotEmpty)
             Padding(
               padding: const EdgeInsets.fromLTRB(Space.s4, 2, Space.s4, 0),
               child: Text(
-                item.author,
+                meta,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: type.meta.copyWith(fontWeight: FontWeight.w400, height: 1.4, color: c.textDim),
@@ -134,7 +114,7 @@ class PhoneVideoSliver extends StatelessWidget {
             delegate: SliverChildBuilderDelegate((context, i) {
               if (i >= items.length - 3) onNearEnd?.call();
               final v = items[i];
-              return PhoneVideoCard(item: v, onOpen: () => onOpen(v));
+              return StaggeredEntrance(index: i % 20, child: PhoneVideoCard(item: v, onOpen: () => onOpen(v)));
             }, childCount: items.length),
           ),
         );

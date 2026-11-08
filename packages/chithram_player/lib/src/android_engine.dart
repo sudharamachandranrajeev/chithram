@@ -42,7 +42,7 @@ MediaTracks androidTracks(Map<Object?, Object?> event) {
 
 /// Media3 ExoPlayer behind a method channel. Video renders into a SurfaceView
 /// hosted by a Hybrid Composition PlatformView (see [view]).
-class AndroidPlayerEngine implements PlayerEngine {
+class AndroidPlayerEngine implements PlayerEngine, PlayerTuning {
   AndroidPlayerEngine._(this._id);
 
   static const MethodChannel _methods = MethodChannel(
@@ -118,6 +118,13 @@ class AndroidPlayerEngine implements PlayerEngine {
   @override
   Future<void> seek(Duration position) =>
       _call('seek', {'positionMs': position.inMilliseconds});
+
+  @override
+  Future<void> setSpeed(double speed) => _call('speed', {'speed': speed});
+
+  @override
+  Future<void> setVolume(double volume) =>
+      _call('volume', {'volume': volume.clamp(0, 1)});
 
   @override
   Stream<Duration> get position => _position.stream;

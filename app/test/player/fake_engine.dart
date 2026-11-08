@@ -4,8 +4,12 @@ import 'package:chithram_player/chithram_player.dart';
 import 'package:flutter/widgets.dart';
 
 /// A [PlayerEngine] that plays nothing and records what it was asked.
-class FakeEngine implements PlayerEngine {
+class FakeEngine implements PlayerEngine, PlayerTuning {
   final opened = <MediaSpec>[];
+
+  /// What [setSpeed] and [setVolume] were asked, in order.
+  final speeds = <double>[];
+  final volumes = <double>[];
   final seeks = <Duration>[];
   bool isPlaying = false;
   bool disposed = false;
@@ -106,6 +110,12 @@ class FakeEngine implements PlayerEngine {
   @override
   Future<void> setTrackPreferences(TrackPreferences p) async =>
       preferences.add(p);
+
+  @override
+  Future<void> setSpeed(double speed) async => speeds.add(speed);
+
+  @override
+  Future<void> setVolume(double volume) async => volumes.add(volume);
 
   @override
   Widget get view => const SizedBox.expand();

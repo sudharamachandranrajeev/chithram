@@ -90,6 +90,14 @@ class ChithramPlayerPlugin : FlutterPlugin, ActivityAware, MethodChannel.MethodC
                             host.seek((call.argument<Number>("positionMs") ?: 0).toLong())
                             result.success(null)
                         }
+                        "speed" -> {
+                            host.setSpeed((call.argument<Number>("speed") ?: 1).toFloat())
+                            result.success(null)
+                        }
+                        "volume" -> {
+                            host.setVolume((call.argument<Number>("volume") ?: 1).toFloat())
+                            result.success(null)
+                        }
                         "dispose" -> {
                             hosts.remove(host.id)
                             host.release()

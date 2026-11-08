@@ -1,15 +1,14 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:innertube/innertube.dart' hide Page;
 
 import '../../core/services.dart';
 import '../../features/youtube/feed/youtube_feed.dart';
 import '../../features/youtube/youtube_results.dart';
 import '../../theme.dart';
 import '../common/dims.dart';
-import '../common/glass.dart';
 import '../common/tokens.dart';
+import '../common/video_billboard.dart';
 import 'focus_card.dart';
 import 'focus_rail.dart';
 
@@ -38,16 +37,26 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     final feed = AppServices.of(context).feed;
     final d = Dims.of(context);
-    final tileWidth = d.tv ? _tvTileWidth(context) : d.u(300);
+    final tileWidth = d.tv ? tvTileWidth(context) : d.u(300);
     return ValueListenableBuilder<FeedState>(
       valueListenable: feed.state,
-      builder: (context, state, _) => SingleChildScrollView(
+      builder: (context, state, _) {
+        final suggested = state.rails.any((r) => r.id == 'for-you');
+        return SingleChildScrollView(
         key: const PageStorageKey<String>('home-scroll'),
         padding: const EdgeInsets.only(bottom: Space.s32),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _Hero(focus: widget.focus, state: state, onRetry: () => feed.refresh(force: true)),
+            TvBillboard(
+              focus: widget.focus,
+              items: state.hero,
+              kicker: suggested ? 'Recommended for you' : 'Popular on YouTube',
+              error: state.error,
+              playFocusNode: widget.focus.entry,
+              onPlay: (v) => playVideo(context, v, source: suggested ? 'for-you' : null),
+              onRetry: () => feed.refresh(force: true),
+            ),
             SizedBox(height: d.tv ? Space.s24 : Space.s16),
             for (final rail in state.rails)
               FocusRail(
@@ -70,7 +79,8 @@ class _HomePageState extends State<HomePage> {
               ),
           ],
         ),
-      ),
+        );
+      },
     );
   }
 }
@@ -80,149 +90,9 @@ class _HomePageState extends State<HomePage> {
 const double _tvTileBase = 208;
 const double _tvScreenBase = 960;
 
-double _tvTileWidth(BuildContext context) =>
+double tvTileWidth(BuildContext context) =>
     (MediaQuery.sizeOf(context).width * _tvTileBase / _tvScreenBase)
         .clamp(_tvTileBase, _tvTileBase * 2);
-
-/// The first suggestion (or popular video) over its frame, with Play. While
-/// nothing is there yet it says so, and offers Retry after a failure.
-class _Hero extends StatelessWidget {
-  const _Hero({required this.focus, required this.state, required this.onRetry});
-
-  final SectionFocus focus;
-  final FeedState state;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    final d = Dims.of(context);
-    final height = (MediaQuery.sizeOf(context).height * (d.tv ? 0.44 : 0.42)).clamp(d.tv ? 190.0 : 220.0, 460.0);
-    final VideoItem? video = state.hero.firstOrNull;
-    final suggested = state.rails.any((r) => r.id == 'for-you');
-    final error = state.error;
-    final String label, title, line;
-    final facts = <String>[];
-    if (video != null) {
-      label = suggested ? 'Recommended for you' : 'Popular on YouTube';
-      title = video.title;
-      line = '';
-      final duration = video.duration;
-      facts.addAll([
-        video.author,
-        video.viewsText,
-        if (duration != null) VideoTile.clock(duration),
-      ].where((s) => s.isNotEmpty));
-    } else if (error != null) {
-      (label, title, line) = ('YouTube', error, 'Check the connection, then retry.');
-    } else {
-      (label, title, line) = ('YouTube', 'Loading what is popular…', '');
-    }
-    return Container(
-      // Fill the width: without it the card shrinks to its widest child.
-      width: double.infinity,
-      constraints: BoxConstraints(minHeight: height),
-      margin: EdgeInsets.fromLTRB(d.phone ? Space.s8 : Space.s16, d.tv ? Space.s12 : Space.s16, d.phone ? Space.s8 : Space.s16, 0),
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(Radii.hero),
-        border: Border.all(color: ChithramColors.of(context).glassEdge),
-        gradient: LinearGradient(
-          begin: Alignment.topRight,
-          end: Alignment.bottomLeft,
-          colors: [
-            ChithramColors.of(context).heroTint,
-            ChithramColors.of(context).surface,
-            ChithramColors.of(context).background,
-          ],
-        ),
-      ),
-      child: Stack(
-        children: [
-          if (video != null) ...[
-            Positioned.fill(child: HeroImage(videoId: video.videoId)),
-            // Keeps the text readable over any frame.
-            Positioned.fill(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.centerRight,
-                    end: Alignment.centerLeft,
-                    colors: [
-                      ChithramColors.of(context).background.withAlpha(0x33),
-                      ChithramColors.of(context).background.withAlpha(0xEE),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
-          Padding(
-            padding: EdgeInsets.all(d.phone ? 18 : (d.tv ? Space.s24 : 28)),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: height - (d.phone ? 36 : (d.tv ? Space.s48 : 56))),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.end,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (video != null)
-                    MetaPill(
-                      text: label,
-                      icon: suggested ? Icons.auto_awesome_rounded : Icons.local_fire_department_rounded,
-                      filled: true,
-                    )
-                  else
-                    Text(label,
-                        style: TextStyle(color: ChithramColors.of(context).accent, fontSize: d.t(14), fontWeight: FontWeight.w600)),
-                  const SizedBox(height: Space.s8),
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 820),
-                    child: Text(title,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: d.tv
-                            ? d.type.hero.copyWith(height: 1.1)
-                            : TextStyle(fontSize: d.t(34), fontWeight: FontWeight.w700, height: 1.15, letterSpacing: -0.3)),
-                  ),
-                  if (facts.isNotEmpty) ...[
-                    const SizedBox(height: 10),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 6,
-                      children: [for (final f in facts) MetaPill(text: f)],
-                    ),
-                  ],
-                  if (line.isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Text(line,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(color: ChithramColors.of(context).textDim, fontSize: d.t(14))),
-                  ],
-                  SizedBox(height: d.tv ? Space.s16 : 18),
-                  FocusCard(
-                    key: const ValueKey('home-hero-action'),
-                    focusNode: focus.entry,
-                    section: focus,
-                    radius: Radii.pill,
-                    onActivate: video != null
-                        ? () => playVideo(context, video, source: suggested ? 'for-you' : null)
-                        : error != null
-                            ? onRetry
-                            : null,
-                    child: video != null
-                        ? ActionLabel(icon: Icons.play_arrow_rounded, text: 'Play', primary: true)
-                        : ActionLabel(icon: Icons.refresh_rounded, text: error != null ? 'Retry' : 'Loading'),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 /// The pill inside a button-like [FocusCard].
 class ActionLabel extends StatelessWidget {

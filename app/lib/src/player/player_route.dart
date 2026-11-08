@@ -15,17 +15,19 @@ import '../ui/tv/focus_card.dart';
 import '../ui/common/form_factor.dart';
 import '../ui/tv/home_page.dart' show ActionLabel;
 import '../ui/common/keys.dart';
+import '../ui/desktop/window_chrome.dart';
 import 'play_request.dart';
 import 'player_keys.dart';
 import 'player_osd.dart';
 import 'seek/double_tap_ripple.dart';
 import 'seek/scrub.dart';
 import 'seek/storyboard_thumb.dart';
+import 'speed_menu.dart';
 import 'tracks.dart';
 import 'tracks_menu.dart';
 import 'up_next_card.dart';
 
-/// Seek step for Left and Right.
+/// Seek step for the 10 s buttons, J and L, and a phone's double tap.
 const seekStep = Duration(seconds: 10);
 
 /// Saved positions at or under this are not worth offering.
@@ -68,20 +70,31 @@ String formatPlayerTime(Duration d) {
 /// Center plays or pauses. Left and Right scrub (VOD, live with a DVR window):
 /// a preview position moves, faster the longer the key is held, and OK or a
 /// pause commits it; Back drops it. Up and Down zap when the request has a
-/// [ZapList]; otherwise Down reaches the buttons (Previous, Next, Audio and
-/// subtitles). Menu, Info or Settings opens the track menu; on a live channel
-/// without a seek bar Left and Right reach it too. When a video with
-/// a queue ends, an "Up next" card counts down to the next one. Back closes
-/// the route, which disposes the engine.
+/// [ZapList]; otherwise Up reaches the top bar (Back, speed, tracks) and Down
+/// the middle row (previous, -10 s, play, +10 s, next); on the buttons Left
+/// and Right move along the row and Up/Down move between rows and the video.
+/// Menu, Info or Settings opens the track menu; on a live channel without a
+/// seek bar Left and Right reach it too. When a video with a queue ends, an
+/// "Up next" card counts down to the next one. Back closes the route, which
+/// disposes the engine.
+///
+/// Desktop keys: Esc leaves fullscreen, else closes (after dropping a menu or
+/// scrub, like Back); Space or K plays/pauses; J and L seek 10 s; F toggles
+/// fullscreen; M mutes; Up and Down change the volume.
 class PlayerRoute extends StatefulWidget {
   const PlayerRoute({
     super.key,
     required this.request,
     this.engineFactory = PlayerEngine.create,
     this.sheetProvider = networkSheet,
+    this.chrome,
   });
 
   final PlayRequest request;
+
+  /// The desktop window, for fullscreen and the window buttons;
+  /// [WindowChrome.instance] when null (tests pass a fake).
+  final WindowChrome? chrome;
 
   /// Loads preview sprite sheets; tests pass a fake.
   final SheetProvider sheetProvider;
@@ -113,6 +126,20 @@ class _PlayerRouteState extends State<PlayerRoute> {
   final _previousFocus = FocusNode(debugLabel: 'player previous');
   final _nextFocus = FocusNode(debugLabel: 'player next');
   final _tracksFocus = FocusNode(debugLabel: 'player tracks');
+  final _backFocus = FocusNode(debugLabel: 'player back');
+  final _speedFocus = FocusNode(debugLabel: 'player speed');
+  final _fullscreenFocus = FocusNode(debugLabel: 'player fullscreen');
+  final _rewindFocus = FocusNode(debugLabel: 'player rewind');
+  final _playFocus = FocusNode(debugLabel: 'player play');
+  final _forwardFocus = FocusNode(debugLabel: 'player forward');
+
+  // Speed is kept while the player is open (next item too); volume is saved.
+  double _speed = 1;
+  double _volume = 1;
+  bool _muted = false;
+
+  /// The player made the window fullscreen; leaving the player undoes it.
+  bool _enteredFullscreen = false;
   final _rippleKey = GlobalKey<DoubleTapRippleState>();
   PlayExtras _extras = PlayExtras.none;
   PlayRequest? _extrasFor;
@@ -141,7 +168,8 @@ class _PlayerRouteState extends State<PlayerRoute> {
   MediaSpec? _spec;
   bool _audioPicked = false;
   bool _subsPicked = false;
-  bool _menuOpen = false;
+  _Menu? _menu;
+  bool get _menuOpen => _menu != null;
 
   /// The key that brought the display back; it does nothing else until up.
   LogicalKeyboardKey? _wakeKey;
@@ -158,8 +186,10 @@ class _PlayerRouteState extends State<PlayerRoute> {
         ?.services;
     _resume = services?.resume;
     _prefs = services?.prefs;
+    _volume = ((_prefs?.getInt(PlayerPrefs.volume) ?? 100) / 100).clamp(0.0, 1.0);
     _zapIndex = _request.zap?.initialIndex ?? 0;
     _saveTimer = Timer.periodic(_saveEvery, (_) => unawaited(_save()));
+    _chrome.fullscreen.addListener(_fullscreenChanged);
     unawaited(_start());
   }
 
@@ -205,6 +235,7 @@ class _PlayerRouteState extends State<PlayerRoute> {
         ..add(engine.error.listen(_onEngineError))
         ..add(engine.tracks.listen(_onTracks));
       setState(() => _engine = engine);
+      if (engine is PlayerTuning) unawaited((engine as PlayerTuning).setVolume(_volume));
       // The video surface must be in the tree before open.
       await WidgetsBinding.instance.endOfFrame;
       await _load(_request, offerResume: true);
@@ -410,7 +441,7 @@ class _PlayerRouteState extends State<PlayerRoute> {
       _upNextDeclined = false;
       _prefetched = false;
       _finished = false;
-      _menuOpen = false;
+      _menu = null;
       _tracks = MediaTracks.none;
     });
     _extrasFor = null;
@@ -464,6 +495,8 @@ class _PlayerRouteState extends State<PlayerRoute> {
     _audioPicked = false;
     _subsPicked = false;
     await engine.setTrackPreferences(PlayerPrefs.read(_prefs));
+    // Live has no speed control: always 1x.
+    await _tuning?.setSpeed(spec.isLive || _request.isLive ? 1 : _speed);
     await engine.open(opened);
     _set(() => _loading = false);
     _armHide();
@@ -573,8 +606,92 @@ class _PlayerRouteState extends State<PlayerRoute> {
     _hideTimer = Timer(osdHideAfter, () => _set(() => _osd = false));
   }
 
+  PlayerTuning? get _tuning {
+    final engine = _engine;
+    return engine is PlayerTuning ? engine as PlayerTuning : null;
+  }
+
+  WindowChrome get _chrome => widget.chrome ?? WindowChrome.instance;
+
+  bool get _desktop => Dims.of(context).desktop;
+
+  bool get _speedShown => _tuning != null && !_request.isLive;
+
+  // The native frame (Linux) cannot go fullscreen from here.
+  bool get _fullscreenShown => _desktop && _chrome.custom;
+
+  /// The top bar's buttons, left to right, as the OSD shows them.
+  List<FocusNode> get _topNodes => [
+    _backFocus,
+    if (_speedShown) _speedFocus,
+    if (_hasTrackChoice) _tracksFocus,
+    if (_fullscreenShown) _fullscreenFocus,
+  ];
+
+  /// The middle row, left to right.
+  List<FocusNode> get _centreNodes {
+    final queue = _hasQueue ? _request.queue : null;
+    return [
+      if (queue != null && queue.hasPrevious) _previousFocus,
+      if (_canScrub) _rewindFocus,
+      _playFocus,
+      if (_canScrub) _forwardFocus,
+      if (queue != null) _nextFocus,
+    ];
+  }
+
   bool get _controlsFocused =>
-      _previousFocus.hasFocus || _nextFocus.hasFocus || _tracksFocus.hasFocus;
+      _topNodes.any((n) => n.hasFocus) || _centreNodes.any((n) => n.hasFocus);
+
+  /// Up from the video: tracks, else speed, else Back.
+  void _focusTop() {
+    (_hasTrackChoice ? _tracksFocus : (_speedShown ? _speedFocus : _backFocus)).requestFocus();
+  }
+
+  // --- Desktop: fullscreen, volume ---
+
+  // F11, the window's own controls or this player: the button's icon follows.
+  void _fullscreenChanged() => _set(() {});
+
+  Future<void> _toggleFullscreen() async {
+    if (!_fullscreenShown) return;
+    _enteredFullscreen = !_chrome.fullscreen.value;
+    _showOsd();
+    await _chrome.toggleFullscreen().catchError((Object _) {});
+  }
+
+  void _setVolume(double v) {
+    final tuning = _tuning;
+    if (tuning == null) return;
+    _set(() {
+      _volume = v;
+      _muted = false;
+    });
+    unawaited(tuning.setVolume(v));
+    unawaited(_prefs?.set(PlayerPrefs.volume, (v * 100).round()));
+    _showOsd();
+  }
+
+  void _toggleMute() {
+    final tuning = _tuning;
+    if (tuning == null) return;
+    _set(() => _muted = !_muted);
+    unawaited(tuning.setVolume(_muted ? 0 : _volume));
+    _showOsd();
+  }
+
+  /// Esc: like Back, but a fullscreen window comes out of fullscreen first.
+  void _escape() {
+    if (!_menuOpen &&
+        !_scrubber.active &&
+        !_upNextShown &&
+        _fullscreenShown &&
+        _chrome.fullscreen.value) {
+      unawaited(_toggleFullscreen());
+      return;
+    }
+    unawaited(Navigator.of(context).maybePop());
+  }
 
   // --- Tracks ---
 
@@ -698,10 +815,43 @@ class _PlayerRouteState extends State<PlayerRoute> {
     if (_menuOpen || !_hasTrackChoice) return;
     _hideTimer?.cancel();
     setState(() {
-      _menuOpen = true;
+      _menu = _Menu.tracks;
       _osd = true;
     });
     if (Dims.of(context).phone) unawaited(_openSheet());
+  }
+
+  void _openSpeedMenu() {
+    if (_menuOpen || !_speedShown) return;
+    _hideTimer?.cancel();
+    setState(() {
+      _menu = _Menu.speed;
+      _osd = true;
+    });
+    if (Dims.of(context).phone) unawaited(_openSpeedSheet());
+  }
+
+  Future<void> _openSpeedSheet() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: ChithramColors.of(context).surface,
+      isScrollControlled: true,
+      builder: (sheet) => SpeedMenu(
+        sheet: true,
+        speed: _speed,
+        onPick: (s) {
+          Navigator.of(sheet).pop();
+          unawaited(_pickSpeed(s));
+        },
+      ),
+    );
+    _closeMenu();
+  }
+
+  Future<void> _pickSpeed(double speed) async {
+    _closeMenu();
+    _set(() => _speed = speed);
+    await _tuning?.setSpeed(speed);
   }
 
   Future<void> _openSheet() async {
@@ -728,7 +878,7 @@ class _PlayerRouteState extends State<PlayerRoute> {
 
   void _closeMenu() {
     if (!_menuOpen || !mounted) return;
-    setState(() => _menuOpen = false);
+    setState(() => _menu = null);
     _rootFocus.requestFocus();
     _armHide();
   }
@@ -771,6 +921,13 @@ class _PlayerRouteState extends State<PlayerRoute> {
     _previousFocus.dispose();
     _nextFocus.dispose();
     _tracksFocus.dispose();
+    for (final n in [_backFocus, _speedFocus, _fullscreenFocus, _rewindFocus, _playFocus, _forwardFocus]) {
+      n.dispose();
+    }
+    _chrome.fullscreen.removeListener(_fullscreenChanged);
+    if (_enteredFullscreen && _chrome.fullscreen.value) {
+      unawaited(_chrome.toggleFullscreen().catchError((Object _) {}));
+    }
     _promptFocus.dispose();
     _errorFocus.dispose();
     _rootFocus.dispose();
@@ -800,6 +957,19 @@ class _PlayerRouteState extends State<PlayerRoute> {
   static Duration _wallClock() =>
       Duration(microseconds: DateTime.now().microsecondsSinceEpoch);
 
+  /// Keys that still act while a button has focus.
+  static final _mediaKeys = {
+    LogicalKeyboardKey.mediaPlayPause,
+    LogicalKeyboardKey.mediaPlay,
+    LogicalKeyboardKey.mediaPause,
+    LogicalKeyboardKey.mediaTrackNext,
+    LogicalKeyboardKey.mediaTrackPrevious,
+    LogicalKeyboardKey.mediaRewind,
+    LogicalKeyboardKey.mediaFastForward,
+    LogicalKeyboardKey.channelUp,
+    LogicalKeyboardKey.channelDown,
+  };
+
   KeyEventResult _onKey(FocusNode node, KeyEvent event) {
     final key = event.logicalKey;
     final isArrow =
@@ -818,6 +988,12 @@ class _PlayerRouteState extends State<PlayerRoute> {
     }
     if (event is! KeyDownEvent && event is! KeyRepeatEvent)
       return KeyEventResult.ignored;
+    // Esc everywhere in the player, panels included: the desktop's own Esc
+    // (above the Navigator) would close the page without asking it.
+    if (key == LogicalKeyboardKey.escape) {
+      if (event is KeyDownEvent) _escape();
+      return KeyEventResult.handled;
+    }
     // Buttons on the error panel, the resume prompt and the Up next card use
     // normal focus movement.
     if (_error != null || _offer != null || _upNextShown || _menuOpen)
@@ -841,15 +1017,57 @@ class _PlayerRouteState extends State<PlayerRoute> {
       _toggleSubtitles();
       return KeyEventResult.handled;
     }
-    // On the buttons: Up goes back to the video, the rest is focus movement.
+    // On the buttons: the arrows move between them (Up from the top bar and
+    // Down from the middle row go back to the video); OK presses the button.
     if (_controlsFocused) {
-      if (fresh && key == LogicalKeyboardKey.arrowUp) {
-        _rootFocus.requestFocus();
+      _showOsd();
+      final top = _topNodes;
+      final inTop = top.any((n) => n.hasFocus);
+      if (key == LogicalKeyboardKey.arrowUp || key == LogicalKeyboardKey.arrowDown) {
+        if (fresh) {
+          final up = key == LogicalKeyboardKey.arrowUp;
+          if (inTop) {
+            (up ? _rootFocus : _playFocus).requestFocus();
+          } else {
+            up ? _focusTop() : _rootFocus.requestFocus();
+          }
+        }
+        return KeyEventResult.handled;
+      }
+      if (isArrow) {
+        final row = inTop ? top : _centreNodes;
+        final i = row.indexWhere((n) => n.hasFocus);
+        if (i >= 0) {
+          final j = (i + (key == LogicalKeyboardKey.arrowLeft ? -1 : 1)).clamp(0, row.length - 1);
+          row[j].requestFocus();
+        }
+        return KeyEventResult.handled;
+      }
+      if (!_mediaKeys.contains(key)) return KeyEventResult.ignored;
+    }
+    if (_desktop && fresh) {
+      if (key == LogicalKeyboardKey.space || key == LogicalKeyboardKey.keyK) {
+        _showOsd();
+        if (_scrubber.active) {
+          _scrubber.commit();
+        } else {
+          unawaited(_toggle());
+        }
+        return KeyEventResult.handled;
+      }
+      if (key == LogicalKeyboardKey.keyJ || key == LogicalKeyboardKey.keyL) {
+        unawaited(_seekBy(key == LogicalKeyboardKey.keyJ ? -seekStep : seekStep));
         _showOsd();
         return KeyEventResult.handled;
       }
-      _showOsd();
-      return KeyEventResult.ignored;
+      if (key == LogicalKeyboardKey.keyF) {
+        unawaited(_toggleFullscreen());
+        return KeyEventResult.handled;
+      }
+      if (key == LogicalKeyboardKey.keyM) {
+        _toggleMute();
+        return KeyEventResult.handled;
+      }
     }
     if (fresh &&
         (key == LogicalKeyboardKey.select ||
@@ -904,27 +1122,25 @@ class _PlayerRouteState extends State<PlayerRoute> {
       }
       return KeyEventResult.handled;
     }
-    final up =
-        key == LogicalKeyboardKey.arrowUp ||
-        key == LogicalKeyboardKey.channelUp;
-    final down =
-        key == LogicalKeyboardKey.arrowDown ||
-        key == LogicalKeyboardKey.channelDown;
-    if (fresh && (up || down)) {
-      if (widget.request.zap != null) {
+    final arrowUp = key == LogicalKeyboardKey.arrowUp;
+    final arrowDown = key == LogicalKeyboardKey.arrowDown;
+    final up = arrowUp || key == LogicalKeyboardKey.channelUp;
+    final down = arrowDown || key == LogicalKeyboardKey.channelDown;
+    if (up || down) {
+      final zapping = widget.request.zap != null;
+      if (!zapping && (arrowUp || arrowDown) && _desktop && _tuning != null) {
+        // Desktop: the arrows set the volume (held keys repeat).
+        _setVolume((_volume + (arrowUp ? 0.05 : -0.05)).clamp(0.0, 1.0));
+        return KeyEventResult.handled;
+      }
+      if (!fresh) return KeyEventResult.handled;
+      if (zapping) {
         unawaited(_zap(up ? -1 : 1));
-      } else if (down &&
-          key == LogicalKeyboardKey.arrowDown &&
-          (_hasQueue || _hasTrackChoice)) {
-        // Down from the video reaches the buttons.
-        _showOsd();
-        final queue = _hasQueue ? _request.queue : null;
-        (queue == null
-                ? _tracksFocus
-                : (queue.hasPrevious ? _previousFocus : _nextFocus))
-            .requestFocus();
       } else {
         _showOsd();
+        // From the video Up reaches the top bar, Down the middle row.
+        if (arrowUp) _focusTop();
+        if (arrowDown) _playFocus.requestFocus();
       }
       return KeyEventResult.handled;
     }
@@ -968,6 +1184,7 @@ class _PlayerRouteState extends State<PlayerRoute> {
     final d = Dims.of(context);
     final queue = _hasQueue ? _request.queue : null;
     final upNext = _upNext;
+    final fullscreen = d.desktop && _chrome.fullscreen.value;
     return PopScope(
       // Back drops a scrub or the Up next card before it closes the player.
       canPop: !_scrubber.active && !_upNextShown && !_menuOpen,
@@ -1002,16 +1219,28 @@ class _PlayerRouteState extends State<PlayerRoute> {
                 fit: StackFit.expand,
                 children: [
                   if (engine != null) engine.view,
-                  if (_loading || _buffering)
-                    Center(
-                      child: CircularProgressIndicator(
-                        key: PlayerKeys.spinner,
-                        color: ChithramColors.of(context).accent,
-                      ),
-                    ),
                   if (d.phone) DoubleTapRipple(key: _rippleKey),
                   PlayerOsd(
                     visible: _osd && !_upNextShown,
+                    controls: _error == null && _offer == null,
+                    onBack: () => unawaited(Navigator.of(context).maybePop()),
+                    backFocus: _backFocus,
+                    playFocus: _playFocus,
+                    onRewind: _canScrub ? () => unawaited(_seekBy(-seekStep)) : null,
+                    onForward: _canScrub ? () => unawaited(_seekBy(seekStep)) : null,
+                    rewindFocus: _rewindFocus,
+                    forwardFocus: _forwardFocus,
+                    speed: _speed,
+                    onSpeed: _speedShown ? _openSpeedMenu : null,
+                    speedFocus: _speedFocus,
+                    fullscreen: fullscreen,
+                    onFullscreen: _fullscreenShown ? () => unawaited(_toggleFullscreen()) : null,
+                    fullscreenFocus: _fullscreenFocus,
+                    windowChrome: d.desktop ? _chrome : null,
+                    volume: d.desktop && _tuning != null ? _volume : null,
+                    muted: _muted,
+                    onVolume: _setVolume,
+                    onMute: _toggleMute,
                     title: _request.title,
                     subtitle: _request.subtitle,
                     status: _statusLine,
@@ -1037,7 +1266,24 @@ class _PlayerRouteState extends State<PlayerRoute> {
                     tracksFocus: _tracksFocus,
                     sheetProvider: widget.sheetProvider,
                   ),
-                  if (_menuOpen && !d.phone)
+                  // A ring round the play button (which sits in the middle)
+                  // while loading; alone when the display is hidden.
+                  if (_loading || _buffering)
+                    Center(
+                      child: IgnorePointer(
+                        child: SizedBox.square(
+                          dimension: playButtonSize(d) + 16,
+                          child: CircularProgressIndicator(
+                            key: PlayerKeys.spinner,
+                            strokeWidth: d.tv ? 4 : 3,
+                            color: ChithramColors.of(context).accent,
+                          ),
+                        ),
+                      ),
+                    ),
+                  if (_menu == _Menu.speed && !d.phone)
+                    SpeedMenu(speed: _speed, onPick: (s) => unawaited(_pickSpeed(s))),
+                  if (_menu == _Menu.tracks && !d.phone)
                     TracksMenu(
                       audio: _audioItems,
                       subtitles: _tracks.subtitles,
@@ -1118,6 +1364,8 @@ class _PlayerRouteState extends State<PlayerRoute> {
     );
   }
 }
+
+enum _Menu { tracks, speed }
 
 class _Panel extends StatelessWidget {
   const _Panel({required this.title, this.message, required this.children});

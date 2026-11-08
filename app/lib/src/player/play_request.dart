@@ -111,12 +111,19 @@ abstract final class PlayerActivity {
   static bool get idle => open.value == 0;
 }
 
+/// The player's route name. The desktop frame folds its title bar away while
+/// a route with this name is on top (the player covers the whole window).
+const playerRouteName = '/player';
+
 /// Pushes the fullscreen player. Completes when it closes.
 Future<void> openPlayer(BuildContext context, PlayRequest request) async {
   PlayerActivity.open.value++;
   try {
     await Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => PlayerRoute(request: request)),
+      MaterialPageRoute<void>(
+        settings: const RouteSettings(name: playerRouteName),
+        builder: (_) => PlayerRoute(request: request),
+      ),
     );
   } finally {
     PlayerActivity.open.value--;

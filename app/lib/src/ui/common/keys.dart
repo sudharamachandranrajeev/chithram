@@ -15,6 +15,10 @@ abstract final class Keys {
   static const textEntryOk = ValueKey('text-entry-ok');
   static const textEntryKeyboard = ValueKey('text-entry-keyboard');
   static const textEntrySend = ValueKey('text-entry-send');
+
+  /// The desktop title bar's Back button, there while a page is open over
+  /// the shell.
+  static const titleBarBack = ValueKey('titlebar-back');
 }
 
 /// True when [event] is a Ctrl, Alt or Meta chord (a shortcut such as the

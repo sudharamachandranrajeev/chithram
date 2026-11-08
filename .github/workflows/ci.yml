@@ -112,6 +112,16 @@ jobs:
             fi
             echo "::endgroup::"
           done
+      # Goldens are Linux-only: on a mismatch, flutter writes the new rendering
+      # (*_testImage.png) and the diff under test/goldens/failures/. Uploaded so
+      # an intended change can be reviewed and committed without a Linux machine.
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: failure()
+        with:
+          name: golden-failures
+          retention-days: 3
+          path: app/test/goldens/failures/
+          if-no-files-found: ignore
       # flutter test treats anything under integration_test/ as a device test,
       # so the host-run tests (focus, layout, form factors) are copied next to
       # the normal ones first.

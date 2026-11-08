@@ -33,8 +33,14 @@ class DesktopShell extends StatefulWidget {
 
 class _DesktopShellState extends SectionShellState<DesktopShell> {
   late final WindowChrome _chrome = widget.chrome ?? WindowChrome.instance;
-  final _searchFocus = FocusNode(debugLabel: 'title search');
-  final _searchText = TextEditingController();
+  final _ownSearchFocus = FocusNode(debugLabel: 'title search');
+  final _ownSearchText = TextEditingController();
+
+  /// The app's frame draws the title bar above the Navigator (so pages over
+  /// the shell keep it); this shell then only listens to its search field.
+  bool get _hostBar => _host?.drawsTitleBar ?? false;
+  FocusNode get _searchFocus => _hostBar ? _host!.searchFocus : _ownSearchFocus;
+  TextEditingController get _searchText => _hostBar ? _host!.searchController : _ownSearchText;
 
   // Tab leaves these scopes at their ends (to the next one in title bar,
   // sidebar, content order) instead of wrapping inside them.
@@ -64,22 +70,23 @@ class _DesktopShellState extends SectionShellState<DesktopShell> {
     toggleSidebar: _toggleSidebar,
     toggleFullscreen: () => unawaited(_chrome.toggleFullscreen().catchError((Object _) {})),
     escapeSearch: _escapeSearch,
+    submitSearch: _submitSearch,
   );
 
   @override
   void initState() {
     super.initState();
     unawaited(_chrome.setCustomFrame(true).catchError((Object _) {}));
-    _searchFocus.addListener(_searchFocusChanged);
     _host = DesktopShortcutScope.maybeOf(context)?..register(_callbacks);
+    _searchFocus.addListener(_searchFocusChanged);
   }
 
   @override
   void dispose() {
     _host?.unregister(_callbacks);
     _searchFocus.removeListener(_searchFocusChanged);
-    _searchFocus.dispose();
-    _searchText.dispose();
+    _ownSearchFocus.dispose();
+    _ownSearchText.dispose();
     _navScope.dispose();
     for (final s in _contentScopes) {
       s.dispose();
@@ -117,8 +124,9 @@ class _DesktopShellState extends SectionShellState<DesktopShell> {
   /// closes a page opened over the shell.
   void _escape() {
     if (_escapeSearch()) return;
+    // maybePop: the page on top may first close something of its own.
     final nav = Navigator.of(context);
-    if (nav.canPop()) nav.pop();
+    if (nav.canPop()) unawaited(nav.maybePop());
   }
 
   /// Esc in the search field: leaves it. False when it did not have focus.
@@ -142,7 +150,7 @@ class _DesktopShellState extends SectionShellState<DesktopShell> {
   void _goBack() {
     final nav = Navigator.of(context);
     if (nav.canPop()) {
-      nav.pop();
+      unawaited(nav.maybePop());
     } else {
       _goHome();
     }
@@ -205,15 +213,16 @@ class _DesktopShellState extends SectionShellState<DesktopShell> {
             policy: OrderedTraversalPolicy(),
             child: Column(
               children: [
-                FocusTraversalOrder(
-                  order: const NumericFocusOrder(0),
-                  child: DesktopTitleBar(
-                    chrome: _chrome,
-                    searchFocus: _searchFocus,
-                    searchController: _searchText,
-                    onSearchSubmitted: _submitSearch,
+                if (!_hostBar)
+                  FocusTraversalOrder(
+                    order: const NumericFocusOrder(0),
+                    child: DesktopTitleBar(
+                      chrome: _chrome,
+                      searchFocus: _searchFocus,
+                      searchController: _searchText,
+                      onSearchSubmitted: _submitSearch,
+                    ),
                   ),
-                ),
                 Expanded(
                   child: Row(
                     children: [

@@ -225,14 +225,15 @@ void main() {
       await _closeRoute(t);
     });
 
-    testWidgets('Down reaches the button; the menu shows language, codec and '
+    testWidgets('Up reaches the button; the menu shows language, codec and '
         'channels; it keeps the display up; Back closes only the menu', (
       t,
     ) async {
       final engine = await _open(t, _request());
       engine.emitTracks(_tracks);
       await t.pump();
-      await _key(t, LogicalKeyboardKey.arrowDown);
+      // The tracks button is in the top bar now.
+      await _key(t, LogicalKeyboardKey.arrowUp);
       expect(_focused(PlayerKeys.tracks), isTrue);
       await _key(t, LogicalKeyboardKey.enter);
       await t.pump();

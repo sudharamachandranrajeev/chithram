@@ -36,7 +36,7 @@ void main() {
     await tester.pumpAndSettle();
 
     final home = tester.getRect(find.byType(HomePage));
-    final heroWidget = find.byWidgetPredicate((w) => w.runtimeType.toString() == '_Hero');
+    final heroWidget = find.byWidgetPredicate((w) => w.runtimeType.toString() == 'TvBillboard');
     // The painted card: the gradient box inside the margin.
     final hero = tester.getRect(find.descendant(of: heroWidget, matching: find.byType(DecoratedBox)).first);
     // The hero's own side margin is 8 dp.

@@ -31,6 +31,10 @@ class _ChithramAppState extends State<ChithramApp> {
   late final AppServices _services = widget.services ?? AppServices.memory();
   FormFactor? _shown;
 
+  // Attached in every form (the Navigator outlives a design switch); only
+  // the desktop frame reads it.
+  final _routes = DesktopRouteObserver();
+
   @override
   void initState() {
     super.initState();
@@ -40,8 +44,8 @@ class _ChithramAppState extends State<ChithramApp> {
 
   /// Desktop in 10-foot mode is the TV design; everything else is as detected.
   FormFactor? _effective() {
-    final base = widget.formFactor ??
-        resolveFormFactor(platform: defaultTargetPlatform, define: formFactorDefine);
+    final base =
+        widget.formFactor ?? resolveFormFactor(platform: defaultTargetPlatform, define: formFactorDefine);
     if (base == FormFactor.desktop && _services.prefs.getBool(tenFootPref)) return FormFactor.tv;
     return base;
   }
@@ -64,6 +68,7 @@ class _ChithramAppState extends State<ChithramApp> {
           final look = ChithramTheme.fromPrefs(_services.prefs);
           final app = MaterialApp(
             navigatorKey: _services.navigatorKey,
+            navigatorObservers: [_routes],
             title: 'Chithram',
             debugShowCheckedModeBanner: false,
             theme: buildChithramTheme(form: form ?? FormFactor.tv, colors: look),
@@ -72,22 +77,23 @@ class _ChithramAppState extends State<ChithramApp> {
             // Phones: the status and navigation bars take the look's colours.
             builder: form == FormFactor.phone
                 ? (context, child) => AnnotatedRegion<SystemUiOverlayStyle>(
-                      value: systemBars(look),
-                      child: child ?? const SizedBox.shrink(),
-                    )
+                    value: systemBars(look),
+                    child: child ?? const SizedBox.shrink(),
+                  )
                 : (form == FormFactor.desktop
-                    // Above the Navigator: the shortcuts reach pages over the shell.
-                    ? (context, child) => DesktopShortcutScope(
+                      // Above the Navigator: the shortcuts and the title bar
+                      // reach pages over the shell.
+                      ? (context, child) => DesktopShortcutScope(
                           navigatorKey: _services.navigatorKey,
+                          routes: _routes,
                           child: child ?? const SizedBox.shrink(),
                         )
-                    : null),
+                      : null),
             home: Shell(key: ValueKey(form)),
             // Debug-only spike pages (see spikes/registry.dart); null in release.
             initialRoute: spikeInitialRoute(),
             onGenerateRoute: spikeRoute,
-            onUnknownRoute: (settings) =>
-                MaterialPageRoute<void>(builder: (_) => const Shell()),
+            onUnknownRoute: (settings) => MaterialPageRoute<void>(builder: (_) => const Shell()),
           );
           return form == null ? app : FormScope(form: form, child: app);
         },

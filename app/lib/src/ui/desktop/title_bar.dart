@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../theme.dart';
 import '../common/dims.dart';
+import '../common/keys.dart';
 import '../common/tokens.dart';
 import 'focus_ring.dart';
 import 'window_chrome.dart';
@@ -16,6 +17,9 @@ const titleBarHeight = 40.0;
 /// With a custom frame ([WindowChrome.custom], Windows) the empty part of the
 /// bar drags the window (double-click maximises) and the window buttons show.
 /// With the native frame (Linux) it is only a toolbar.
+///
+/// [onBack] set (a page is open over the shell) puts a Back button before the
+/// logo, so a mouse user always has a way back without knowing Esc.
 class DesktopTitleBar extends StatelessWidget {
   const DesktopTitleBar({
     super.key,
@@ -23,12 +27,14 @@ class DesktopTitleBar extends StatelessWidget {
     required this.searchFocus,
     required this.searchController,
     required this.onSearchSubmitted,
+    this.onBack,
   });
 
   final WindowChrome chrome;
   final FocusNode searchFocus;
   final TextEditingController searchController;
   final ValueChanged<String> onSearchSubmitted;
+  final VoidCallback? onBack;
 
   @override
   Widget build(BuildContext context) {
@@ -59,9 +65,10 @@ class DesktopTitleBar extends StatelessWidget {
                 Positioned.fill(
                   child: Row(
                     children: [
+                      _BackSlot(onBack: onBack),
                       const IgnorePointer(child: _Brand()),
                       const Spacer(),
-                      if (custom) _WindowButtons(chrome: chrome),
+                      if (custom) WindowButtons(chrome: chrome),
                     ],
                   ),
                 ),
@@ -80,6 +87,36 @@ class DesktopTitleBar extends StatelessWidget {
           },
         ),
       ),
+    );
+  }
+}
+
+/// The Back button's place: it grows in when a page opens over the shell and
+/// takes no room on the shell itself.
+class _BackSlot extends StatelessWidget {
+  const _BackSlot({required this.onBack});
+
+  final VoidCallback? onBack;
+
+  @override
+  Widget build(BuildContext context) {
+    final back = onBack;
+    return AnimatedSize(
+      duration: Motion.of(context).expandTime,
+      curve: Motion.curve,
+      child: back == null
+          ? const SizedBox(height: titleBarHeight)
+          : Padding(
+              padding: const EdgeInsets.only(left: Space.s4),
+              child: TitleBarButton(
+                key: Keys.titleBarBack,
+                label: 'Back',
+                tooltip: 'Back (Esc)',
+                icon: Icons.arrow_back_rounded,
+                width: 40,
+                onPressed: back,
+              ),
+            ),
     );
   }
 }
@@ -196,10 +233,14 @@ class _SearchFieldState extends State<_SearchField> {
   }
 }
 
-class _WindowButtons extends StatelessWidget {
-  const _WindowButtons({required this.chrome});
+/// Minimise, maximise and close. Public for the player, which covers the
+/// title bar and draws these in its own top bar ([foreground] over video).
+class WindowButtons extends StatelessWidget {
+  const WindowButtons({super.key, required this.chrome, this.foreground, this.height = titleBarHeight});
 
   final WindowChrome chrome;
+  final Color? foreground;
+  final double height;
 
   @override
   Widget build(BuildContext context) {
@@ -207,21 +248,27 @@ class _WindowButtons extends StatelessWidget {
       valueListenable: chrome.maximized,
       builder: (context, maximized, _) => Row(
         children: [
-          _WindowButton(
+          TitleBarButton(
             label: 'Minimize',
             icon: Icons.remove_rounded,
             onPressed: chrome.minimize,
+            foreground: foreground,
+            height: height,
           ),
-          _WindowButton(
+          TitleBarButton(
             label: maximized ? 'Restore' : 'Maximize',
             icon: maximized ? Icons.filter_none_rounded : Icons.crop_square_rounded,
             onPressed: chrome.toggleMaximize,
+            foreground: foreground,
+            height: height,
           ),
-          _WindowButton(
+          TitleBarButton(
             label: 'Close',
             icon: Icons.close_rounded,
             onPressed: chrome.close,
             danger: true,
+            foreground: foreground,
+            height: height,
           ),
         ],
       ),
@@ -229,24 +276,36 @@ class _WindowButtons extends StatelessWidget {
   }
 }
 
-class _WindowButton extends StatefulWidget {
-  const _WindowButton({
+/// A flat title-bar button: a window button, or Back.
+class TitleBarButton extends StatefulWidget {
+  const TitleBarButton({
+    super.key,
     required this.label,
     required this.icon,
     required this.onPressed,
     this.danger = false,
+    this.foreground,
+    this.tooltip,
+    this.width = 46,
+    this.height = titleBarHeight,
   });
 
   final String label;
   final IconData icon;
   final VoidCallback onPressed;
   final bool danger;
+  final Color? foreground;
+
+  /// Shown on hover; null shows none (the window buttons are self-evident).
+  final String? tooltip;
+  final double width;
+  final double height;
 
   @override
-  State<_WindowButton> createState() => _WindowButtonState();
+  State<TitleBarButton> createState() => _TitleBarButtonState();
 }
 
-class _WindowButtonState extends State<_WindowButton> {
+class _TitleBarButtonState extends State<TitleBarButton> {
   bool _hovered = false;
   bool _focused = false;
 
@@ -254,7 +313,8 @@ class _WindowButtonState extends State<_WindowButton> {
   Widget build(BuildContext context) {
     final c = ChithramColors.of(context);
     final hot = _hovered && widget.danger;
-    return Semantics(
+    final fg = widget.foreground ?? c.text;
+    final button = Semantics(
       button: true,
       label: widget.label,
       onTap: widget.onPressed,
@@ -277,17 +337,21 @@ class _WindowButtonState extends State<_WindowButton> {
               focused: _focused,
               radius: 4,
               child: Container(
-                width: 46,
-                height: titleBarHeight,
+                width: widget.width,
+                height: widget.height,
                 color: hot
                     ? const Color(0xFFE81123)
-                    : (_hovered ? c.text.withValues(alpha: 0.08) : Colors.transparent),
-                child: Icon(widget.icon, size: 16, color: hot ? Colors.white : c.text),
+                    : (_hovered ? fg.withValues(alpha: 0.08) : Colors.transparent),
+                child: Icon(widget.icon, size: 16, color: hot ? Colors.white : fg),
               ),
             ),
           ),
         ),
       ),
     );
+    final tip = widget.tooltip;
+    return tip == null
+        ? button
+        : Tooltip(message: tip, waitDuration: const Duration(milliseconds: 500), child: button);
   }
 }

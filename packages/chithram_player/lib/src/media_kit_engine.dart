@@ -82,7 +82,7 @@ MediaTracks mpvTracks(Tracks tracks, {String? aid, String? sid}) {
 /// Separate audio (YouTube DASH) is attached with mpv's `audio-add` command.
 /// Setting the `audio-files` option would split the URL at its `:` characters
 /// (mpv's list separator on Unix), so the command is the safe route.
-class MediaKitPlayerEngine implements PlayerEngine {
+class MediaKitPlayerEngine implements PlayerEngine, PlayerTuning {
   MediaKitPlayerEngine._() {
     _player = Player();
     _controller = VideoController(_player);
@@ -178,6 +178,13 @@ class MediaKitPlayerEngine implements PlayerEngine {
   Future<void> pause() => _player.pause();
   @override
   Future<void> seek(Duration position) => _player.seek(position);
+
+  @override
+  Future<void> setSpeed(double speed) => _player.setRate(speed);
+
+  // mpv's volume is 0 to 100.
+  @override
+  Future<void> setVolume(double volume) => _player.setVolume(volume.clamp(0, 1) * 100);
 
   @override
   Stream<Duration> get position => _player.stream.position;

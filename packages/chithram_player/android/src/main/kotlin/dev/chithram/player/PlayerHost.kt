@@ -276,6 +276,8 @@ class PlayerHost(
     fun play() { player.playWhenReady = true }
     fun pause() { player.playWhenReady = false }
     fun seek(ms: Long) { player.seekTo(ms) }
+    fun setSpeed(speed: Float) { player.setPlaybackSpeed(speed) }
+    fun setVolume(volume: Float) { player.volume = volume.coerceIn(0f, 1f) }
 
     fun attach(view: SurfaceView, subtitles: SubtitleView) {
         if (released) return

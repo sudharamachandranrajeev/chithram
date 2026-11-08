@@ -4,6 +4,7 @@ import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:iptv/iptv.dart' hide SecretStore;
+import 'package:package_info_plus/package_info_plus.dart';
 
 import '../catalog/catalog_repository.dart';
 import '../catalog/tmdb_catalog.dart';
@@ -33,6 +34,7 @@ import 'prefs.dart';
 import 'resume_store.dart';
 import 'resume_store_json.dart';
 import 'secrets.dart';
+import 'updater.dart';
 
 /// The app's services, built once in `main()` and read with
 /// [AppServices.of]. Plain objects (`ChangeNotifier` or `ValueListenable`
@@ -59,8 +61,16 @@ class AppServices {
     required this.torrentHome,
     PluginRegistry? plugins,
     MediaService? media,
+    UpdateManager? updates,
   })  : plugins = plugins ?? PluginRegistry(),
-        media = media ?? MediaService(prefs: prefs, tokens: SecretTokenStore(secrets));
+        media = media ?? MediaService(prefs: prefs, tokens: SecretTokenStore(secrets)),
+        updates = updates ??
+            UpdateManager(
+              currentVersion: platformVersion,
+              dir: paths.cacheDir('updates'),
+              // Offline unless a test passes a real one: nothing here reads the network.
+              fetch: (_) async => (503, const <int>[]),
+            );
 
   /// The real services: files under the app support directory. Reads only
   /// `prefs.json` and `home_snapshot.json` (in parallel); the database, the
@@ -110,6 +120,7 @@ class AppServices {
         cacheFile: File('${paths.cache.path}/torrent_home.json'),
       ),
       plugins: plugins,
+      updates: UpdateManager(currentVersion: platformVersion, dir: paths.cacheDir('updates')),
     );
   }
 
@@ -134,6 +145,7 @@ class AppServices {
     TorrentHomeFeed? torrentHome,
     PluginRegistry? plugins,
     MediaService? media,
+    UpdateManager? updates,
   }) {
     // Tests build many; each database is lazy and in memory.
     driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
@@ -168,6 +180,7 @@ class AppServices {
       torrentHome: torrentHome ?? TorrentHomeFeed(sources: TorznabPopularSources(torznab0)),
       plugins: pluginRegistry,
       media: media,
+      updates: updates,
     );
   }
 
@@ -214,6 +227,19 @@ class AppServices {
   /// The Media section's state (flag `media.enabled`, off by default). Idle:
   /// no disk, no network until the section is on and shown.
   final MediaService media;
+
+  /// New versions from the GitHub releases: checked quietly after the first
+  /// frame, and from Settings. Offline in [AppServices.memory] unless passed.
+  final UpdateManager updates;
+
+  /// This build's version, or '' where the platform cannot say.
+  static Future<String> platformVersion() async {
+    try {
+      return (await PackageInfo.fromPlatform()).version;
+    } catch (_) {
+      return '';
+    }
+  }
 
   static AppServices of(BuildContext context) {
     final scope = context.dependOnInheritedWidgetOfExactType<AppServicesScope>();

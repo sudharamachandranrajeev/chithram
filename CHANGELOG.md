@@ -2,6 +2,14 @@
 
 Release notes are taken from the section of the version being tagged.
 
+## 0.4.1
+
+### Added
+- Updates in Settings: Chithram checks GitHub for a newer release (quietly, once after it starts) and, on Windows and
+  the Linux AppImage, downloads it, checks its SHA-256 against the release's SHA256SUMS.txt and installs it. A download
+  that does not match, or a release with no checksum, is not installed. On Android it names the new version and the
+  releases page.
+
 ## 0.4.0
 
 ### Changed

@@ -67,7 +67,7 @@ jobs:
             cargo tree -p librqbit --depth 0
             cargo metadata --format-version 1 | python3 -c "import sys,json; d=json.load(sys.stdin); [print(p['name'], p['version'], p['license']) for p in d['packages'] if p['name']=='librqbit']"
           } | tee -a "$GITHUB_STEP_SUMMARY"
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         continue-on-error: true
         with:
@@ -111,7 +111,7 @@ jobs:
           ls -l ../../out/linux-x64 | tee -a "$GITHUB_STEP_SUMMARY"
           echo "glibc symbols needed:"; objdump -T ../../out/linux-x64/libchithram_torrent.so | grep -o 'GLIBC_[0-9.]*' | sort -uV | tail -3
           nm -D --defined-only ../../out/linux-x64/libchithram_torrent.so | grep ' ct_'
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         continue-on-error: true
         with:
           retention-days: 2
@@ -140,7 +140,7 @@ jobs:
           mkdir -p ../../out/windows-x64
           cp target/x86_64-pc-windows-msvc/release/chithram_torrent.dll ../../out/windows-x64/
           ls -l ../../out/windows-x64 | tee -a "$GITHUB_STEP_SUMMARY"
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         continue-on-error: true
         with:
           retention-days: 2
@@ -173,7 +173,7 @@ jobs:
             ls -l ../../out/jniLibs/*/
             echo '```'
           } | tee -a "$GITHUB_STEP_SUMMARY"
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         continue-on-error: true
         with:
           retention-days: 2
@@ -349,7 +349,7 @@ jobs:
             tail -5 "$RUNNER_TEMP/seeder.log" || true
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         continue-on-error: true
         with:

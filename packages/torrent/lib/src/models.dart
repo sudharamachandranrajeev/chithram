@@ -74,13 +74,37 @@ class TorrentStats {
   }
 
   /// Download speed as librqbit reports it (MiB/s), or null when not live.
-  double? get downloadMibPerSec {
+  double? get downloadMibPerSec => _speed('download_speed');
+
+  /// Upload speed (MiB/s), or null when not live.
+  double? get uploadMibPerSec => _speed('upload_speed');
+
+  double? _speed(String key) {
     final live = raw['live'];
     if (live is! Map) return null;
-    final s = live['download_speed'];
+    final s = live[key];
     if (s is Map && s['mbps'] is num) return (s['mbps'] as num).toDouble();
     return null;
   }
+
+  /// Bytes sent to other peers.
+  int get uploadedBytes => (raw['uploaded_bytes'] as num?)?.toInt() ?? 0;
+
+  bool get paused => state == 'paused';
+
+  /// Time left as librqbit words it ("2m 10s"), or null.
+  String? get timeRemaining {
+    final live = raw['live'];
+    if (live is! Map) return null;
+    final t = live['time_remaining'];
+    if (t is Map && t['human_readable'] is String) return t['human_readable'] as String;
+    return null;
+  }
+
+  /// Bytes done per file index, when the engine reports them.
+  List<int> get fileProgress => [
+        for (final b in (raw['file_progress'] is List ? raw['file_progress'] as List : const [])) (b as num).toInt(),
+      ];
 }
 
 class TorrentException implements Exception {

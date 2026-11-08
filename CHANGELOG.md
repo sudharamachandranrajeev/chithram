@@ -2,6 +2,19 @@
 
 Release notes are taken from the section of the version being tagged.
 
+## 0.5.0
+
+### Added
+- Search torrents: a Search button on the Torrents page asks the installed search plugins and Torznab endpoints.
+  Results are sorted by seeders, size or age, one row per torrent, with size, seeders/leechers, age and where they
+  came from, and each provider's state. Select a result to stream it, pick a file to stream, download it, or copy its
+  magnet link.
+- Downloads: keep a torrent in a folder of your own (Downloads\Chithram by default) instead of streaming it. Downloads
+  survive a restart, show progress, speeds, peers and time left, and can be paused, resumed, narrowed to some files,
+  played while they download, opened in the file manager, and removed with or without their files. "Download instead"
+  on a stream's file list keeps it.
+- Torrent settings: download folder, download and upload speed limits, and whether finished downloads keep seeding.
+
 ## 0.4.2
 
 ### Changed

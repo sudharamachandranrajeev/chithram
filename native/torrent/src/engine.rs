@@ -1,8 +1,10 @@
 //! Engine: a librqbit session plus the loopback streaming server.
 
+use std::collections::HashSet;
 use std::net::{Ipv4Addr, SocketAddr};
+use std::num::NonZeroU32;
 use std::path::PathBuf;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use anyhow::{Context, Result, bail};
 use librqbit::{
@@ -30,6 +32,20 @@ pub enum AddSource {
     TorrentBytes(Vec<u8>),
 }
 
+/// How a torrent is added.
+#[derive(Clone, Debug, Default)]
+pub struct AddOptions {
+    /// Tried first; useful for tests and trusted sources.
+    pub initial_peers: Vec<SocketAddr>,
+    /// A kept download: saved here instead of the stream cache, never evicted
+    /// by the quota, and files already there are checked and resumed.
+    pub output_folder: Option<String>,
+    /// Added without starting.
+    pub paused: bool,
+    /// Only these file indexes are downloaded (all when None).
+    pub only_files: Option<Vec<usize>>,
+}
+
 pub struct Engine {
     pub session: Arc<Session>,
     pub port: u16,
@@ -37,6 +53,8 @@ pub struct Engine {
     quota_bytes: u64,
     socks5: bool,
     server: JoinHandle<()>,
+    /// Ids of kept downloads: outside the stream-cache quota.
+    kept: Mutex<HashSet<usize>>,
 }
 
 fn random_token() -> Result<String> {
@@ -206,10 +224,23 @@ impl Engine {
         let server = tokio::spawn(async move {
             let _ = axum::serve(listener, app).await;
         });
-        Ok(Engine { session, port, token, quota_bytes: o.quota_bytes, socks5: proxied, server })
+        Ok(Engine {
+            session,
+            port,
+            token,
+            quota_bytes: o.quota_bytes,
+            socks5: proxied,
+            server,
+            kept: Mutex::new(HashSet::new()),
+        })
     }
 
     pub async fn add(&self, src: AddSource, initial_peers: Vec<SocketAddr>) -> Result<Value> {
+        self.add_with(src, AddOptions { initial_peers, ..Default::default() }).await
+    }
+
+    pub async fn add_with(&self, src: AddSource, o: AddOptions) -> Result<Value> {
+        let keep = o.output_folder.is_some();
         let add = match src {
             AddSource::Magnet(m) => {
                 if !m.starts_with("magnet:") {
@@ -222,7 +253,12 @@ impl Engine {
             }
         };
         let opts = AddTorrentOptions {
-            initial_peers: if initial_peers.is_empty() { None } else { Some(initial_peers) },
+            initial_peers: if o.initial_peers.is_empty() { None } else { Some(o.initial_peers) },
+            // Kept downloads resume over what is already on disk.
+            overwrite: keep,
+            output_folder: o.output_folder,
+            paused: o.paused,
+            only_files: o.only_files,
             ..Default::default()
         };
         let (id, h) = match self.session.add_torrent(add, Some(opts)).await? {
@@ -239,6 +275,9 @@ impl Engine {
                 })
                 .collect()
         })?;
+        if keep {
+            self.kept.lock().unwrap_or_else(|e| e.into_inner()).insert(id);
+        }
         self.enforce_quota(id).await;
         Ok(json!({"id": id, "name": h.name(), "info_hash": h.info_hash().as_string(), "files": files}))
     }
@@ -248,9 +287,12 @@ impl Engine {
         if self.quota_bytes == 0 {
             return;
         }
-        let mut all: Vec<(usize, u64)> = self
-            .session
-            .with_torrents(|it| it.map(|(id, h)| (id, h.stats().progress_bytes)).collect());
+        let kept = self.kept.lock().unwrap_or_else(|e| e.into_inner()).clone();
+        let mut all: Vec<(usize, u64)> = self.session.with_torrents(|it| {
+            it.filter(|(id, _)| !kept.contains(id))
+                .map(|(id, h)| (id, h.stats().progress_bytes))
+                .collect()
+        });
         all.sort_by_key(|(id, _)| *id);
         let mut total: u64 = all.iter().map(|(_, b)| *b).sum();
         for (id, bytes) in all {
@@ -277,7 +319,36 @@ impl Engine {
     }
 
     pub async fn remove(&self, id: usize, delete_files: bool) -> Result<()> {
-        self.session.delete(TorrentIdOrHash::Id(id), delete_files).await
+        self.session.delete(TorrentIdOrHash::Id(id), delete_files).await?;
+        self.kept.lock().unwrap_or_else(|e| e.into_inner()).remove(&id);
+        Ok(())
+    }
+
+    fn handle(&self, id: usize) -> Result<Arc<librqbit::ManagedTorrent>> {
+        self.session.get(TorrentIdOrHash::Id(id)).context("no such torrent")
+    }
+
+    pub async fn pause(&self, id: usize) -> Result<()> {
+        self.session.pause(&self.handle(id)?).await
+    }
+
+    pub async fn resume(&self, id: usize) -> Result<()> {
+        self.session.unpause(&self.handle(id)?).await
+    }
+
+    /// Download only `files` (indexes) from now on.
+    pub async fn set_files(&self, id: usize, files: &[usize]) -> Result<()> {
+        let set: HashSet<usize> = files.iter().copied().collect();
+        if set.is_empty() {
+            bail!("choose at least one file");
+        }
+        self.session.update_only_files(&self.handle(id)?, &set).await
+    }
+
+    /// Session-wide limits in bytes per second; 0 = unlimited.
+    pub fn set_limits(&self, download_bps: u32, upload_bps: u32) {
+        self.session.ratelimits.set_download_bps(NonZeroU32::new(download_bps));
+        self.session.ratelimits.set_upload_bps(NonZeroU32::new(upload_bps));
     }
 
     pub fn url_prefix(&self) -> String {

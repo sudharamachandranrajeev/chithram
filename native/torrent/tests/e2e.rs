@@ -5,7 +5,7 @@ use std::io::{Read, Seek, SeekFrom, Write};
 use std::net::{Ipv4Addr, SocketAddr};
 use std::time::{Duration, Instant};
 
-use chithram_torrent::engine::{AddSource, Engine, StartOptions};
+use chithram_torrent::engine::{AddOptions, AddSource, Engine, StartOptions};
 use librqbit::{
     AddTorrent, AddTorrentOptions, CreateTorrentOptions, ListenerMode, ListenerOptions, Session,
     SessionOptions, create_torrent, spawn_utils::BlockingSpawner,
@@ -284,5 +284,70 @@ async fn non_media_rejected() {
     let host = format!("127.0.0.1:{}", eng.port);
     let r = http(eng.port, "GET", &format!("/{}/stream/{id}/0", eng.token), &host, None).await;
     assert_eq!(r.status, 415);
+    eng.shutdown().await;
+}
+
+/// Polls until the torrent's state is [want] (max 10 s).
+async fn wait_state(eng: &Engine, id: usize, want: &str) {
+    let start = Instant::now();
+    loop {
+        let st = eng.stats(id).unwrap()["state"].as_str().unwrap_or("").to_string();
+        if st == want {
+            return;
+        }
+        assert!(start.elapsed() < Duration::from_secs(10), "state {st}, want {want}");
+        tokio::time::sleep(Duration::from_millis(50)).await;
+    }
+}
+
+/// A kept download goes to its own folder, survives the quota, pauses,
+/// resumes, and narrows to chosen files.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn kept_download_pause_resume_and_files() {
+    let src = tempfile::tempdir().unwrap();
+    std::fs::create_dir(src.path().join("pack")).unwrap();
+    std::fs::write(src.path().join("pack/a.mkv"), vec![1u8; 8192]).unwrap();
+    std::fs::write(src.path().join("pack/b.mkv"), vec![2u8; 8192]).unwrap();
+    let torrent = create_torrent(
+        &src.path().join("pack"),
+        CreateTorrentOptions { piece_length: Some(1024), ..Default::default() },
+        &BlockingSpawner::new(1),
+    )
+    .await
+    .unwrap();
+    // A 1-byte quota would evict every stream torrent; the kept one must stay.
+    let eng = Engine::start(StartOptions {
+        dir: tempfile::tempdir().unwrap().keep(),
+        quota_bytes: 1,
+        socks5: None,
+        local_only: true,
+    })
+    .await
+    .unwrap();
+    let out = tempfile::tempdir().unwrap();
+    let added = eng
+        .add_with(
+            AddSource::TorrentBytes(torrent.as_bytes().unwrap().to_vec()),
+            AddOptions {
+                output_folder: Some(out.path().to_string_lossy().into_owned()),
+                paused: true,
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
+    let id = added["id"].as_u64().unwrap() as usize;
+    assert_eq!(added["files"].as_array().unwrap().len(), 2);
+    wait_state(&eng, id, "paused").await;
+    eng.resume(id).await.unwrap();
+    wait_state(&eng, id, "live").await;
+    eng.set_files(id, &[1]).await.unwrap();
+    assert!(eng.set_files(id, &[]).await.is_err());
+    eng.pause(id).await.unwrap();
+    wait_state(&eng, id, "paused").await;
+    eng.set_limits(1 << 20, 0);
+    assert!(eng.stats(id).is_ok(), "the kept download was evicted");
+    eng.remove(id, false).await.unwrap();
+    assert!(eng.stats(id).is_err());
     eng.shutdown().await;
 }

@@ -38,16 +38,36 @@ class PhoneFileTiles extends StatelessWidget {
 /// The file list screen on a phone (shown by the page that owns the torrent,
 /// which removes it when the screen closes).
 class PhoneTorrentFiles extends StatelessWidget {
-  const PhoneTorrentFiles({super.key, required this.info, required this.service, required this.onPlay});
+  const PhoneTorrentFiles({
+    super.key,
+    required this.info,
+    required this.service,
+    required this.onPlay,
+    this.onDownload,
+  });
 
   final TorrentInfo info;
   final TorrentService service;
   final void Function(TorrentFile) onPlay;
 
+  /// "Download instead": keeps the torrent.
+  final VoidCallback? onDownload;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(info.name ?? 'Torrent', maxLines: 1, overflow: TextOverflow.ellipsis)),
+      appBar: AppBar(
+        title: Text(info.name ?? 'Torrent', maxLines: 1, overflow: TextOverflow.ellipsis),
+        actions: [
+          if (onDownload != null)
+            IconButton(
+              key: TorrentKeys.downloadInstead,
+              tooltip: 'Download instead',
+              icon: const Icon(Icons.download_rounded),
+              onPressed: onDownload,
+            ),
+        ],
+      ),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.only(bottom: 24),

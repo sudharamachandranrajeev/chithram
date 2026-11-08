@@ -2,6 +2,29 @@
 
 Release notes are taken from the section of the version being tagged.
 
+## 0.4.0
+
+### Changed
+- Player: new on-screen controls. A top bar with Back, the title, playback speed and (desktop) fullscreen and window
+  buttons; large centre controls (back 10 s, play/pause, forward 10 s, previous/next); a seek bar; volume and mute on
+  desktop. Esc leaves fullscreen and then closes the player; Space/K, J/L, M and F work as on video sites, and the mouse
+  back button goes back.
+- Desktop: the title bar stays on every page and has a Back button, so pages opened over the main screen (player,
+  results, channel lists) always have a way back. Esc and Alt+Left go back too.
+- Live TV: filter channels by category, country, language and quality, search by name, and sort by name, channel
+  number, country or recently watched. Favourites and a recently watched list (last 50). Grid or list view. Country,
+  language and quality are worked out from the playlist (tvg-id, group and name), so existing playlists get them too.
+- YouTube: a new home page on desktop, phone and TV with search suggestions, topic chips (For you, Continue watching,
+  Music, Live, Sports, News, Gaming), a rotating featured banner and rows of video cards with watch progress and
+  duration. Search results are a grid on desktop and a list on phone, load more as you scroll, and Back returns to
+  where you were. Loading placeholders, and a Retry when loading fails.
+- App Home uses the same banner, cards and rows as the YouTube home.
+
+### Known issues
+- Pages with their own back arrow (Find, Plugins, YouTube results) show it under the title-bar Back on desktop.
+- Video cards do not show upload age yet.
+- Android: playback speed and volume are new and not yet tested on a device.
+
 ## 0.3.1
 
 ### Added

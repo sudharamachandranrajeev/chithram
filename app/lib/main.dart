@@ -56,6 +56,7 @@ Future<void> main(List<String> args) async {
     unawaited(_sizeImageCache());
     unawaited(services.plugins.start()); // loads plugins, then the daily repo check after 30 s
     unawaited(services.updates.check(quiet: true)); // a newer release on GitHub?
+    unawaited(services.torrents.restoreDownloads()); // kept downloads carry on
   });
   final smoke = smokeTarget(args);
   if (smoke != null) unawaited(runSmoke(smoke));

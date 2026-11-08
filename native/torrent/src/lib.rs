@@ -12,7 +12,7 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use engine::{AddSource, Engine, StartOptions};
+use engine::{AddOptions, AddSource, Engine, StartOptions};
 use serde_json::{Value, json};
 use tokio::runtime::Runtime;
 
@@ -111,7 +111,8 @@ pub unsafe extern "C" fn ct_start(dir: *const c_char, quota_bytes: u64, socks5: 
 ///
 /// # Safety
 /// `magnet` null or a valid C string; `data` must point to `len` readable bytes when non-null;
-/// `peers_json` null or a JSON array of "ip:port" strings used as initial peers.
+/// `peers_json` null, a JSON array of "ip:port" strings used as initial peers, or an object
+/// `{"peers":[..],"output_folder":"..","paused":bool,"only_files":[..]}` (see [`AddOptions`]).
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn ct_add(
     magnet: *const c_char,
@@ -120,10 +121,7 @@ pub unsafe extern "C" fn ct_add(
     peers_json: *const c_char,
 ) -> *mut c_char {
     let magnet = unsafe { opt_str(magnet) };
-    let peers: Vec<std::net::SocketAddr> = unsafe { opt_str(peers_json) }
-        .and_then(|s| serde_json::from_str::<Vec<String>>(&s).ok())
-        .map(|v| v.iter().filter_map(|p| p.parse().ok()).collect())
-        .unwrap_or_default();
+    let opts = add_options(unsafe { opt_str(peers_json) }.and_then(|s| serde_json::from_str::<Value>(&s).ok()));
     let bytes = if data.is_null() || len == 0 {
         None
     } else {
@@ -140,7 +138,7 @@ pub unsafe extern "C" fn ct_add(
             _ => return err("need a magnet or torrent bytes"),
         };
         let r = rt.block_on(async {
-            tokio::time::timeout(Duration::from_secs(120), engine.add(src, peers))
+            tokio::time::timeout(Duration::from_secs(120), engine.add_with(src, opts))
                 .await
                 .map_err(|_| anyhow::anyhow!("timed out resolving metadata"))?
         });
@@ -151,6 +149,79 @@ pub unsafe extern "C" fn ct_add(
             }
             Err(e) => err(e),
         }
+    })
+}
+
+/// The add options from `ct_add`'s JSON: a bare array is the initial peers.
+pub fn add_options(v: Option<Value>) -> AddOptions {
+    let peers = |v: Option<&Value>| -> Vec<std::net::SocketAddr> {
+        v.and_then(Value::as_array)
+            .map(|a| a.iter().filter_map(|p| p.as_str()?.parse().ok()).collect())
+            .unwrap_or_default()
+    };
+    match v {
+        Some(a @ Value::Array(_)) => AddOptions { initial_peers: peers(Some(&a)), ..Default::default() },
+        Some(Value::Object(m)) => AddOptions {
+            initial_peers: peers(m.get("peers")),
+            output_folder: m
+                .get("output_folder")
+                .and_then(Value::as_str)
+                .filter(|s| !s.is_empty())
+                .map(String::from),
+            paused: m.get("paused").and_then(Value::as_bool).unwrap_or(false),
+            only_files: m
+                .get("only_files")
+                .and_then(Value::as_array)
+                .map(|a| a.iter().filter_map(|i| i.as_u64().map(|i| i as usize)).collect()),
+        },
+        _ => AddOptions::default(),
+    }
+}
+
+/// Runs `f` against the engine and answers `{"ok":true}` or the error.
+fn run(f: impl FnOnce(&Runtime, &Engine) -> anyhow::Result<()>) -> *mut c_char {
+    guard(move || {
+        let (rt, e) = match current() {
+            Ok(x) => x,
+            Err(e) => return e,
+        };
+        match f(&rt, &e) {
+            Ok(()) => json!({"ok": true}),
+            Err(e) => err(e),
+        }
+    })
+}
+
+/// Stops a torrent's transfers; its files stay.
+#[unsafe(no_mangle)]
+pub extern "C" fn ct_pause(id: u64) -> *mut c_char {
+    run(|rt, e| rt.block_on(e.pause(id as usize)))
+}
+
+/// Starts a paused torrent again.
+#[unsafe(no_mangle)]
+pub extern "C" fn ct_resume(id: u64) -> *mut c_char {
+    run(|rt, e| rt.block_on(e.resume(id as usize)))
+}
+
+/// Downloads only the file indexes in `files_json` (a JSON array) from now on.
+///
+/// # Safety
+/// `files_json` null or a valid C string.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn ct_set_files(id: u64, files_json: *const c_char) -> *mut c_char {
+    let files: Vec<usize> = unsafe { opt_str(files_json) }
+        .and_then(|s| serde_json::from_str(&s).ok())
+        .unwrap_or_default();
+    run(move |rt, e| rt.block_on(e.set_files(id as usize, &files)))
+}
+
+/// Session-wide speed limits in bytes per second; 0 = unlimited.
+#[unsafe(no_mangle)]
+pub extern "C" fn ct_set_limits(download_bps: u32, upload_bps: u32) -> *mut c_char {
+    run(move |_, e| {
+        e.set_limits(download_bps, upload_bps);
+        Ok(())
     })
 }
 
@@ -194,4 +265,25 @@ pub extern "C" fn ct_stop() -> *mut c_char {
         }
         json!({"ok": true})
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn add_options_read_an_array_or_an_object() {
+        let a = add_options(Some(json!(["127.0.0.1:6881", "bad"])));
+        assert_eq!(a.initial_peers.len(), 1);
+        assert!(a.output_folder.is_none());
+        let o = add_options(Some(json!({
+            "peers": ["127.0.0.1:1"], "output_folder": "/d", "paused": true, "only_files": [0, 2]
+        })));
+        assert_eq!(o.initial_peers.len(), 1);
+        assert_eq!(o.output_folder.as_deref(), Some("/d"));
+        assert!(o.paused);
+        assert_eq!(o.only_files, Some(vec![0, 2]));
+        assert!(add_options(Some(json!({"output_folder": ""}))).output_folder.is_none());
+        assert!(add_options(None).initial_peers.is_empty());
+    }
 }

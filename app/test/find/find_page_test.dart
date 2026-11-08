@@ -27,18 +27,40 @@ Future<FakeFindProvider> _pump(WidgetTester t, Widget Function(Widget home) wrap
 }
 
 void main() {
-  testWidgets('FindPage lists raw results and passes the query on', (t) async {
+  testWidgets('FindPage lists results and passes the query on', (t) async {
     final p = await _pump(t, (_) => const FindPage(query: TextQuery('Fixture Film 1')));
     await t.pumpAndSettle();
-    expect(find.text("Find sources for 'Fixture Film 1'"), findsOneWidget);
+    expect(find.text("Find 'Fixture Film 1'"), findsOneWidget);
     expect(find.text('Fixture Film 1 2020 1080p'), findsOneWidget);
+    expect(find.textContaining('12 seeders'), findsOneWidget);
+    expect(find.byKey(const ValueKey('find-sort-size')), findsOneWidget);
     expect(p.queries.single, isA<TextQuery>());
+  });
+
+  testWidgets('selecting a torrent result offers stream, download and copy', (t) async {
+    await _pump(t, (_) => const FindPage(query: TextQuery('Fixture Film 1')), providers: [
+      FakeFindProvider(id: 'fixture', results: [
+        FindResult(
+          providerId: 'fixture',
+          title: 'Fixture Film 1 2020 1080p',
+          kind: ResultKind.torrent,
+          seeders: 12,
+          infoHash: 'a' * 40,
+        ),
+      ]),
+    ]);
+    await t.pumpAndSettle();
+    await t.tap(find.text('Fixture Film 1 2020 1080p'));
+    await t.pumpAndSettle();
+    for (final k in ['find-stream', 'find-files', 'find-download', 'find-copy']) {
+      expect(find.byKey(ValueKey(k)), findsOneWidget, reason: k);
+    }
   });
 
   testWidgets('FindPage with no providers says so, and skips unavailable ones', (t) async {
     await _pump(t, (_) => const FindPage(query: TextQuery('x')), providers: []);
     await t.pumpAndSettle();
-    expect(find.text('No search providers added yet.'), findsOneWidget);
+    expect(find.textContaining('No search providers yet.'), findsOneWidget);
     final off = FakeFindProvider(id: 'off', available: false, results: const [_result]);
     await _pump(t, (_) => const FindPage(query: TextQuery('x')), providers: [off]);
     await t.pumpAndSettle();

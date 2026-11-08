@@ -9,7 +9,9 @@ import '../../../core/services.dart';
 import '../../../player/play_request.dart';
 import '../../../theme.dart';
 import '../../../ui/phone/phone_widgets.dart';
+import '../downloads_view.dart';
 import '../home/torrent_home_phone.dart';
+import '../torrent_actions.dart';
 import '../torrent_files_page.dart' show TorrentKeys;
 import '../torrent_logic.dart';
 import 'phone_torrent_files.dart';
@@ -97,7 +99,17 @@ class _PhoneTorrentsPageState extends State<PhoneTorrentsPage> {
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           padding: const EdgeInsets.only(bottom: 24),
           children: [
-            const PhoneNote('Stream a torrent while it downloads. It seeds only while you watch.'),
+            const PhoneNote('Search, stream while it downloads, or keep a download. A stream seeds only while you watch.'),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: phoneGutter, vertical: 4),
+              child: FilledButton.icon(
+                key: TorrentKeys.search,
+                style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+                onPressed: () => unawaited(searchTorrents(context)),
+                icon: const Icon(Icons.search_rounded),
+                label: const Text('Search torrents'),
+              ),
+            ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: phoneGutter, vertical: 4),
               child: TextField(
@@ -121,7 +133,7 @@ class _PhoneTorrentsPageState extends State<PhoneTorrentsPage> {
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: phoneGutter, vertical: 8),
-              child: FilledButton.icon(
+              child: FilledButton.tonalIcon(
                 key: const ValueKey('torrent-magnet-add'),
                 style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
                 onPressed: service.resolving ? null : _add,
@@ -138,7 +150,7 @@ class _PhoneTorrentsPageState extends State<PhoneTorrentsPage> {
               onTap: () => unawaited(service.changeNetworkChoice(context)),
             ),
             if (active != null) ...[
-              const PhoneSectionTitle('Downloads'),
+              const PhoneSectionTitle('Streaming'),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: phoneGutter),
                 child: Text(active.name ?? 'Torrent', style: Theme.of(context).textTheme.titleMedium),
@@ -153,6 +165,7 @@ class _PhoneTorrentsPageState extends State<PhoneTorrentsPage> {
               ),
               PhoneFileTiles(info: active, onPlay: (f) => unawaited(_play(active, f))),
             ],
+            ...phoneDownloadTiles(context, service),
             ...phoneTorrentHomeChildren(context, feed.state.value, () => feed.refresh(force: true)),
           ],
           ),

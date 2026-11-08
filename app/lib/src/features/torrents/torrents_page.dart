@@ -14,8 +14,10 @@ import '../../ui/common/text_entry.dart';
 import '../../ui/tv/focus_card.dart';
 import '../../ui/tv/home_page.dart' show ActionLabel;
 import '../receive/receive_page.dart';
+import 'downloads_view.dart';
 import 'home/torrent_home_tv.dart';
 import 'phone/phone_torrents_page.dart';
+import 'torrent_actions.dart';
 import 'torrent_files_page.dart';
 import 'torrent_logic.dart';
 
@@ -97,7 +99,7 @@ class _TorrentsPageState extends State<_TvTorrentsPage> {
                 Text('Torrents', style: TextStyle(fontSize: d.t(32), fontWeight: FontWeight.w700)),
                 const SizedBox(height: 8),
                 Text(
-                  'Stream a torrent while it downloads. It seeds only while you watch.',
+                  'Search, stream while it downloads, or keep a download. A stream seeds only while you watch.',
                   style: TextStyle(color: ChithramColors.of(context).textDim, fontSize: d.t(14)),
                 ),
                 const SizedBox(height: 28),
@@ -106,15 +108,21 @@ class _TorrentsPageState extends State<_TvTorrentsPage> {
                   runSpacing: 16,
                   children: [
                     FocusCard(
-                      key: TorrentKeys.pasteMagnet,
+                      key: TorrentKeys.search,
                       focusNode: widget.focus.entry,
+                      section: widget.focus,
+                      radius: 28,
+                      onActivate: () => unawaited(searchTorrents(context)),
+                      child: const ActionLabel(icon: Icons.search_rounded, text: 'Search torrents', primary: true),
+                    ),
+                    FocusCard(
+                      key: TorrentKeys.pasteMagnet,
                       section: widget.focus,
                       radius: 28,
                       onActivate: service.resolving ? null : _pasteMagnet,
                       child: ActionLabel(
                         icon: Icons.link_rounded,
                         text: service.resolving ? 'Finding peers...' : 'Paste magnet',
-                        primary: true,
                       ),
                     ),
                     FocusCard(
@@ -142,7 +150,7 @@ class _TorrentsPageState extends State<_TvTorrentsPage> {
                 ),
                 if (active != null) ...[
                   const SizedBox(height: 24),
-                  Text('Downloads', style: TextStyle(color: ChithramColors.of(context).accent, fontSize: d.t(14), fontWeight: FontWeight.w600)),
+                  Text('Streaming', style: TextStyle(color: ChithramColors.of(context).accent, fontSize: d.t(14), fontWeight: FontWeight.w600)),
                   const SizedBox(height: 4),
                   Text(active.name ?? 'Torrent',
                       maxLines: 2,
@@ -162,6 +170,7 @@ class _TorrentsPageState extends State<_TvTorrentsPage> {
                     onPlay: (f) => unawaited(_play(active, f)),
                   ),
                 ],
+                DownloadsSection(focus: widget.focus),
                 TorrentHomeRails(focus: widget.focus),
               ],
             );

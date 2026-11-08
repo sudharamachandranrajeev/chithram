@@ -4,17 +4,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:torrent/torrent.dart';
 
+import '../../core/redact.dart';
 import '../../core/services.dart';
 import '../../player/play_request.dart';
 import '../../theme.dart';
 import '../../ui/common/dims.dart';
 import '../../ui/tv/focus_card.dart';
+import '../../ui/tv/home_page.dart' show ActionLabel;
+import 'downloads_view.dart';
 import 'phone/phone_torrent_files.dart';
 import 'torrent_logic.dart';
 
 /// Widget keys for the file list, for tests.
 abstract final class TorrentKeys {
   static const stats = ValueKey('torrent-stats');
+  static const search = ValueKey('torrent-search');
+  static const downloadInstead = ValueKey('torrent-download-instead');
   static const pasteMagnet = ValueKey('torrent-paste-magnet');
   static const sendFromPhone = ValueKey('torrent-send-from-phone');
   static const network = ValueKey('torrent-network');
@@ -61,10 +66,22 @@ class _TorrentFilesPageState extends State<TorrentFilesPage> {
     if (mounted) Navigator.of(context).pop();
   }
 
+  /// Keeps the torrent as a download and shows it in place of this list.
+  Future<void> _downloadInstead() async {
+    final nav = Navigator.of(context);
+    try {
+      final d = await _service.downloadActive();
+      if (!mounted) return;
+      unawaited(nav.pushReplacement(MaterialPageRoute<void>(builder: (_) => DownloadPage(infoHash: d.infoHash))));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(redactText('$e'))));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final d = Dims.of(context);
-    if (d.phone) return PhoneTorrentFiles(info: widget.info, service: _service, onPlay: _play);
+    if (d.phone) return PhoneTorrentFiles(info: widget.info, service: _service, onPlay: _play, onDownload: _downloadInstead);
     return CallbackShortcuts(
       bindings: {
         const SingleActivator(LogicalKeyboardKey.escape): () => Navigator.of(context).maybePop(),
@@ -92,7 +109,18 @@ class _TorrentFilesPageState extends State<TorrentFilesPage> {
                       style: TextStyle(color: ChithramColors.of(context).textDim, fontSize: d.t(14)),
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 16),
+                  Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: FocusCard(
+                      key: TorrentKeys.downloadInstead,
+                      section: _focus,
+                      radius: 24,
+                      onActivate: () => unawaited(_downloadInstead()),
+                      child: const ActionLabel(icon: Icons.download_rounded, text: 'Download instead'),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
                   TorrentFileList(info: widget.info, focus: _focus, onPlay: _play),
                 ],
               ),

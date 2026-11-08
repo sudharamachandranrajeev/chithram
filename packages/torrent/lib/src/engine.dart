@@ -37,16 +37,30 @@ class TorrentEngine {
 
   /// Adds a magnet or .torrent bytes and waits (max 120 s) for the file list.
   /// [peers] ("ip:port") are tried first; useful for tests and trusted sources.
+  ///
+  /// [outputFolder] makes it a kept download: saved there, outside the cache
+  /// quota, resuming over files already present. [onlyFiles] limits it to
+  /// those file indexes.
   Future<TorrentInfo> add({
     String? magnet,
     Uint8List? torrentBytes,
     List<String> peers = const [],
+    String? outputFolder,
+    bool paused = false,
+    List<int>? onlyFiles,
   }) async {
     if (magnet == null && torrentBytes == null) {
       throw ArgumentError('magnet or torrentBytes required');
     }
     final j = await Isolate.run(
-      () => TorrentBindings.open().add(magnet: magnet, torrentBytes: torrentBytes, peers: peers),
+      () => TorrentBindings.open().add(
+        magnet: magnet,
+        torrentBytes: torrentBytes,
+        peers: peers,
+        outputFolder: outputFolder,
+        paused: paused,
+        onlyFiles: onlyFiles,
+      ),
     );
     return TorrentInfo.fromJson(j);
   }
@@ -56,6 +70,18 @@ class TorrentEngine {
 
   Future<void> remove(int id, {bool deleteFiles = false}) =>
       Isolate.run(() => TorrentBindings.open().remove(id, deleteFiles));
+
+  Future<void> pause(int id) => Isolate.run(() => TorrentBindings.open().pause(id));
+
+  Future<void> resume(int id) => Isolate.run(() => TorrentBindings.open().resume(id));
+
+  /// Download only these file indexes from now on (at least one).
+  Future<void> setFiles(int id, List<int> files) =>
+      Isolate.run(() => TorrentBindings.open().setFiles(id, files));
+
+  /// Session-wide speed limits in bytes per second; 0 = unlimited.
+  Future<void> setLimits({int downloadBps = 0, int uploadBps = 0}) =>
+      Isolate.run(() => TorrentBindings.open().setLimits(downloadBps, uploadBps));
 
   /// Stops whatever engine is running in this process (state is process-global).
   static Future<void> stopRunning() => Isolate.run(() => TorrentBindings.open().stop());

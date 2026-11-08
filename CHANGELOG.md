@@ -2,6 +2,11 @@
 
 Release notes are taken from the section of the version being tagged.
 
+## 0.4.2
+
+### Changed
+- A release to check the in-app updater: 0.4.1 finds it in Settings > Updates and installs it. No app changes.
+
 ## 0.4.1
 
 ### Added

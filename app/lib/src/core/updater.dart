@@ -18,8 +18,8 @@ import 'package:flutter/foundation.dart';
 
 /// The list, not /releases/latest: that one passes over pre-releases, and
 /// every 0.x release is published as one.
-const releaseApiUrl = 'https://api.github.com/repos/sudharamachandranrajeev/chithram/releases?per_page=20';
-const releasePageUrl = 'https://github.com/sudharamachandranrajeev/chithram/releases';
+const releaseApiUrl = 'https://api.github.com/repos/sudharamachandranrajeev/chithram-video-app/releases?per_page=20';
+const releasePageUrl = 'https://github.com/sudharamachandranrajeev/chithram-video-app/releases';
 
 /// The file the releases publish their checksums in.
 const checksumsName = 'SHA256SUMS.txt';

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Installs (or updates) Chithram for the current user on x86_64 Linux:
-#   curl -fsSL https://raw.githubusercontent.com/sudharamachandranrajeev/chithram/main/install-linux.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/sudharamachandranrajeev/chithram-video-app/main/install-linux.sh | bash
 #
 # What it does:
 #   1. Installs the runtime libraries with your package manager (pacman, apt or
@@ -13,7 +13,7 @@
 # Options: --no-deps (skip step 1), --uninstall (remove what step 3 added).
 set -euo pipefail
 
-repo=sudharamachandranrajeev/chithram
+repo=sudharamachandranrajeev/chithram-video-app
 prefix=${XDG_DATA_HOME:-$HOME/.local/share}
 dest=$prefix/chithram
 bin=$HOME/.local/bin

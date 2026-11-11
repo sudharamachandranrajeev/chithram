@@ -1,6 +1,6 @@
 <h1 align="center">
   <br>
-  <a href="https://github.com/sudharamachandranrajeev/chithram"><img src="branding/chithram-512.png" alt="Chithram" width="140"></a>
+  <a href="https://github.com/sudharamachandranrajeev/chithram-video-app"><img src="branding/chithram-512.png" alt="Chithram" width="140"></a>
   <br>
   Chithram
   <br>
@@ -9,8 +9,8 @@
 <h4 align="center">A bring-your-own-sources video app: YouTube without an account, live TV from IPTV playlists and torrent streaming, with no ads. Android TV first, then Android phones, Windows and Linux.</h4>
 
 <p align="center">
-  <a href="https://github.com/sudharamachandranrajeev/chithram/releases"><img src="https://img.shields.io/github/v/release/sudharamachandranrajeev/chithram?include_prereleases&color=f5a300" alt="Release"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/github/license/sudharamachandranrajeev/chithram?color=555" alt="License"></a>
+  <a href="https://github.com/sudharamachandranrajeev/chithram-video-app/releases"><img src="https://img.shields.io/github/v/release/sudharamachandranrajeev/chithram-video-app?include_prereleases&color=f5a300" alt="Release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/sudharamachandranrajeev/chithram-video-app?color=555" alt="License"></a>
   <img src="https://img.shields.io/badge/platforms-Android%20TV%20%7C%20Android%20%7C%20Windows%20%7C%20Linux-555" alt="Platforms">
   <img src="https://img.shields.io/badge/Flutter-3.47-02569B?logo=flutter" alt="Flutter">
 </p>
@@ -83,7 +83,7 @@ To clone and run this application, you'll need [Git](https://git-scm.com) and
 
 ```bash
 # Clone this repository
-$ git clone https://github.com/sudharamachandranrajeev/chithram
+$ git clone https://github.com/sudharamachandranrajeev/chithram-video-app
 
 # Go into the repository
 $ cd chithram
@@ -133,7 +133,7 @@ More packages (`torznab`, `tmdb`, `media_names`, `nova_host`, `torrent`) are lis
 
 ## Download
 
-Builds are on the [releases page](https://github.com/sudharamachandranrajeev/chithram/releases).
+Builds are on the [releases page](https://github.com/sudharamachandranrajeev/chithram-video-app/releases).
 
 * **Android TV and phones** – one APK, per-ABI (arm64-v8a, armeabi-v7a, x86_64).
 * **Windows** – installer and portable zip.
@@ -145,7 +145,7 @@ Builds are on the [releases page](https://github.com/sudharamachandranrajeev/chi
 One command, for Arch, Omarchy, Ubuntu, Debian and Fedora (x86_64):
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/sudharamachandranrajeev/chithram/main/install-linux.sh | bash
+curl -fsSL https://raw.githubusercontent.com/sudharamachandranrajeev/chithram-video-app/main/install-linux.sh | bash
 ```
 
 On **Arch and Omarchy** this is all you need. Step by step, the script:
@@ -160,7 +160,7 @@ On **Arch and Omarchy** this is all you need. Step by step, the script:
 Everything stays in your home directory; only step 1 needs `sudo`.
 
 - **Update:** run the same command again.
-- **Uninstall:** `curl -fsSL https://raw.githubusercontent.com/sudharamachandranrajeev/chithram/main/install-linux.sh | bash -s -- --uninstall`
+- **Uninstall:** `curl -fsSL https://raw.githubusercontent.com/sudharamachandranrajeev/chithram-video-app/main/install-linux.sh | bash -s -- --uninstall`
 - **Libraries already installed?** Add `--no-deps`: `... | bash -s -- --no-deps`.
 - **Prefer to read it first?** The script is [install-linux.sh](install-linux.sh), about 90 lines.
 
@@ -192,9 +192,9 @@ This software uses the following open source packages and services:
 
 ## Related
 
-* [Brahma](https://github.com/sudharamachandranrajeev/brahma) – the author's life-management suite (a
+* [Brahma](https://github.com/sudharamachandranrajeev/brahma-life-suite) – the author's life-management suite (a
   separate project)
-* [Paattu](https://github.com/sudharamachandranrajeev/paattu) – a music player by the same author,
+* [Paattu](https://github.com/sudharamachandranrajeev/paattu-music-player) – a music player by the same author,
   whose YouTube resolver this app's `innertube` package grew from
 
 ## License
